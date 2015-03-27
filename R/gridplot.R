@@ -1,28 +1,33 @@
-gridplot <- function(mfrow, mfcol, fun, nx, gps, shps.env, dasp, sasp, assign.to.vp=FALSE) {
+gridplot <- function(mfrow, mfcol, fun, nx, gps, shps.env, dasp, sasp, legend_pos) {
 	cl <- rw <- 1
-	for (i in 1:nx) {
-		# set grid layout at each new page page iteration
-		if (i%%(mfrow*mfcol)==1 || (mfrow==1 && mfcol==1)) {
-			pushViewport(viewport(layout=grid.layout(mfrow, mfcol)))
-		}
-		if (assign.to.vp) {
-			do.call(fun, args=list(gps=gps[[i]], shps.env, dasp, sasp,  
-								   vp=viewport(layout.pos.row=rw, 
-								   			layout.pos.col=cl)))
-		} else {
-			cellplot(rw, cl, e=do.call(fun, args=list(gps[[i]], shps.env, dasp, sasp)))
-		}
-		
-		cl <- cl + 1
-		if (cl > mfcol) {
-			cl <- 1; rw <- rw + 1
-		}
-		
-		if (i%%(mfrow*mfcol)==0 && i<nx) {
+	
+	np <- ceiling(nx / (mfrow * mfcol))
+	
+	pp <- min(mfrow * mfcol, nx)
+
+	
+	
+	treeMlts <- lapply(1:np, function(k) {
+		if (k!=1) {
 			grid.newpage()
-			rw <- 1
 		}
-	}
+		vpGrid <- viewport(layout=grid.layout(mfrow, mfcol, widths=unit(1/mfcol-1e-5, "npc"), heights=unit(1/mfrow-1e-5, "npc")), name = "multiples_grid")
+		pushViewport(vpGrid)
+		
+		istart <- (k-1) * pp + 1
+		iend <- min(istart + pp, nx)
+		ni <- iend-istart+1
+		treeMults <- mapply(function(i, rw, cl) {
+			cellplot2(rw, cl, e=do.call(fun, args=list(i, gps[[i]], shps.env, dasp, sasp, legend_pos)), name = paste("multiple", i, sep="_"))
+		}, istart:iend, 
+		rep(1:mfrow, each=mfcol, length.out=ni), 
+		rep(1:mfcol, times=mfrow, length.out=ni), SIMPLIFY=FALSE)
+		
+		tree <- gTree(children=do.call("gList", treeMults), vp=vpGrid)
+		#tree <- gTree(children=gList(polylineGrob(x=c(0.2, 0.7, 0.8, 0.5, 0.3, 0.2), y=c(0.1, 0.2, 0.9, 0.8, 0.2, 0.1), gp=gpar(col="#0000EE77", lwd=4), vp=viewport(layout.pos.row = 1, layout.pos.col = 1, clip=TRUE))), vp=vpGrid)
+		grid.draw(tree)
+	})
+	
 	upViewport(0)
 	invisible()
 }

@@ -14,13 +14,13 @@
 #' @param borders color of the polygon borders. Use \code{NA} to omit the borders.
 #' @param theme one of "World", "Europe", or "NLD"
 #' @param scale numeric value that serves as the global scale parameter. All font sizes, bubble sizes, border widths, and line widths are controled by this value. The parameters \code{bubble.size}, \code{text.cex}, and \code{line.lwd} can be scaled seperately with respectively \code{bubble.scale}, \code{text.scale}, and \code{line.scale}.
-#' @param ... parameters passed on to the \code{tm_*} functions.
+#' @param ... arguments passed on to the \code{tm_*} functions. If an argument name is not unique for a particular \code{tm_} function, then it should be prefixed with the function name without \code{"tm_"}. For instance, \code{style} is an argument of \code{\link{tm_fill}}, \code{\link{tm_bubbles}}, and \code{\link{tm_lines}}. Therefore, in order to define the \code{style} for a choropleth, its arugment name should be \code{fill.style}.  
 #' @return \code{\link{tmap-element}}
 #' @example ../examples/qtm.R
 #' @seealso \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
 #' @export
 qtm <- function(shp, 
-				fill="grey90",
+				fill="grey85",
 				bubble.size=NULL,
 				bubble.col=NULL,
 				text=NULL,
@@ -29,9 +29,10 @@ qtm <- function(shp,
 				line.col=NULL,
 				borders="grey40",
 				theme=NULL,
-				scale=1,
+				scale=NA,
 				...) {
 	args <- list(...)
+	shp_name <- deparse(substitute(shp))
 	if (!inherits(shp, "SpatialPolygons")) {
 		fill <- NULL
 		borders <- NULL
@@ -45,44 +46,49 @@ qtm <- function(shp,
 			if (missing(bubble.col)) bubble.col <- "black"
 		}
 	}
-	shapeargs <- args[intersect(names(args), names(tm_shape()[[1]]))]
-	fillargs <- args[setdiff(intersect(names(args), names(tm_fill()[[1]])), "col")]
-	bubblenames <- names(tm_bubbles()[[1]])
-	bubblenames[bubblenames=="bubble.border"] <- "border"
-	bubbleargs <- args[setdiff(intersect(names(args), bubblenames), c("bubble.col", "bubble.size"))]
-	if ("bubble.scale" %in% names(bubbleargs)) names(bubbleargs)[names(bubbleargs)=="bubble.scale"] <- "scale"
 	
-	borderargs <- args[setdiff(intersect(names(args), names(tm_borders()[[1]])), "col")]
+	dupl <- c("alpha", "auto.palette.mapping", "bg.color", "breaks", "col", "colorNA", "contrast", "labels", "lty", "lwd", "max.categories", "n", "palette", "scale", "style", "textNA", "xmod", "ymod")
 	
-	textnames <- names(tm_text("")[[1]])[-c(1:2)]
-	textnames[-1] <- substr(textnames[-1], 6, nchar(textnames[-1]))
-	textnames[textnames=="scale"] <- "text.scale"
-	textargs <- args[intersect(names(args), textnames)]
-	if ("text.scale" %in% names(textargs)) names(textargs)[names(textargs)=="text.scale"] <- "scale"
+	fns <- c("tm_shape", "tm_fill", "tm_borders", "tm_bubbles", "tm_lines", "tm_text", "tm_layout", "tm_grid", "tm_facets")
+	fns_prefix <- c("shape", "fill", "borders", "bubble", "line", "text", "layout", "grid", "facets")
 	
-	linenames <- names(tm_lines()[[1]])
-	linenames[linenames=="lines.lty"] <- "lty"
-	lineargs <- args[setdiff(intersect(names(args), linenames), c("lines.col", "lines.lwd"))]
-	if ("line.scale" %in% names(lineargs)) names(lineargs)[names(lineargs)=="line.scale"] <- "scale"
+	skips <- list(tm_shape="shp", tm_fill="col", tm_borders="col", tm_bubbles=c("size", "col"), tm_lines=c("col", "lwd"), tm_text=c("text", "cex"), tm_layout="scale", tm_grid=NULL, tm_facets=NULL)
 	
-	themeargs <- args[intersect(names(args), names(tm_layout()[[1]]))]
-	gridargs <- args[intersect(names(args), names(tm_grid()[[1]]))]
 	
-	g <- do.call("tm_shape", c(list(shp=shp), shapeargs))
-	if (!is.null(borders)) g <- g + do.call("tm_borders", c(list(col=borders), borderargs))
-	if (!is.null(fill)) g <- g + do.call("tm_fill", c(list(col=fill), fillargs))
-	if (!missing(bubble.size) || !missing(bubble.col)) g <- g + do.call("tm_bubbles", c(list(size=bubble.size, col=bubble.col), bubbleargs))
+	args2 <- mapply(function(f, pre, sk, args, dupl){
+		lnames <- setdiff(names(formals(f)), sk)
+		isD <- lnames %in% dupl
+		lnames2 <- lnames
+		lnames2[isD] <- paste(pre, lnames2[isD], sep=".")
+		arg <- args[intersect(names(args), lnames2)]
+		if (length(arg)) names(arg) <- lnames[match(names(arg), lnames2)]
+		arg
+	}, fns, fns_prefix, skips, MoreArgs = list(args=args, dupl=dupl), SIMPLIFY=FALSE)
 	
-	if (!missing(text)) g <- g + do.call("tm_text", c(list(text=text, cex=text.cex), textargs))
-	
-	if (!missing(line.lwd) || !missing(line.col)) g <- g + do.call("tm_lines", c(list(lwd=line.lwd, col=line.col), lineargs))
+	g <- do.call("tm_shape", c(list(shp=shp), args2[["tm_shape"]]))
+	g$tm_shape$shp_name <- shp_name
+	if (!is.null(borders)) g <- g + do.call("tm_borders", c(list(col=borders), args2[["tm_borders"]]))
+	if (!is.null(fill)) g <- g + do.call("tm_fill", c(list(col=fill), args2[["tm_fill"]]))
 
+	if (!missing(line.lwd) || !missing(line.col)) g <- g + do.call("tm_lines", c(list(lwd=line.lwd, col=line.col), args2[["tm_lines"]]))
+	
+	if (!missing(bubble.size) || !missing(bubble.col)) {
+		bubbleLst <- c(if (!missing(bubble.size)) list(size=bubble.size) else list(),
+					   if (!missing(bubble.col)) list(col=bubble.col) else list())
+		g <- g + do.call("tm_bubbles", c(bubbleLst, args2[["tm_bubbles"]]))	
+	} 
+	
+	if (!missing(text)) g <- g + do.call("tm_text", c(list(text=text, cex=text.cex), args2[["tm_text"]]))
+	
+	if (length(args2[["tm_facets"]])) g <- g + do.call("tm_facets", args2[["tm_facets"]])
+
+	scaleLst <- if (!missing(scale)) list(scale=scale) else list()
 	if (missing(theme)) {
-		if (length(themeargs)) g <- g + do.call("tm_layout", c(list(scale=scale), themeargs))	
+		g <- g + do.call("tm_layout", c(scaleLst, args2[["tm_layout"]]))	
 	} else {
 		if (!(theme %in% c("World", "Europe", "NLD"))) stop("Unknown theme")
 		funct <- paste("tm_layout", theme, sep="_")
-		g <- g + do.call(funct, c(list(scale=scale), themeargs))
+		g <- g + do.call(funct, c(scaleLst, args2[["tm_layout"]]))
 	}
 	
 	g

@@ -5,7 +5,8 @@ num2pal <- function(x, n = 5,
 					   auto.palette.mapping = TRUE,
 					   contrast = 1,
 					   legend.labels = NULL,
-					   legend.digits = 2,
+					   legend.scientific = FALSE,
+					   legend.digits = NA,
 					   colorNA = "#FF1414",
 					   legend.NA.text = "Missing") {
 	
@@ -38,8 +39,10 @@ num2pal <- function(x, n = 5,
 		colpal <- colorRampPalette(revPal(brewer.pal(mc, palette)))(101)
 
 		ids <- if (pal.div) {
-			map2divscale(breaks, contrast=contrast)
-		} else seq(1, 1+100*contrast, length.out=nbrks-1)
+			map2divscaleID(breaks, contrast=contrast)
+		} else {
+			map2seqscaleID(breaks, contrast=contrast)
+		}
 		
 		legend.palette <- colpal[ids]
 	} else {
@@ -56,10 +59,25 @@ num2pal <- function(x, n = 5,
 	}
 	# create legend labels
 	if (is.null(legend.labels)) {
-		breaks.printed <- sprintf(paste("%.", legend.digits, "f", sep=""), breaks) 
-		legend.labels <- paste("[", paste(breaks.printed[-nbrks], breaks.printed[-1], sep=", "), ")", sep="")
-		legend.labels[length(legend.labels)] <- paste(substr(legend.labels[length(legend.labels)], 
-															 1, nchar(legend.labels[length(legend.labels)])-1), "]", sep="")
+		#breaks.printed <- sprintf(paste("%.", legend.digits, "f", sep=""), breaks) 
+		if (legend.scientific) {
+			if (is.na(legend.digits)) {
+				breaks.printed <- formatC(breaks, flag="#")
+			} else {
+				breaks.printed <- formatC(breaks, digits=legend.digits, flag="#")
+			}
+			legend.labels <- paste("[", breaks.printed[-nbrks], ", ", breaks.printed[-1], ")", sep="")
+			legend.labels[length(legend.labels)] <- paste(substr(legend.labels[length(legend.labels)], 
+																 1, nchar(legend.labels[length(legend.labels)])-1), "]", sep="")
+			
+		} else {
+			breaks.printed <- fancy_breaks(breaks, dp=legend.digits) 
+			breaks.printed[breaks==-Inf] <- ""
+			legend.labels <- paste(breaks.printed[-nbrks], breaks.printed[-1], sep=" to ")
+			if (breaks[1]==-Inf) legend.labels[1] <- paste("Less than", breaks.printed[2])
+			if (breaks[nbrks]==Inf) legend.labels[nbrks-1] <- paste(breaks.printed[nbrks-1], "or more")
+		}
+		
 	} else {
 		if (length(legend.labels)!=nbrks-1) warning(paste("number of legend labels should be", nbrks-1))
 		legend.labels <- rep(legend.labels, length.out=nbrks-1)
@@ -72,45 +90,27 @@ num2pal <- function(x, n = 5,
 	list(cols=cols, legend.labels=legend.labels, legend.palette=legend.palette, breaks=breaks)
 }
 
-# breaksList <- list(c(0, 10, 20, 30, 40, 50),
-# 				   c(10, 20, 30, 40, 50),
-# 				   c(-50, -40, -30, -20, -10, 0),
-# 				   c(-50, -40, -30, -20, -10),
-# 				   c(-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50),
-# 				   c(-50, -40, -30, -20, -10, -1, 10, 20, 30, 40, 50),
-# 				   c(-30, -10, 10, 30),
-# 				   c(-1, 10, 20, 30, 40, 50),
-# 				   c(-1, 0, 10, 20, 30, 40, 50),
-# 				   c(-50, -40, -30, -20, -10, 1))
-# lapply(breaksList, FUN=map2divscale)
-map2divscale <- function(breaks, n=101, contrast=1) {
-	nbrks <- length(breaks)
-	mx <- max(abs(breaks))
-	
-	is.div <- any(breaks<0) && any(breaks>0)
-	
-	cat0 <- !any(breaks==0)
-	
-	h <- ((n-1)/2)+1
-	
-	if (is.div && !cat0) {
-		npos <- sum(breaks>0)
-		nneg <- sum(breaks<0)
-		step <- round((h-1)*contrast/((max(npos, nneg)-.5)*2))
+
+fancy_breaks <- function(vec, dp=NA) {
+	# get correct number of significant figures
+	#vec = signif(vec, digits)
+	frm <- gsub(" ", "", sprintf("%20.10f", abs(vec)))
+	mag <- max(nchar(frm)-11)
+	ndec <- max(10 - nchar(frm) + nchar(sub("0+$","",frm)))
+	nsig <- 
+
+	if (mag>11 || (mag > 9 && all(vec - floor(vec/1e9)*1e9 < 1))) {
+		vec <- vec / 1e9
+		ext <- " bln"
+	} else if (mag > 8 || (mag > 6 && all(vec - floor(vec/1e6)*1e6 < 1))) {
+		vec <- vec / 1e6
+		ext <- " mln"
 	} else {
-		npos <- sum(breaks>=0) - !is.div
-		nneg <- sum(breaks<=0) - !is.div
-		step <- 0
+		ext <- ""
 	}
 	
-	pid <- h + step
-	nid <- h - step
+	if (is.na(dp)) dp <- max(min(ndec, 4-mag), 0)
 	
-	ids <- rep(h, nbrks-1)
-	if (npos>0) ids[(nbrks-npos):(nbrks-1)] <- pid + seq(0, (n-pid)/mx*breaks[nbrks]*contrast, 
-														 length.out=npos)
-	if (nneg>0) ids[1:nneg] <- seq(nid-((nid-1)/mx*-breaks[1]*contrast), nid, 
-								   length.out=nneg)
-	
-	ids
+	paste(prettyNum(vec, big.mark=",", scientific=FALSE, preserve.width="none", digits=dp), ext, sep="")
 }
+

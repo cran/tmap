@@ -1,16 +1,35 @@
-process_meta <- function(gt, gf, gg, nx, varnames) {
+process_meta <- function(gt, gf, gg, nx, varnames, asp_ratio) {
 	legend.config <- NULL
+	
 	
 	gf <- within(gf, {
 		by <- NULL
 		if (is.null(ncol) && is.null(nrow)) {
-			## default setting: place next to each other, or in grid
-			if (nx <= 3) {
-				ncol <- nx
-				nrow <- 1
+			#           asp ~ nrow      
+			#       |-------------- 
+			#   1   |
+			# ~ncol |       nx
+			#       | 
+			ncol_init <- sqrt(nx/asp_ratio)
+			nrow_init <- nx / ncol_init
+			
+			# rounding:
+			nrow_ceiling <- min(ceiling(nrow_init), nx)
+			ncol_ceiling <- min(ceiling(ncol_init), nx)
+			
+			# find minimal change
+			nrow_xtra <- abs(nrow_ceiling - nrow_init) * ncol_init
+			ncol_xtra <- abs(ncol_ceiling - ncol_init) * nrow_init
+			
+			# calculaet the other, and subtract 1 when possible
+			if (nrow_xtra < ncol_xtra) {
+				nrow <- nrow_ceiling
+				ncol <- ceiling(nx / nrow)
+				if ((nrow-1) * ncol >= nx) nrow <- nrow - 1
 			} else {
-				ncol <- ceiling(sqrt(nx))
+				ncol <- ncol_ceiling
 				nrow <- ceiling(nx / ncol)
+				if ((ncol-1) * nrow >= nx) ncol <- ncol - 1
 			}
 		} else {
 			if (is.null(ncol)) ncol <- ceiling(nx / nrow)
@@ -51,29 +70,39 @@ process_meta <- function(gt, gf, gg, nx, varnames) {
 			legend.titles <- NA
 		} else {
 			# replace NA's with varnames
-			legend.titles <- lapply(legend.titles, function(x) {
-				id <- eval.parent(quote(names(X)))[substitute(x)[[3]]]
+			legend.titles <- mapply(function(x, id) {
 				y <- if (is.na(x[1])) varnames[[id]] else x
 				rep(y, length.out=nx)
-			})
+			}, legend.titles, names(legend.titles), SIMPLIFY=FALSE)
 			if (!spec.title) {
 				title <- rep(varnames[[idname]], length.out=nx)
 			} else {
 				title <- rep(title, length.out=nx)
 			}
 		}
+
+		if (asp_ratio>1) {
+			asp_w <- 1
+			asp_h <- 1/asp_ratio
+		} else {
+			asp_w <- asp_ratio
+			asp_h <- 1
+		}
 		
-		scale <- scale / m
-		
+		scale <- (min(1/ (asp_w * gf$ncol), 1 / (asp_h * gf$nrow))) ^ (1/gf$scale.factor)
+
 		title.cex <- title.cex * scale
 		legend.title.cex <- legend.title.cex * scale
 		legend.text.cex <- legend.text.cex * scale
 		legend.hist.cex <- legend.hist.cex * scale
 				
-		if (is.null(bg.color)) bg.color <- ifelse(is.na(varnames$fill[1]), "white", "grey85")
+		if (is.null(bg.color)) bg.color <- ifelse(is.na(varnames$fill[1]), "white", "grey75")
 		
 		if (identical(title.bg.color, TRUE)) title.bg.color <- bg.color
 		if (identical(legend.bg.color, TRUE)) legend.bg.color <- bg.color
+		
+		outer.margins <- rep(outer.margins, length.out=4)
+		inner.margins <- rep(inner.margins, length.out=4)
 	})	
 	
 	if (!is.null(gg)) {

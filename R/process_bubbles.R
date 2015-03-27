@@ -1,16 +1,38 @@
-process_bubbles_size_vector <- function(x, g, rescale) {
+process_bubbles_size_vector <- function(x, g, rescale, gt) {
 	if (!is.na(g$size.lim[1])) {
 		x[x<g$size.lim[1]] <- NA
 		x[x>g$size.lim[2]] <- g$size.lim[2]
 	}
-	x_legend <- pretty(x, 7)
-	x_legend <- x_legend[x_legend!=0]
-	nxl <- length(x_legend)
-	if (nxl>4) x_legend <- x_legend[-c(nxl-3, nxl-1)]
+	
+	if (is.null(g$sizes.legend)) {
+		x_legend <- pretty(x, 7)
+		x_legend <- x_legend[x_legend!=0]
+		nxl <- length(x_legend)
+		if (nxl>4) x_legend <- x_legend[-c(nxl-3, nxl-1)]
+	} else {
+		x_legend <- g$sizes.legend
+	}
+
+	if (is.null(g$sizes.legend.labels)) {
+		bubble.size.legend.labels <- if (gt$legend.scientific) {
+			if (is.na(gt$legend.digits)) {
+				formatC(x_legend, flag="#")
+			} else {
+				formatC(x_legend, digits=gt$legend.digits, flag="#")
+			}
+		} else {
+			fancy_breaks(x_legend, gt$legend.digits)
+		}
+	} else {
+		if (length(g$sizes.legend.labels) != length(x_legend)) stop("length of sizes.legend.labels is not equal to the number of bubbles in the legend")
+		bubble.size.legend.labels <- g$sizes.legend.labels
+	}
+	
+	
+	
 	maxX <- ifelse(rescale, max(x, na.rm=TRUE), 1)
 	bubble.size <- g$bubble.scale*sqrt(x/maxX)
 	bubble.max.size <- max(bubble.size, na.rm=TRUE)
-	bubble.size.legend.labels <- format(x_legend, trim=TRUE)
 	bubble.legend.sizes <- g$bubble.scale*sqrt(x_legend/maxX)
 	list(bubble.size=bubble.size,
 		 bubble.size.legend.labels=bubble.size.legend.labels,
@@ -26,6 +48,7 @@ process_bubbles_col_vector <- function(xc, xs, g, gt) {
 						   palette = palette,
 						   auto.palette.mapping = g$auto.palette.mapping,
 						   contrast = g$contrast, legend.labels=g$labels,
+						   legend.scientific=gt$legend.scientific,
 						   legend.digits=gt$legend.digits,
 						   legend.NA.text=g$textNA)
 		bubble.col <- colsLeg[[1]]
@@ -103,13 +126,13 @@ process_bubbles <- function(data, g, gt, gby) {
 	dtsize <- process_data(data[, xsize, drop=FALSE], by=by, free.scales=gby$free.scales.bubble.size)
 	
 	if (is.list(dtsize)) {
-		res <- lapply(dtsize, process_bubbles_size_vector, g, rescale=varysize)
+		res <- lapply(dtsize, process_bubbles_size_vector, g, rescale=varysize, gt)
 		bubble.size <- sapply(res, function(r)r$bubble.size)
 		bubble.size.legend.labels <- lapply(res, function(r)r$bubble.size.legend.labels)
 		bubble.legend.sizes <- lapply(res, function(r)r$bubble.legend.sizes)
 		bubble.max.size <- sapply(res, function(r)r$bubble.max.size)
 	} else {
-		res <- process_bubbles_size_vector(dtsize, g, rescale=varysize)
+		res <- process_bubbles_size_vector(dtsize, g, rescale=varysize, gt)
 		bubble.size <- matrix(res$bubble.size, nrow=npol)
 		if (varysize) {
 			bubble.size.legend.labels <- res$bubble.size.legend.labels
@@ -164,15 +187,17 @@ process_bubbles <- function(data, g, gt, gby) {
 	
 	list(bubble.size=bubble.size,
 		 bubble.col=bubble.col,
+		 bubble.alpha=g$bubble.alpha,
 		 bubble.border.lwd=g$bubble.border.lwd,
 		 bubble.border.col=g$bubble.border.col,
+		 bubble.border.alpha=g$bubble.border.alpha,
 		 bubble.scale=g$bubble.scale,
 		 bubble.col.legend.labels=bubble.col.legend.labels,
 		 bubble.col.legend.palette=bubble.col.legend.palette,
-		 bubble.col.legend.misc=list(bubble.border.lwd=g$bubble.border.lwd, bubble.border.col=g$bubble.border.col, bubble.max.size=bubble.max.size),
+		 bubble.col.legend.misc=list(bubble.alpha=g$bubble.alpha, bubble.border.lwd=g$bubble.border.lwd, bubble.border.col=g$bubble.border.col, bubble.border.alpha=g$bubble.border.alpha, bubble.max.size=bubble.max.size),
 		 bubble.size.legend.labels=bubble.size.legend.labels,
 		 bubble.size.legend.palette= bubble.size.legend.palette,
-		 bubble.size.legend.misc=list(bubble.border.lwd=g$bubble.border.lwd, bubble.border.col=g$bubble.border.col, legend.sizes=bubble.legend.sizes),
+		 bubble.size.legend.misc=list(bubble.alpha=g$bubble.alpha, bubble.border.lwd=g$bubble.border.lwd, bubble.border.col=g$bubble.border.col, bubble.border.alpha=g$bubble.border.alpha, legend.sizes=bubble.legend.sizes),
 		 xsize=xsize,
 		 xcol=xcol,
 		 bubble.xmod=xmod,

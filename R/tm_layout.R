@@ -1,6 +1,6 @@
 #' Layout elements of cartographic maps
 #' 
-#' This element specifies layout options for the maps. The main function \code{tm_layout} is used by default as  general layout theme. The functions \code{tm_layout_World}, \code{tm_layout_Europe}, and \code{tm_layout_NLD} are layout themes for World, Europe, and Netherlands maps (which are contained in this package).
+#' This element specifies layout options for the maps. The main function \code{tm_layout} can be seen as a general layout theme. The functions \code{tm_layout_World}, \code{tm_layout_Europe}, and \code{tm_layout_NLD} are layout themes specified for the world, Europe, and Netherlands maps (which are contained in this package). Tip: create a layout theme for your own map (see example below).
 #' 
 #' @name tm_layout
 #' @rdname tm_layout
@@ -9,7 +9,7 @@
 #' @param title.cex Relative size of the title
 #' @param bg.color Background color. By default it is light grey (\code{grey85}) for choropleths and white for other maps.
 #' @param draw.frame Boolean that determines whether a frama is drawn. 
-#' @param title.position Position of the title. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "center" or "right" for the first value and "top", "center", or "right" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left bottom corner of the legend.
+#' @param title.position Position of the title. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "center" or "right" for the first value and "top", "center", or "bottom" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left bottom corner of the legend.
 #' @param title.bg.color background color of the title. Use \code{TRUE} to match with the overall background color \code{bg.color}.
 #' @param asp Aspect ratio. The aspect ratio of the map (width/height). If \code{NA}, it is determined by the bounding box (see argument \code{bbox} of \code{\link{tm_shape}}) and the argument \code{frame.margins}. If \code{0}, then the aspect ratio is adjusted to the aspect ratio of the device.
 #' @param frame.lwd Width of the frame
@@ -20,7 +20,7 @@
 #' @param legend.hist.show Logical that determines whether to show a histogram for the choropleth fill variable.
 #' @param legend.only logical. Only draw the legend (without map)? Particularly useful for small multiples with a common legend.
 #' @param legend.titles titles of the legend elements. Named character vector, where the names correspond to the legend elements and the value to the titles of those elements. Possible legend element names are: \code{"fill"}, \code{"bubble.size"}, \code{"bubble.col"}, \code{"line.col"}, and \code{"line.lwd"}. For small multiples, a list of character vectors can be provided, where the list names correspond to the legend elements, and the character vectors to the legend titles of the small multiples per legend element. By default, the names of the corresponding statistical variables are used. For the legend element at the top, no legend title is used since the main title is used for this. A legend title for this element can be speficied.
-#' @param legend.position Position of the legend. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "center" or "right" for the first value and "top", "center", or "right" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left bottom corner of the legend.
+#' @param legend.position Position of the legend. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "center" or "right" for the first value and "top", "center", or "bottom" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left bottom corner of the legend. By default, it is automatically placed in the corner with most space based on the (first) shape object.
 #' @param legend.is.portrait logical vector that determines whether the orientation of the legend elements are portrait (\code{TRUE}) or landscape (\code{FALSE}). The vector should be named with the corresponding elements, which are \code{"fill"}, \code{"bubble.size"}, \code{"bubble.col"}, \code{"line.col"}, and \code{"line.lwd"}.
 #' @param legend.width maximum width of the legend
 #' @param legend.height maximum height of the legend.
@@ -29,28 +29,30 @@
 #' @param legend.title.cex Relative font size for the legend title
 #' @param legend.text.cex Relative font size for the legend text elements
 #' @param legend.hist.cex Relative font size for the choropleth histogram
+#' @param legend.scientific logical. Should the numeric legend labels be formatted scientific?
 #' @param legend.digits Number of digits for the legend labels
 #' @param legend.bg.color Background color of the legend. Use \code{TRUE} to match with the overall background color \code{bg.color}.
 #' @param ... other arguments from \code{tm_layout}
 #' @seealso \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
+#' @example ../examples/tm_layout.R
 #' @export
 tm_layout <- function(title=NA,
 					  scale=1,
 					  title.cex=1.5,
 					  bg.color=NULL,
 					  draw.frame=TRUE,
-					  title.position = c("left", "top"),
+					  title.position = NULL,
 					  title.bg.color=NA,
 					  asp = NA,
 					  frame.lwd=1,
 					  outer.margins = rep(0.02, 4),
-					  inner.margins=rep(0.02, 4),
+					  inner.margins = rep(0.02, 4),
 					  outer.bg.color="white",
 					  legend.show = TRUE,
 					  legend.hist.show = FALSE,
 					  legend.only = FALSE,
 					  legend.titles = c(fill = NA, bubble.size = NA, bubble.col = NA, line.col = NA, line.lwd = NA),
-					  legend.position = c("left", "top"),
+					  legend.position = NULL,
 					  legend.is.portrait = c(fill = TRUE, bubble.size = FALSE, 
 					  					   bubble.col = TRUE,
 					  					   line.col = TRUE, line.lwd = FALSE),
@@ -61,7 +63,8 @@ tm_layout <- function(title=NA,
 					  legend.title.cex=1.0,
 					  legend.text.cex=0.7,
 					  legend.hist.cex=0.7,
-					  legend.digits = 2L,
+					  legend.scientific = FALSE,
+					  legend.digits = NA,
 					  legend.bg.color = NA) {
 	g <- list(tm_layout=c(as.list(environment()), list(call=names(match.call(expand.dots = TRUE)[-1]))))
 	class(g) <- "tm"
@@ -73,12 +76,10 @@ tm_layout <- function(title=NA,
 #' @export
 tm_layout_World <- function(title=NA,
 							scale=.85,
-							title.position = c("left", "bottom"),
 							title.bg.color=TRUE,
-							outer.margins=rep(.02, 4),
 							inner.margins=c(0, 0.02, 0.02, 0.02),
 							legend.position=c("left", "bottom"), 
-							legend.width=.2,
+							legend.width=.25,
 							legend.height = .5,
 							legend.bg.color=TRUE,
 							...) {
@@ -89,9 +90,9 @@ tm_layout_World <- function(title=NA,
 #' @rdname tm_layout
 #' @export
 tm_layout_Europe <- function(title=NA,
+							 title.position=c("left", "top"),
 							 legend.position=c("left", "top"), 
-							 outer.margins=rep(0.02, 4),
-							 inner.margins=c(0, 0.25, 0, 0),
+							 inner.margins=c(0, 0.15, 0, 0),
 							 ...) {
 	args <- c(as.list(environment()), list(...))
 	do.call("tm_layout", args)
@@ -102,9 +103,9 @@ tm_layout_Europe <- function(title=NA,
 #' @export
 tm_layout_NLD <- function(title=NA,
 						  draw.frame=FALSE, 
-						  inner.margins=c(.05, .3, .05, .05),
+						  inner.margins=c(.05, .3, .1, .05),
 						  legend.position=c("left", "top"), 
-						  legend.width=.3,
+						  legend.width=.35,
 						  ...) {
 	args <- c(as.list(environment()), list(...))
 	do.call("tm_layout", args)

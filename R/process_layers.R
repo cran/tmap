@@ -7,14 +7,35 @@ process_layers <- function(g, gt, gf) {
 	data <- g$tm_shape$data
 	
 	scale <- gt$scale
-	
-	if (!is.null(gf$by) && gf$shp_name==g$tm_shape$shp_name) {
-		data$GROUP_BY <- as.factor(data[[gf$by]])
-		by <- levels(data$GROUP_BY)
-	} else {
+		
+	if (g$tm_shape$by=="") {
 		data$GROUP_BY <- factor("_NA_")
 		by <- NA
+	} else {
+		d <- data[[g$tm_shape$by]]
+		data$GROUP_BY <- if (is.factor(d)) {
+			factor(as.character(d), levels=levels(d)[table(d)>0])
+		} else {
+			factor(d)
+		}
+		by <- levels(data$GROUP_BY)
 	}
+	
+	
+	# 	data_by <- lapply(1:nshps, function(i) {
+	# 		if (gf$shp_nr[i]==0) {
+	# 			NULL
+	# 		} else {
+	# 			d <- gp[[gf$shp_nr[i]]]$data_by
+	# 			if (is.factor(d)) {
+	# 				factor(as.character(d), levels=levels(d)[table(d)>0])
+	# 			} else {
+	# 				factor(d)
+	# 			}
+	# 		}
+	# 	})
+	
+	
 	
 	# determine plotting order 
 	plot.order <- names(g)[names(g) %in% c("tm_fill", "tm_borders", "tm_text", "tm_bubbles", "tm_lines")]
@@ -23,7 +44,7 @@ process_layers <- function(g, gt, gf) {
 	
 	# border info
 	gborders <- if (is.null(g$tm_borders)) {
-		list(col=NA, lwd=1, lty="blank")
+		list(col=NA, lwd=1, lty="blank", alpha=NA)
 	} else g$tm_borders
 # 	gborders$lwd <- gborders$lwd * scale
 	
@@ -56,5 +77,5 @@ process_layers <- function(g, gt, gf) {
 		gtext <- process_text(data, g$tm_text, if (is.null(gfill$fill)) NA else gfill$fill)
 	}
 
-	c(list(npol=nrow(data), varnames=list(by=by, fill=gfill$xfill, bubble.size=gbubble$xsize, bubble.col=gbubble$xcol, line.col=glines$xline, line.lwd=glines$xlinelwd), plot.order=plot.order), gborders, gfill, glines, gbubble, gtext)
+	c(list(npol=nrow(data), varnames=list(by=by, fill=gfill$xfill, bubble.size=gbubble$xsize, bubble.col=gbubble$xcol, line.col=glines$xline, line.lwd=glines$xlinelwd), data_by=data$GROUP_BY, plot.order=plot.order), gborders, gfill, glines, gbubble, gtext)
 }

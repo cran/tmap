@@ -1,5 +1,6 @@
 process_text <- function(data, g, fill) {
-	root <- NULL; text.cex.lowerbound <- NULL; text.scale <- NULL; text.bg.alpha <- NULL; text.case <- NULL
+	root <- NULL; text.cex.lowerbound <- NULL; text.scale <- NULL; text.bg.alpha <- NULL; text.case <- NULL; text.alpha <- NULL
+	text.shadow <- NULL
 	
 	npol <- nrow(data)
 	
@@ -32,6 +33,21 @@ process_text <- function(data, g, fill) {
 				rep(ifelse(light, "black", "white"), length.out=npol)
 			}
 		} else rep(text.fontcolor, length.out=npol)
+		
+		if (text.shadow) {
+			text.shadowcol <- if (is.matrix(text.fontcolor)) {
+				apply(text.fontcolor, MARGIN=2, function(f) {
+					fillrgb <- col2rgb(f)
+					light <- apply(fillrgb * c(.299, .587, .114), MARGIN=2, sum) >= 128
+					rep(ifelse(light, "black", "white"), length.out=npol)
+				})
+			} else {
+				fillrgb <- col2rgb(text.fontcolor)
+				light <- apply(fillrgb * c(.299, .587, .114), MARGIN=2, sum) >= 128
+				rep(ifelse(light, "black", "white"), length.out=npol)
+			}
+		}
+		
 		text.xmod <- if (is.character(text.xmod)) data[[text.xmod]] else rep(text.xmod, length.out=npol)
 		text.ymod <-  if (is.character(text.ymod)) data[[text.ymod]] else rep(text.ymod, length.out=npol)
 		
@@ -47,12 +63,13 @@ process_text <- function(data, g, fill) {
 		rm(text_empty)
 		text.cex <- rep(text.cex * text.scale, length.out=npol)
 		
+		text.fontcolor <- if (is.matrix(text.fontcolor)) {
+			apply(text.fontcolor, MARGIN=2, function(col) {
+				get_alpha_col(col, text.alpha)
+			})
+		} else get_alpha_col(text.fontcolor, text.alpha)
 		if (!is.na(text.bg.color)) {
-			bgcols <- col2rgb(text.bg.color)
-			bgcols <- rgb(bgcols[1,], bgcols[2,], bgcols[3,], 
-						  alpha=text.bg.alpha, maxColorValue=255)
-			text.bg.color <- bgcols
-			rm(bgcols)
+			text.bg.color <- get_alpha_col(text.bg.color, text.bg.alpha)
 		}
 	})
 	

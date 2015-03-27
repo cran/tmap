@@ -5,18 +5,15 @@ Title: Thematic Maps
 Type: Package
 LazyLoad: yes
 Author: Martijn Tennekes
-Description: Thematic maps are geographical maps in which spatial data
-    distributions are visualized. This package offers a flexible, layer-based,
-    way to create all kinds of thematic maps, such as choropleths and bubble
-    maps.
-Version: 0.6
-Date: 2014-06-30
+Description: Thematic maps are geographical maps in which statistical data are visualized. This package offers a flexible, layer-based, way to create thematic maps, such as choropleths and bubble maps.
+Version: 0.7
+Date: 2015-03-27
 Depends: R (>= 3.0)
 Imports: rgeos, grid, gridBase, sp, rgdal, classInt, RColorBrewer,
         igraph, fields, vegan
 Suggests: knitr
 VignetteBuilder: knitr
-Packaged: 2014-07-30 15:47:53 UTC; vt
+Packaged: 2015-03-27 19:25:14 UTC; vt
 NeedsCompilation: no
 Repository: CRAN
-Date/Publication: 2014-07-30 18:25:21
+Date/Publication: 2015-03-27 20:58:30
