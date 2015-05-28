@@ -1,9 +1,12 @@
-legend_hist <- function(x, legend.hist.cex, lineHeight, scale) {
+legend_hist <- function(x, legend.hist.size, lineHeight, scale, m, legend.hist.bg.color) {
 	with(x, {
 		if (is.factor(values)) {
 			numbers <- table(values)
 			xticks <- seq(0, 1, length.out=length(numbers)*2+1)[seq(2,length(numbers)*2,by=2)]
 			ptx <- levels(values)
+			
+			#if (any(nchar(ptx)>5)) ptx <- substr(ptx, 1, 3)
+			
 			colors <- legend.palette
 		} else {
 			values <- na.omit(values)
@@ -49,71 +52,103 @@ legend_hist <- function(x, legend.hist.cex, lineHeight, scale) {
 		
 		formattedY <- format(pty, trim=TRUE)
 		
-		width.npc <- max(convertWidth(stringWidth(ptx), unitTo="npc", valueOnly=TRUE)) * length(ptx)
+		width.npc <- max(convertWidth(stringWidth(paste(ptx, " ")), unitTo="npc", valueOnly=TRUE)) * (length(ptx)+1)
 		height.npc <- convertHeight(unit(length(formattedY)+2, "lines"), "npc", valueOnly=TRUE) 
 		
-		margin <- 0.05
-		npc.total <- 1-2*margin
+		my <- lineHeight * legend.hist.size * m
+		mx <- convertWidth(convertHeight(unit(my, "npc"), "inch"), "npc", TRUE)
+		npcx.total <- 1-2*mx
+		npcy.total <- 1-2*my
 		
-		cex <- min(legend.hist.cex,
-				   npc.total/width.npc,
-				   npc.total/height.npc)
+		## decrease factor
+		text_shrink <- (npcx.total/width.npc)
+		if (legend.hist.size/text_shrink>1.5) {
+			draw_x_axis <- FALSE
+			text_shrink <- Inf
+		} else {
+			draw_x_axis <- TRUE
+		}
 		
-		width.npc <- width.npc * cex
-		height.npc <- height.npc * cex
+		
+		#margin <- 0.05
+		#npc.total <- 1-2*m
+		
+		size <- min(legend.hist.size,
+					text_shrink,
+					npcy.total/height.npc)
+		
+		width.npc <- width.npc * size
+		height.npc <- height.npc * size
 		
 		
-		width.yaxis <- max(convertWidth(stringWidth(formattedY), unitTo="npc", valueOnly=TRUE)) * cex * 1.5
-		height.xaxis <- lineHeight * cex
+		width.yaxis <- max(convertWidth(stringWidth(formattedY), unitTo="npc", valueOnly=TRUE)) * size
+		height.xaxis <- lineHeight * size * ifelse(draw_x_axis, 1, .25)
 		
-		axisMargin <- convertWidth(unit(0.02, "npc"), "inch", valueOnly=TRUE)
-		axisTicks <- convertWidth(unit(0.01, "npc"), "inch", valueOnly=TRUE)
+		axisTicks <- convertWidth(unit(mx, "npc"), "inch", valueOnly=TRUE)
 		
-		pushViewport(
-			viewport(layout=grid.layout(5, 5, 
-										heights=unit(c(margin, 1, axisMargin+axisTicks, height.xaxis, margin), c("npc", "null", "inch", "npc", "npc")),
-										widths=unit(c(margin, 1, axisMargin+axisTicks, width.yaxis, margin), c("npc", "null", "inch", "npc", "npc")))))
+		mxInch <- convertWidth(unit(mx, "npc"), "inch", valueOnly=TRUE)
+
 		
-		cellplot(2,2, e={
-			#grid.rect(gp=gpar(fill="lightblue2"))
-			grid.rect(x=x, y=0, width=ws, height=hs, gp=gpar(col=NA,fill=colors), just=c("left", "bottom"))
-		})
+		height.xaxisInch <- convertHeight(unit(height.xaxis, "npc"), "inch", valueOnly=TRUE)
 		
-		# plot y axis
-		cellplot(2,3,e={
-			axisMargin.npc <- convertWidth(unit(axisMargin, "inch"), "npc", valueOnly=TRUE)
-			axisTicks.npc <- convertWidth(unit(axisTicks, "inch"), "npc", valueOnly=TRUE)
-			
-			
-			grid.polyline(x=c(axisMargin.npc, axisMargin.npc, 
-							  rep(c(axisMargin.npc,axisMargin.npc+axisTicks.npc), length(pty))),
-						  y=c(0, 1, rep(hpty, each=2)),
-						  id=rep(1:(length(pty)+1),each=2), gp=gpar(lwd=scale))
-		})
+		vpHist <- viewport(layout=grid.layout(5, 5, 
+											  heights=unit(c(my, 1, axisTicks, height.xaxis, my), c("npc", "null", "inch", "npc", "npc")),
+											  widths=unit(c(width.yaxis, mx, axisTicks, 1, 3*mx), c("npc", "npc", "inch", "null", "npc"))))
 		
-		cellplot(2,4,e={
-			maxWidth <- max(convertWidth(stringWidth(formattedY), unitTo="npc", valueOnly=TRUE)) * cex * 1.5
-			grid.text(formattedY, x=maxWidth, y=hpty, 
-					  just=c("right","center"), gp=gpar(cex=cex))
-		})
 		
-		# plot x axis tick marks
-		cellplot(3,2,e={
-			axisMargin.npc <- convertHeight(unit(axisMargin, "inch"), "npc", valueOnly=TRUE)
-			axisTicks.npc <- convertHeight(unit(axisTicks, "inch"), "npc", valueOnly=TRUE)
-			
-			n <- length(xticks)
-			
-			line_height <- convertHeight(unit(1, "lines"), "npc", valueOnly=TRUE) * cex
-			grid.lines(x=c(0,1), y=c(1-axisMargin.npc, 1-axisMargin.npc), gp=gpar(lwd=scale))
-			grid.polyline(x=rep(xticks, each=2), y=rep(c(1-axisMargin.npc, 1-axisMargin.npc-axisTicks.npc), n), 
-						  id=rep(1:n, each=2), gp=gpar(lwd=scale)) 
-		})
+		pushViewport(vpHist)
 		
-		cellplot(4,2,e={
-			grid.text(ptx, x=xticks, y=.5, gp=gpar(cex=cex))
-		})
+		histElems <- gList(
+			if (!is.na(legend.hist.bg.color)) cellplot(2,4,e={
+				rectGrob(gp=gpar(fill=legend.hist.bg.color, col="black"))
+			}) else NULL,
+			cellplot(2,4, e={
+				rectGrob(x=x, y=0, width=ws, height=hs, gp=gpar(col=NA,fill=colors), just=c("left", "bottom"))
+			}),
+			# plot y axis
+			cellplot(2,3,e={
+				axisTicks.npc <- convertWidth(unit(axisTicks, "inch"), "npc", valueOnly=TRUE)
+				
+				
+				polylineGrob(x=c(axisTicks.npc, axisTicks.npc, 
+								  rep(c(0,axisTicks.npc), length(pty))),
+							  y=c(0, 1, rep(hpty, each=2)),
+							  id=rep(1:(length(pty)+1),each=2), gp=gpar(lwd=scale))
+			}),
+			cellplot(2:4,1,e={
+				maxWidth <- max(convertWidth(stringWidth(formattedY), unitTo="npc", valueOnly=TRUE)) * size
+				h_total <- convertHeight(unit(1, "npc"), "inch", valueOnly = TRUE)
+				h_extra <- axisTicks+height.xaxisInch
+				h_e <- h_extra / h_total
+				hpty <- h_e + hpty * (1-h_e)
+				textGrob(formattedY, x=maxWidth, y=hpty, 
+						  just=c(1,.4), gp=gpar(cex=size))
+			}),
+			# plot x axis tick marks
+			cellplot(3,4,e={
+				axisTicks.npc <- convertHeight(unit(axisTicks, "inch"), "npc", valueOnly=TRUE)
+				
+				n <- length(xticks)
+
+				line_height <- convertHeight(unit(1, "lines"), "npc", valueOnly=TRUE) * size
+				if (draw_x_axis) {
+					
+					gTree(children = gList(linesGrob(x=c(0,1), y=c(1, 1), gp=gpar(lwd=scale)),
+										   polylineGrob(x=rep(xticks, each=2), y=rep(c(1, 1-axisTicks.npc), n), 
+								  id=rep(1:n, each=2), gp=gpar(lwd=scale)))) 
+				} else linesGrob(x=c(0,1), y=c(1, 1), gp=gpar(lwd=scale))
+			}),
+			if (draw_x_axis) cellplot(4,4:5,e={
+ 				w_total <- convertWidth(unit(1, "npc"), "inch", valueOnly = TRUE)
+ 				w_extra <- 3*mxInch
+ 				w_e <- w_extra / w_total
+ 				xticks <- xticks * (1-w_e)
+				textGrob(ptx, x=xticks, y=.5, gp=gpar(cex=size))
+			}) else NULL)
 		
+		treeHist <- gTree(children=histElems, vp=vpHist)
 		upViewport()
+
+		treeHist
 	})
 }

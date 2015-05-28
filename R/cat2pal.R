@@ -1,10 +1,14 @@
 cat2pal <- function(x, 
 					palette = "Set3",
+					contrast = 1, 
 					colorNA = "#FF1414",
 					legend.labels = NULL,
 					max_levels = 40,
-					legend.NA.text = "Missing") {
+					legend.NA.text = "Missing",
+					alpha=1) {
 	if (!is.factor(x)) x <- factor(x, levels=sort(unique(x)))
+	
+	
 	
 	# quick&dirty
 	nCol <- nlevels(x)
@@ -27,18 +31,35 @@ cat2pal <- function(x,
 	} else revPal <- function(p)p
 	
 
+	n <- nlevels(x)
 	legend.palette <- if (palette[1] %in% rownames(brewer.pal.info)) {
-		maxCols <- brewer.pal.info[palette, "maxcolors"]
-		revPal(rep(brewer.pal(maxCols, name=palette), length.out=nlevels(x)))
+		brewerpal <- brewer.pal(min(brewer.pal.info[palette, "maxcolors"], max(n, 3)), name=palette)
+		if (brewer.pal.info[palette, "category"]=="qual") {
+			p <- rep(brewerpal, length.out=nlevels(x))
+		} else {
+			if (length(contrast)==1) contrast <- c(0, contrast)
+			crange <- contrast[2] - contrast[1]
+			ext <- nlevels(x)/crange
+			from <- floor(contrast[1] * ext)
+			to <- from + nlevels(x)
+			p <- colorRampPalette(brewerpal)(ext)[from:to]
+		}
+		revPal(p)
 	} else {
         rep(palette, length.out=nlevels(x))
 	}
     
-	   
+	legend.palette <- get_alpha_col(legend.palette, alpha)
+	colorNA <- get_alpha_col(colorNA, alpha)
+	
 	cols <- legend.palette[as.integer(x)]
 	colsNA <- is.na(cols)
 
-	legend.labels <- levels(x)
+	if (is.null(legend.labels)) {
+		legend.labels <- levels(x)	
+	} else {
+		legend.labels <- rep(legend.labels, length.out = n)
+	}
 	if (any(colsNA)) {
 		cols[is.na(cols)] <- colorNA
 		if (!is.na(legend.NA.text)) {

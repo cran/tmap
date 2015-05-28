@@ -1,5 +1,4 @@
-process_meta <- function(gt, gf, gg, nx, varnames, asp_ratio) {
-	legend.config <- NULL
+process_meta <- function(gt, gf, gg, gc, gsb, nx, by_names, asp_ratio) {
 	
 	
 	gf <- within(gf, {
@@ -39,48 +38,19 @@ process_meta <- function(gt, gf, gg, nx, varnames, asp_ratio) {
 	
 	m <- gf$ncol * gf$nrow
 	
+	legend.only <- legend.frame <- NULL
 	gt <- within(gt, {
-		idname <- names(which(sapply(varnames, function(x)as.logical(sum(!is.na(x[1]))))[legend.config]))[1]
-		if (!is.na(varnames[[1]][1])) {
-			idname <- "by"
-		}
-		one <- sum(sapply(varnames[-1], function(x)!is.na(x[1])))==1
-		spec.title <- !is.na(title[1])
-		add.title <- !identical(title, "")
-		
-		## if no names, repeat for all sublegends except for heading
-		if (!length(names(legend.titles))) {
-			legend.titles <- rep(legend.titles, length.out=length(varnames)-1)
-			names(legend.titles) <- names(varnames[-1])
-			if (add.title && !is.na(idname) && idname != "by") legend.titles[idname] <- ""
-		}
-		if (is.vector(legend.titles)) legend.titles <- as.list(legend.titles)
-		
-		tmp <- as.list(rep(NA, length(varnames)-1))
-		names(tmp) <- names(varnames[-1])
-
-		if (!is.na(idname) && (add.title || one) && idname != "by") tmp[[idname]] <- ""
-		nna <- sapply(legend.titles, function(x)!is.na(x[1]))
-		if (any(nna)) tmp[names(legend.titles[nna])] <- legend.titles[nna]
-		
-		legend.titles <- tmp[names(which(sapply(varnames[-1], function(x)!is.na(x)[1])))]
-		
-		if (is.na(idname)) {
-			if (!spec.title) title <- rep("", nx)
-			legend.titles <- NA
+		if (legend.only) {
+			title <- rep("", nx)
+			legend.width <- 1
+			legend.height <- 1
 		} else {
-			# replace NA's with varnames
-			legend.titles <- mapply(function(x, id) {
-				y <- if (is.na(x[1])) varnames[[id]] else x
-				rep(y, length.out=nx)
-			}, legend.titles, names(legend.titles), SIMPLIFY=FALSE)
-			if (!spec.title) {
-				title <- rep(varnames[[idname]], length.out=nx)
-			} else {
-				title <- rep(title, length.out=nx)
-			}
+			title <- if (is.na(title[1])) {
+				if (is.na(by_names[1])) "" else by_names
+			} else title
+			title <- rep(title, length.out=nx)
 		}
-
+		
 		if (asp_ratio>1) {
 			asp_w <- 1
 			asp_h <- 1/asp_ratio
@@ -89,20 +59,22 @@ process_meta <- function(gt, gf, gg, nx, varnames, asp_ratio) {
 			asp_h <- 1
 		}
 		
-		scale <- (min(1/ (asp_w * gf$ncol), 1 / (asp_h * gf$nrow))) ^ (1/gf$scale.factor)
+		scale <- scale * (min(1/ (asp_w * gf$ncol), 1 / (asp_h * gf$nrow))) ^ (1/gf$scale.factor)
 
-		title.cex <- title.cex * scale
-		legend.title.cex <- legend.title.cex * scale
-		legend.text.cex <- legend.text.cex * scale
-		legend.hist.cex <- legend.hist.cex * scale
+		title.size <- title.size * scale
+		legend.title.size <- legend.title.size * scale
+		legend.text.size <- legend.text.size * scale
+		legend.hist.size <- legend.hist.size * scale
 				
-		if (is.null(bg.color)) bg.color <- ifelse(is.na(varnames$fill[1]), "white", "grey75")
+		if (is.null(bg.color)) bg.color <- "white" #ifelse(is.na(varnames$fill[1]), "white", "grey75")
 		
+		legend.inside.box <- if (!is.logical(legend.frame)) TRUE else legend.frame
 		if (identical(title.bg.color, TRUE)) title.bg.color <- bg.color
 		if (identical(legend.bg.color, TRUE)) legend.bg.color <- bg.color
 		
 		outer.margins <- rep(outer.margins, length.out=4)
 		inner.margins <- rep(inner.margins, length.out=4)
+		
 	})	
 	
 	if (!is.null(gg)) {
@@ -113,5 +85,23 @@ process_meta <- function(gt, gf, gg, nx, varnames, asp_ratio) {
 		gg <- list(grid.show=FALSE)
 	}
 	
-	c(gt, gf, gg)
+	if (!is.null(gc)) {
+		gc <- within(gc, {
+			credits.size <- credits.size * gt$scale
+			credits.show <- TRUE
+		})
+	} else {
+		gc <- list(credits.show=FALSE)
+	}
+
+	if (!is.null(gsb)) {
+		gsb <- within(gsb, {
+			scale.size <- scale.size * gt$scale
+			scale.show <- TRUE
+		})
+	} else {
+		gsb <- list(scale.show=FALSE)
+	}
+	
+	c(gt, gf, gg, gc, gsb)
 }

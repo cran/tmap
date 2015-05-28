@@ -22,14 +22,14 @@ get_i <- function(x, xname, i, n, oid) {
 		ncx <- nchar(xname)
 		if (xname == "varnames") {
 			x
-		} else if (substr(xname, ncx-10, ncx)=="legend.misc") {
-			lapply(x, get_i, i, n, oid=NULL)
+		} else if (substr(xname, ncx-10, ncx) %in% c("d.hist.misc", "legend.misc")) {
+			mapply(get_i, x, names(x), MoreArgs = list(i=i, n=n, oid=NULL), SIMPLIFY=FALSE)
 		} else {
 			if (length(x)>=i) x[[i]] else x[[1]]
 		}
 	} else {
 		ncx <- nchar(xname)
-		if (xname %in% c("bubble.size.legend.palette", "bubble.max.size", "line.lwd.legend.palette", "line.legend.lwd")) {
+		if (xname %in% c("bubble.size.legend.palette", "bubble.max.size", "line.lwd.legend.palette", "line.legend.lwd") || substr(xname, ncx-11, ncx)=="legend.title") {
 			if (length(x)>=i) x[i] else x[1]
 		} else x
 	}
