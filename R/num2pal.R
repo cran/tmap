@@ -1,3 +1,29 @@
+num2breaks <- function(x, n, style, breaks, approx=FALSE) {
+	if (length(x)==1) stop("Statistical numerical variable only contains one value. Please use a constant value instead.")
+	# create intervals and assign colors
+	q <- suppressWarnings(if (style=="fixed") {
+		classIntervals(x, n, style= style, fixedBreaks=breaks) 
+	} else {
+		classIntervals(x, n, style= style)
+	})
+	
+	# to prevent ugly rounded breaks such as -.5, .5, ..., 100.5 for n=101
+	if (approx && style != "fixed") {
+		brks <- q$brks
+		qm1 <- suppressWarnings(classIntervals(x, n-1, style= style))
+		brksm1 <- qm1$brks
+		qp1 <- suppressWarnings(classIntervals(x, n+1, style= style))
+		brksp1 <- qp1$brks
+		if (min(brksm1) > min(brks) && max(brksm1) < max(brks)) {
+			q <- qm1
+		} else if (min(brksp1) > min(brks) && max(brksp1) < max(brks)) {
+			q <- qp1
+		}
+	}
+	
+	q
+}
+
 num2pal <- function(x, n = 5,
 					   style = "pretty",
                        breaks = NULL,
@@ -5,28 +31,29 @@ num2pal <- function(x, n = 5,
 					   auto.palette.mapping = TRUE,
 					   contrast = 1,
 					   legend.labels = NULL,
-					   legend.scientific = FALSE,
-					   legend.digits = NA,
 					   colorNA = "#FF1414",
 					   legend.NA.text = "Missing",
-					   alpha=1,
-					   text_separator = "to",
-					   text_less_than = "Less than",
-					   text_or_more = "or more") {
+					   process.colors=NULL,
+					   legend.format=list(scientific=FALSE)) {
+	breaks.specified <- !is.null(breaks)
+	is.cont <- (style=="cont" || style=="order")
 	
-	if (length(x)==1) stop("Statistical numerical variable only contains one value. Please use a constant value instead.")
-	# create intervals and assign colors
-	q <- suppressWarnings(if (style=="fixed") {
-        classIntervals(x, n, style= style, fixedBreaks=breaks) 
-    } else {
-        classIntervals(x, n, style= style)
-    })
-    breaks <- q$brks
+	if (is.cont) {
+		style <- ifelse(style=="order", "quantile", "equal")
+		if (is.null(legend.labels)) {
+			ncont <- n
+		} else {
+			ncont <- length(legend.labels)
+		}
+		q <- num2breaks(x=x, n=101, style=style, breaks=breaks, approx=TRUE)
+		n <- length(q$brks) - 1
+	} else {
+		q <- num2breaks(x=x, n=n, style=style, breaks=breaks)
+	}
+
+	breaks <- q$brks
 	nbrks <- length(breaks)
 
-	#if (breaks[1] > xrealmin) breaks[1] <- xrealmin
-	#if (breaks[nbrks] < xrealmax) breaks[nbrks] <- xrealmax
-	
 	
 	# reverse palette
 	if (length(palette)==1 && substr(palette[1], 1, 1)=="-") {
@@ -36,104 +63,195 @@ num2pal <- function(x, n = 5,
 	
 	
 	# map palette
-	if (palette[1] %in% rownames(brewer.pal.info)) {
+	is.brewer <- palette[1] %in% rownames(brewer.pal.info)
+	
+	if (is.brewer) {
 		mc <- brewer.pal.info[palette, "maxcolors"]
-		if (auto.palette.mapping) {
-			pal.div <- (brewer.pal.info[palette, "category"]=="div")
+		pal.div <- (brewer.pal.info[palette, "category"]=="div")
+	} else {
+# 		k <- length(palette)
+# 		m <- floor((k-1)/2)
+# 		
+# 		colpal_light <- get_light(palette)
+# 		
+# 		
+# 		s <- sign(colpal_light[-1] - colpal_light[-k])
+# 		
+# 		pal.div <- ((all(s[1:m]==1) && all(s[(k-m+1):k]==-1)) ||
+# 						(all(s[1:m]==-1) && all(s[(k-m+1):k]==1)))
+		palette.type <- palette_type(palette)
+		
+		if (auto.palette.mapping && palette.type=="cat") {
+			warning("could not determine whether palette is sequential or diverging. auto.palette.mapping will be set to FALSE.")
+			auto.palette.mapping <- FALSE
+		}
+		pal.div <- palette.type=="div"
 			
+		
+		colpal_light <- get_light(palette[c(1, length(palette)/2, length(palette))])
+		# figure out whether palette is diverging
+		pal.div <- ((colpal_light[2]>colpal_light[1] && colpal_light[2]>colpal_light[3]) || (colpal_light[2]<colpal_light[1] && colpal_light[2]<colpal_light[3]))
+	}
+	
+	if (auto.palette.mapping) {
+		if (is.brewer) {
 			colpal <- colorRampPalette(revPal(brewer.pal(mc, palette)))(101)
-			
-			ids <- if (pal.div) {
-				map2divscaleID(breaks, n=101, contrast=contrast)
-			} else {
-				map2seqscaleID(breaks, n=101, contrast=contrast)
-			}
-			
-			legend.palette <- colpal[ids]
-			if (any(ids<51) && any(ids>51)) {
-				ids.neutral <- min(ids[ids>=51]-51) + 51
-				legend.neutral.col <- colpal[ids.neutral]
-			} else {
-				legend.neutral.col <- colpal[ids[round(((length(ids)-1)/2)+1)]]
-			}
-			
 		} else {
+			colpal <- colorRampPalette(revPal(palette))(101)
+		}
+		
+		ids <- if (pal.div) {
+			map2divscaleID(breaks, n=101, contrast=contrast)
+		} else {
+			map2seqscaleID(breaks, n=101, contrast=contrast, breaks.specified=breaks.specified)
+		}
+		
+		legend.palette <- colpal[ids]
+		if (any(ids<51) && any(ids>51)) {
+			ids.neutral <- min(ids[ids>=51]-51) + 51
+			legend.neutral.col <- colpal[ids.neutral]
+		} else {
+			legend.neutral.col <- colpal[ids[round(((length(ids)-1)/2)+1)]]
+		}
+		
+	} else {
+		if (is.brewer) {
 			if (nbrks-1 > mc) {
 				legend.palette <- colorRampPalette(revPal(brewer.pal(mc, palette)))(nbrks-1)
 			} else legend.palette <- revPal(brewer.pal(nbrks-1, palette))
-			legend.neutral.col <- legend.palette[round(((length(legend.palette)-1)/2)+1)]
+		} else {
+			legend.palette <- colorRampPalette(revPal(palette))(nbrks-1) #rep(palette, length.out=nbrks-1)
 		}
-	} else {
-		legend.palette <- rep(palette, length.out=nbrks-1)
-		legend.neutral.col <- legend.palette[1]
+		neutralID <- if (pal.div) round(((length(legend.palette)-1)/2)+1) else 1
+		legend.neutral.col <- legend.palette[neutralID]
 	}
+
+	legend.palette <- do.call("process_color", c(list(col=legend.palette), process.colors))
+	legend.neutral.col <- do.call("process_color", c(list(col=legend.neutral.col), process.colors))
+	colorNA <- do.call("process_color", c(list(col=colorNA), process.colors))
 	
-	legend.palette <- get_alpha_col(legend.palette, alpha)
-	legend.neutral.col <- get_alpha_col(legend.neutral.col, alpha)
-	colorNA <- get_alpha_col(colorNA, alpha)
+# 	if (!is.null(process.colors)) {
+# 		legend.palette <- process.colors(legend.palette)
+# 		legend.neutral.col <- process.colors(legend.neutral.col)
+# 		colorNA <- process.colors(colorNA)
+# 	}
+# 	
+# 	legend.palette <- get_alpha_col(legend.palette, alpha)
+# 	legend.neutral.col <- get_alpha_col(legend.neutral.col, alpha)
+# 	colorNA <- get_alpha_col(colorNA, alpha)
 	
 	
 	ids <- findCols(q)
 	cols <- legend.palette[ids]
 	anyNA <- any(is.na(cols))
+	breaks.palette <- legend.palette
 	if (anyNA) {
 		cols[is.na(cols)] <- colorNA
-		if (!is.na(legend.NA.text)) legend.palette <- c(legend.palette, colorNA)
+		if (!is.na(legend.NA.text) && !is.cont) legend.palette <- c(legend.palette, colorNA)
 	}
-	# create legend labels
-	if (is.null(legend.labels)) {
-		#breaks.printed <- sprintf(paste("%.", legend.digits, "f", sep=""), breaks) 
-		if (legend.scientific) {
-			if (is.na(legend.digits)) {
-				breaks.printed <- formatC(breaks, flag="#")
-			} else {
-				breaks.printed <- formatC(breaks, digits=legend.digits, flag="#")
-			}
-			legend.labels <- paste("[", breaks.printed[-nbrks], ", ", breaks.printed[-1], ")", sep="")
-			legend.labels[length(legend.labels)] <- paste(substr(legend.labels[length(legend.labels)], 
-																 1, nchar(legend.labels[length(legend.labels)])-1), "]", sep="")
-			
+
+	if (is.cont) {
+		# recreate legend palette for continuous cases
+		if (style=="quantile") {
+			id <- seq(1, n+1, length.out=ncont)
+			b <- breaks[id]
+			nbrks_cont <- length(b)
 		} else {
-			breaks.printed <- fancy_breaks(breaks, dp=legend.digits) 
-			breaks.printed[breaks==-Inf] <- ""
-			legend.labels <- paste(breaks.printed[-nbrks], breaks.printed[-1], sep = paste0(" ", text_separator, " "))
-			if (breaks[1]==-Inf) legend.labels[1] <- paste(text_less_than, breaks.printed[2])
-			if (breaks[nbrks]==Inf) legend.labels[nbrks-1] <- paste(breaks.printed[nbrks-1], text_or_more)
+			b <- pretty(breaks, n=ncont)
+			b <- b[b>=breaks[1] & b<=breaks[length(breaks)]]
+			nbrks_cont <- length(b)
+			id <- as.integer(cut(b, breaks=breaks))
+		}
+
+		id_step <- id[2] - id[1]
+		id_lst <- lapply(id, function(i){
+			res <- round(seq(i-floor(id_step/2), i+ceiling(id_step/2), length.out=11))[1:10]
+			res[res<1 | res>101] <- NA
+			res
+		})
+		legend.palette <- lapply(id_lst, function(i) legend.palette[i])
+		if (anyNA && !is.na(legend.NA.text)) legend.palette <- c(legend.palette, colorNA)
+		
+		# temporarily stack gradient colors
+		legend.palette <- sapply(legend.palette, paste, collapse="-")
+		
+		# create legend labels for continuous cases
+		if (is.null(legend.labels)) {
+			legend.labels <- do.call("fancy_breaks", c(list(vec=b, intervals=FALSE), legend.format)) 	
+		} else {
+			legend.labels <- rep(legend.labels, length.out=nbrks_cont)
+		}
+		if (anyNA && !is.na(legend.NA.text)) {
+			legend.labels <- c(legend.labels, legend.NA.text)
+		}		
+
+	} else {
+		# create legend labels for discrete cases
+		if (is.null(legend.labels)) {
+			legend.labels <- do.call("fancy_breaks", c(list(vec=breaks, intervals=TRUE), legend.format)) 
+		} else {
+			if (length(legend.labels)!=nbrks-1) warning(paste("number of legend labels should be", nbrks-1))
+			legend.labels <- rep(legend.labels, length.out=nbrks-1)
 		}
 		
-	} else {
-		if (length(legend.labels)!=nbrks-1) warning(paste("number of legend labels should be", nbrks-1))
-		legend.labels <- rep(legend.labels, length.out=nbrks-1)
+		if (anyNA && !is.na(legend.NA.text)) {
+			legend.labels <- c(legend.labels, legend.NA.text)
+		}
 	}
-	
-	if (anyNA && !is.na(legend.NA.text)) {
-		legend.labels <- c(legend.labels, legend.NA.text)
-	}
-	
-	list(cols=cols, legend.labels=legend.labels, legend.palette=legend.palette, breaks=breaks, legend.neutral.col = legend.neutral.col)
+	list(cols=cols, legend.labels=legend.labels, legend.palette=legend.palette, breaks=breaks, breaks.palette=breaks.palette, legend.neutral.col = legend.neutral.col)
 }
 
 
-fancy_breaks <- function(vec, dp=NA) {
-	# get correct number of significant figures
-	#vec = signif(vec, digits)
-	frm <- gsub(" ", "", sprintf("%20.10f", abs(vec)))
-	mag <- max(nchar(frm)-11)
-	ndec <- max(10 - nchar(frm) + nchar(sub("0+$","",frm)))
-	nsig <- 
+fancy_breaks <- function(vec, intervals=FALSE, scientific=FALSE, text.separator="to", text.less.than="less than", text.or.more="or more", digits=NA, ...) {
+	args <- list(...)
 
-	if (mag>11 || (mag > 9 && all(vec - floor(vec/1e9)*1e9 < 1))) {
-		vec <- vec / 1e9
-		ext <- " bln"
-	} else if (mag > 8 || (mag > 6 && all(vec - floor(vec/1e6)*1e6 < 1))) {
-		vec <- vec / 1e6
-		ext <- " mln"
+	### analyse the numeric vector
+	n <- length(vec)
+	frm <- gsub(" ", "", sprintf("%20.10f", abs(vec[!is.infinite(vec)])))
+	
+	# get width before decimal point
+	mag <- max(nchar(frm)-11)
+	
+	# get number of decimals (which is number of decimals in vec, which is reduced when mag is large)
+	ndec <- max(10 - nchar(frm) + nchar(sub("0+$","",frm)))
+	if (is.na(digits)) digits <- max(min(ndec, 4-mag), 0)
+	
+	
+	if (!scientific) {
+		if (mag>11 || (mag > 9 && all(vec - floor(vec/1e9)*1e9 < 1))) {
+			vec <- vec / 1e9
+			ext <- " bln"
+		} else if (mag > 8 || (mag > 6 && all(vec - floor(vec/1e6)*1e6 < 1))) {
+			vec <- vec / 1e6
+			ext <- " mln"
+		} else {
+			ext <- ""
+		}
+		
+		# set default values
+		if (!("big.mark" %in% names(args))) args$big.mark <- ","
+		if (!("format" %in% names(args))) args$format <- "f"
+		if (!("preserve.width" %in% names(args))) args$preserve.width <- "none"
+		
+		x <- paste(do.call("formatC", c(list(x=vec, digits=digits), args)), ext, sep="")
+
+		if (intervals) {
+			x[vec==-Inf] <- ""
+			lbls <- paste(x[-n], x[-1], sep = paste0(" ", text.separator, " "))
+			if (vec[1]==-Inf) lbls[1] <- paste(text.less.than, x[2])
+			if (vec[n]==Inf) lbls[n-1] <- paste(x[n-1], text.or.more)
+		}
+		
 	} else {
-		ext <- ""
+		if (!("format" %in% names(args))) args$format <- "g"
+		
+		x <- do.call("formatC", c(list(x=vec, digits=digits), args))
+		if (intervals) {
+			lbls <- paste("[", x[-n], ", ", x[-1], ")", sep="")
+			lbls[n-1] <- paste(substr(lbls[n-1], 1, nchar(lbls[n-1])-1), "]", sep="")
+		}
 	}
 	
-	if (is.na(dp)) dp <- max(min(ndec, 4-mag), 0)
-	
-	paste(prettyNum(vec, big.mark=",", scientific=FALSE, preserve.width="none", digits=dp), ext, sep="")
+	if (intervals) lbls else x
 }
 

@@ -13,10 +13,11 @@
 #' @export
 sbind <- function(...) {
 	xlist <- list(...)
+	xlist <- xlist[!sapply(xlist, is.null)]
+
 	k <- length(xlist)
-	
 	x <- xlist[[1]]
-	
+	if (!length(xlist)) stop("No shape objects specified.")
 	if (!all(sapply(xlist, class)==class(x))) stop("Objects have inconsistent classes")
 	
     ids <- make.unique(unlist(lapply(xlist, get_IDs)), sep="_")

@@ -17,23 +17,39 @@ process_shapes <- function(shps, g, gm, data_by, dw, dh, masterID) {
 	projection <- g[[masterID]]$projection
 	xlim <- g[[masterID]]$xlim
 	ylim <- g[[masterID]]$ylim
+	ext <- g[[masterID]]$ext
 	relative <- g[[masterID]]$relative
 	bbox <- g[[masterID]]$bbox
-	shp.proj <- attr(shp, "proj4string")@projargs
+	args <- g[[masterID]][intersect(names(g[[masterID]]), c("x", "ext", "cx", "cy", "width", "height", "xlim", "ylim", "relative"))]
 	
+	shp.proj <- attr(shp, "proj4string")@projargs
+
+	# set bounding box arguments
+	if (is.character(args$x)) {
+		args$projection <- if (is.null(projection)) shp.proj else projection
+		args$current.projection <- "longlat"
+	}
+	if (!is.null(bbox) && !("x" %in% names(args))) {
+		args$x <- bbox 	
+		args$projection <- if (is.null(projection)) shp.proj else projection
+		args$current.projection <- if (is.character(bbox)) "longlat" else shp.proj
+	}
+	
+	
+		
 	if (is.na(shp.proj)) {
 		warning(paste("Currect projection of shape", shp_name, "unknown. Long-lat (WGS84) is assumed."))
 		shp.proj <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
 		attr(shp, "proj4string") <- CRS(shp.proj)
 	}
-	
+
 	# edit and set projection
 	if (!is.null(projection)) {
 		if (is.raster(shp)) {
-			warning("Unable to set projection for rasters")
+			warning("Unable to set projection for rasters. Please use set_projection.")
 			projection <- shp.proj
 		} else {
-			projection <- get_proj4_code(projection)
+			projection <- get_proj4(projection)
 			shp <- spTransform(shp, CRS(projection))
 			attr(shp, "projected") <- is_projected(shp)
 		}
@@ -61,9 +77,10 @@ process_shapes <- function(shps, g, gm, data_by, dw, dh, masterID) {
 				attr(x, "proj4string") <- CRS(x.proj)
 			}
 			if (x.proj != projection) {
-				if (is.raster(x)) {
-					stop(paste("Raster", shp_nm, "has different projection and cannot be transformed"))
+				if (inherits(x, "Raster")) {
+					stop(paste("Raster", shp_nm, "has different projection and cannot easily be transformed. Please use set_projection for that."))
 				}
+				
 				x <- spTransform(x, CRS(projection))
 			}
 		}
@@ -74,14 +91,18 @@ process_shapes <- function(shps, g, gm, data_by, dw, dh, masterID) {
 	# define bounding box
 
 	
-	group_by <- any(gm$shp_nr != 0) && gm$free.coords
-	group_split <- group_by && gm$drop.shapes
+	group_by <- any(gm$shp_nr != 0)
+	
+	free_coords <- group_by && gm$free.coords
+	drop_shapes <- group_by && gm$drop.shapes
+	diff_shapes <- free_coords || drop_shapes
+	
 	inside_bbox <- group_by && gm$inside.original.bbox
 	
-	if (group_by) {
+	if (diff_shapes) {
 		if (is.na(pasp)) pasp <- dasp
 		
-		shp_by_names <- gm$shp_name[gm$shp_nr != 0]
+		#shp_by_names <- gm$shp_name[gm$shp_nr != 0]
 		data_by <- data_by[gm$shp_nr != 0]
 		
 		shps_by <- shps[gm$shp_nr != 0]
@@ -95,7 +116,10 @@ process_shapes <- function(shps, g, gm, data_by, dw, dh, masterID) {
 				split_raster(s_by, f = d_by)
 			} 
 		}, shps_by, data_by, SIMPLIFY=FALSE)
-		
+	}
+	
+	
+	if (free_coords) {
 		
 		shp.by.bbox <- sapply(shps_by, attr, which="bbox")
 		shp.by.bbox <- matrix(c(apply(shp.by.bbox[1:2,,drop=FALSE], MARGIN = 1, min), apply(shp.by.bbox[3:4,,drop=FALSE], MARGIN = 1, max)),
@@ -105,17 +129,16 @@ process_shapes <- function(shps, g, gm, data_by, dw, dh, masterID) {
 		bboxes <- do.call("mapply", c(list(FUN=function(...){
 			x <- list(...)
 			
-			bb <- sapply(x, attr, which="bbox")
-			bb <- matrix(c(apply(bb[1:2,,drop=FALSE], MARGIN = 1, min), apply(bb[3:4,,drop=FALSE], MARGIN = 1, max)),
+			bbx <- sapply(x, attr, which="bbox")
+			bbx <- matrix(c(apply(bbx[1:2,,drop=FALSE], MARGIN = 1, min), apply(bbx[3:4,,drop=FALSE], MARGIN = 1, max)),
 								  nrow=2, dimnames=list(c("x", "y"), c("min", "max")))
 			
 			if (inside_bbox) {
-				bb[,1] <- pmax(bb[,1], shp.by.bbox[,1])
-				bb[,2] <- pmin(bb[,2], shp.by.bbox[,2])
+				bbx[,1] <- pmax(bbx[,1], shp.by.bbox[,1])
+				bbx[,2] <- pmin(bbx[,2], shp.by.bbox[,2])
 			}
-			
-			bbox <- get_bbox_lim(bb, relative, bbox, xlim, ylim)
-			
+			if (!("x" %in% names(args))) args$x <- bbx
+			bbox <- do.call("bb", args)  #get_bbox_lim(bbx, relative, bbox, xlim, ylim, ext)
 			bbox_asp <- get_bbox_asp(bbox, gm$inner.margins, longlat, pasp)$bbox
 			
 			if (inside_bbox) {
@@ -127,22 +150,25 @@ process_shapes <- function(shps, g, gm, data_by, dw, dh, masterID) {
 			}
 			bbox_asp
 		}), shps_by_splt, list(SIMPLIFY=FALSE)))
-		bb <- bboxes[[1]]
+		bbx <- bboxes[[1]]
 
-		sasp <- calc_asp_ratio(bb[1,], bb[2,], longlat)
+		sasp <- calc_asp_ratio(bbx[1,], bbx[2,], longlat)
 		inner.margins <- gm$inner.margins
 		
 	} else {
 		shp.bbox <- attr(shp, "bbox")
-		bbox <- get_bbox_lim(shp.bbox, relative, bbox, xlim, ylim)
+		if (!("x" %in% names(args))) args$x <- shp.bbox
+		
+		bbox <- do.call("bb", args)  #bbox <- get_bbox_lim(shp.bbox, relative, bbox, xlim, ylim, ext)
 		bbox_asp <- get_bbox_asp(bbox, gm$inner.margins, longlat, pasp)
-		bb <- bbox_asp$bbox
+		bbx <- bbox_asp$bbox
+		if (drop_shapes) bboxes <- rep(list(bbx), nplots)
 		sasp <- bbox_asp$sasp
 		inner.margins <- bbox_asp$inner.margins
 		#shp_by_name <- ""
 	}
 
-	if (group_split) {
+	if (drop_shapes) {
 		shps_by_ind <- ifelse(gm$shp_nr==0, 0, cumsum(gm$shp_nr!=0))
 		shps2 <- lapply(1:nx, function(i){
 			x <- if (gm$shp_nr[i]==0) {
@@ -151,6 +177,7 @@ process_shapes <- function(shps, g, gm, data_by, dw, dh, masterID) {
 				shps_by_splt[[shps_by_ind[i]]]
 			}
 			mapply(function(shp2, bb2){
+				prj <- attr(shp2, "proj4string")
 				y <- tryCatch({
 					crop(shp2, bb2)
 				}, error = function(e) {
@@ -159,6 +186,7 @@ process_shapes <- function(shps, g, gm, data_by, dw, dh, masterID) {
 				})
 				if (is.null(y)) y <- shp2
 				attr(y, "bbox") <- bb2
+				attr(y, "proj4string") <- prj
 				y
 			}, x, bboxes, SIMPLIFY=FALSE)
 		})
@@ -167,31 +195,31 @@ process_shapes <- function(shps, g, gm, data_by, dw, dh, masterID) {
 	
 		shps2 <- mapply(function(x, shp_nm){
 			## try to crop the shape file at the bounding box in order to place bubbles and text labels inside the frame
-			if (group_by) {
+			if (diff_shapes) {
 				lapply(bboxes, function(bb2){
-					y <- tryCatch({
-						crop(x, bb2)
-					}, error = function(e) {
-						x
-					})
+					prj <- attr(x, "proj4string")
+					y <- crop(x, bb2)
+					if (is.null(y)) y <- x
 					attr(y, "bbox") <- bb2
+					attr(y, "proj4string") <- prj
 					y
 				})
 			} else {
+				prj <- attr(x, "proj4string")
 				y <- tryCatch({
-					crop(x, bb)
-				}, error = function(e) {
-					#cat("crop error\n")
-					x
+					y <- crop(x, bbx)
+					if (is.null(y)) x else y
+				}, error=function(e) {
+					x	
 				})
-
-				attr(y, "bbox") <- bb
+				attr(y, "bbox") <- bbx
+				attr(y, "proj4string") <- prj
 				y	
 			}
 		}, shps, names(shps), SIMPLIFY=FALSE)
 	
 	}
-	if (group_by) {
+	if (diff_shapes) {
 		shps2 <- lapply(1:nplots, function(i)lapply(shps2, function(j)j[[i]]))
 	}
 	
@@ -205,8 +233,8 @@ process_shapes <- function(shps, g, gm, data_by, dw, dh, masterID) {
 		} else {
 			coordinates(shp)
 		}
-		xn <- (co[,1]-bb[1])/(bb[3]-bb[1])
-		yn <- (co[,2]-bb[2])/(bb[4]-bb[2])
+		xn <- (co[,1]-bbx[1])/(bbx[3]-bbx[1])
+		yn <- (co[,2]-bbx[2])/(bbx[4]-bbx[2])
 		legend_pos <- which.max(c(
 			min(sqrt((xn^2) + (yn^2))),
 			min(sqrt((xn^2) + ((1-yn)^2))),
@@ -219,37 +247,11 @@ process_shapes <- function(shps, g, gm, data_by, dw, dh, masterID) {
 	attr(shps2, "sasp") <- ifelse(is.na(pasp), sasp, pasp)
 	attr(shps2, "dasp") <- dasp
 	attr(shps2, "legend_pos") <- legend_pos
-	attr(shps2, "group_by") <- group_by
+	attr(shps2, "diff_shapes") <- diff_shapes
 	attr(shps2, "inner.margins") <- inner.margins
 	shps2
 }
 
-
-get_bbox_lim <- function(shp.bbox, relative, bbox, xlim, ylim) {
-	if (!is.null(bbox)) {
-		bbox <- bbox
-	} else {
-		if (relative) {
-			steps <- shp.bbox[, 2] - shp.bbox[, 1]
-			xlim <- if (is.null(xlim)) {
-				shp.bbox[1, ]
-			} else {
-				shp.bbox[1,1] + xlim * steps[1]
-			}
-			ylim <- if (is.null(ylim)) {
-				shp.bbox[2, ]
-			} else {
-				shp.bbox[2,1] + ylim * steps[2]
-			}
-		} else {
-			if (is.null(xlim)) xlim <- shp.bbox[1, ]
-			if (is.null(ylim)) ylim <- shp.bbox[2, ]
-		}
-		bbox <- matrix(c(xlim, ylim), ncol = 2, byrow=TRUE, 
-					   dimnames=list(c("x", "y"), c("min", "max")))
-	}
-	bbox
-}
 
 
 get_bbox_asp <- function(bbox, inner.margins, longlat, pasp) {
@@ -259,22 +261,12 @@ get_bbox_asp <- function(bbox, inner.margins, longlat, pasp) {
 	xspan <- 1 - inner.margins[2] - inner.margins[4]
 	yspan <- 1 - inner.margins[1] - inner.margins[3]
 	
-# 	inner.margins[c(2,4)] bbrange[1]
-# 	
-# 	bb <- bbox - 
-# 	
-# 	bbrange2 <- bbrange / c(xspan, yspan)
-# 	bbmin <- bbox[,1] - 
-	
-	
-	#bb <- bbox + rep(bbrange2, 2)
-	
 	bbmarg <- inner.margins[c(2,1,4,3)]
 	bbmarg[c(1,2)] <- -bbmarg[c(1,2)]
-	bb <- bbox + rep(bbrange/c(xspan, yspan), 2) * bbmarg
+	bbx <- bbox + rep(bbrange/c(xspan, yspan), 2) * bbmarg
 	
-	xlim <- bb[1,]
-	ylim <- bb[2,]
+	xlim <- bbx[1,]
+	ylim <- bbx[2,]
 	
 	sasp <- calc_asp_ratio(xlim, ylim, longlat)
 	
@@ -282,20 +274,20 @@ get_bbox_asp <- function(bbox, inner.margins, longlat, pasp) {
 		if (pasp > sasp) {
 			## landscape map
 			xdiff <- if (longlat) diff(ylim) * pasp / cos((mean(ylim) * pi)/180) else diff(ylim) * (pasp)
-			bb[1, ] <- mean(xlim) + (xdiff * c(-.5, .5))
+			bbx[1, ] <- mean(xlim) + (xdiff * c(-.5, .5))
 			
 		} else {
 			## portrait map
 			ydiff <- if (longlat) (diff(xlim) * cos((mean(ylim) * pi)/180)) / pasp else diff(xlim) / (pasp)
-			bb[2, ] <- mean(ylim) + (ydiff * c(-.5, .5))
+			bbx[2, ] <- mean(ylim) + (ydiff * c(-.5, .5))
 		}
 	}
 	
 	# recalculate inner.margins (needed for design.mode)
-	bb_diff <- (bb-bbox) / (bb[,2] - bb[,1])
+	bb_diff <- (bbx-bbox) / (bbx[,2] - bbx[,1])
 	inner.margins.new <- c(-bb_diff[2], -bb_diff[1], bb_diff[4], bb_diff[3])
 
-	list(bbox=bb, sasp=sasp, inner.margins=inner.margins.new)
+	list(bbox=bbx, sasp=sasp, inner.margins=inner.margins.new)
 }
 
 split_raster <- function(r, f) {
@@ -303,7 +295,7 @@ split_raster <- function(r, f) {
 		warning("f is not a factor")
 		f <- as.factor(f)
 	}
-	bb <- attr(r, "bbox")
+	bbx <- attr(r, "bbox")
 	lev <- intersect(levels(f), f)
 	lapply(lev, function(l){
 		m <- matrix(as.numeric(!is.na(f) & f==l), ncol=r@ncol, nrow=r@nrow, byrow = TRUE)
@@ -319,10 +311,10 @@ split_raster <- function(r, f) {
 		xlim <- xrng / r@ncol
 		ylim <- yrng / r@nrow
 		
-		attr(r, "bbox") <- matrix(c(bb[1,1] + (bb[1,2] - bb[1,1]) * xlim[1],
-				 bb[1,1] + (bb[1,2] - bb[1,1]) * xlim[2],
-				 bb[2,1] + (bb[2,2] - bb[2,1]) * ylim[1],
-				 bb[2,1] + (bb[2,2] - bb[2,1]) * ylim[2]), ncol=2, dimnames=dimnames(bb), byrow = TRUE)
+		attr(r, "bbox") <- matrix(c(bbx[1,1] + (bbx[1,2] - bbx[1,1]) * xlim[1],
+				 bbx[1,1] + (bbx[1,2] - bbx[1,1]) * xlim[2],
+				 bbx[2,1] + (bbx[2,2] - bbx[2,1]) * ylim[1],
+				 bbx[2,1] + (bbx[2,2] - bbx[2,1]) * ylim[2]), ncol=2, dimnames=dimnames(bbx), byrow = TRUE)
 		r
 	})
 }

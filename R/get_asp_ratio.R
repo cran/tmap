@@ -1,22 +1,19 @@
 #' Get aspect ratio
 #' 
 #' Get the aspect ratio of a shape object, i.e., the map width devided by the map height.
-#' @param shp shape object, which is one of
-#' \enumerate{
-#'  \item{\code{\link[sp:SpatialPolygonsDataFrame]{SpatialPolygons(DataFrame)}}}
-#'  \item{\code{\link[sp:SpatialPointsDataFrame]{SpatialPoints(DataFrame)}}}
-#'  \item{\code{\link[sp:SpatialLinesDataFrame]{SpatialLines(DataFrame)}}}
-#'  \item{\code{\link[sp:SpatialGridDataFrame]{SpatialGrid(DataFrame)}}}
-#'  \item{\code{\link[sp:SpatialPixelsDataFrame]{SpatialPixels(DataFrame)}}}
-#' }
+#' @param shp shape object, either \code{\link[sp:Spatial]{Spatial}} or a \code{\link[raster:Raster-class]{Raster}}.
 #' @return aspect ratio
+#' @import sp
+#' @importFrom raster couldBeLonLat
 #' @export
 get_asp_ratio <- function(shp) {
-	bb <- shp@bbox
+	bb <- bbox(shp)
 	calc_asp_ratio(bb[1, ], bb[2, ], !is_projected(shp))
 }
 
 calc_asp_ratio <- function(xlim, ylim, longlat) {
 	if (is.na(longlat)) longlat <- TRUE
-	unname((diff(xlim)/diff(ylim)) * ifelse(longlat, cos((mean(ylim) * pi)/180), 1))
+	if (diff(xlim)==0 || diff(ylim)==0) {
+		1
+	} else unname((diff(xlim)/diff(ylim)) * ifelse(longlat, cos((mean(ylim) * pi)/180), 1))
 }

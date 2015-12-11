@@ -11,6 +11,8 @@
 #' @param free.scales.fill logical. Should the color scale for the choropleth be free?
 #' @param free.scales.bubble.size logical. Should the bubble size scale for the bubble map be free?
 #' @param free.scales.bubble.col logical. Should the color scale for the bubble map be free?
+#' @param free.scales.text.size logical. Should the text size scale be free?
+#' @param free.scales.text.col logical. Should the text color scale be free?
 #' @param free.scales.line.col Should the line color scale be free?
 #' @param free.scales.line.lwd Should the line width scale be free?
 #' @param free.scales.raster Should the color scale for raster layers be free?
@@ -22,11 +24,13 @@
 #' @return \code{\link{tmap-element}}
 tm_facets <- function(by=NULL, ncol=NULL, nrow=NULL, 
 					  free.coords=FALSE,
-					  drop.shapes=FALSE,
+					  drop.shapes=free.coords,
 					  free.scales=is.null(by),
 					  free.scales.fill=free.scales,
 					  free.scales.bubble.size=free.scales,
 					  free.scales.bubble.col=free.scales,
+					  free.scales.text.size=free.scales,
+					  free.scales.text.col=free.scales,
 					  free.scales.line.col=free.scales,
 					  free.scales.line.lwd=free.scales,
 					  free.scales.raster=free.scales,
@@ -43,21 +47,27 @@ tm_facets <- function(by=NULL, ncol=NULL, nrow=NULL,
 
 #' Coordinate grid lines
 #' 
-#' Creates a \code{\link{tmap-element}} that draws coordinate grid lines.
+#' Creates a \code{\link{tmap-element}} that draws coordinate grid lines. It serves as a layer that can be drawn anywhere between other layers. By default the coordinate system of the (master) shape object is used, which results in horizontal and vertical lines. Alternatively, grid lines can be reprojected, for instance to latitude longitude coordinates, and hence be curved.
 #' 
-#' @param n.x Prefered number of grid lines for the x axis.
-#' @param n.y Prefered number of grid lines for the y axis.
-#' @param col Color for the grid lines.
+#' @param n.x prefered number of grid lines for the x axis.
+#' @param n.y prefered number of grid lines for the y axis.
+#' @param projection projection character. If specified, the grid lines are projected accordingly. See \code{\link{set_projection}} for projection details. Many world maps are projected, but still have latitude longitude (\code{"longlat"}) grid lines.
+#' @param col color of the grid lines.
+#' @param lwd line width of the grid lines
+#' @param alpha alpha transparency of the grid lines. Number between 0 and 1. By default, the alpha transparency of \code{col} is taken. 
 #' @param labels.size font size of the tick labels
-#' @param labels.col font color fo the tick labels
-#' @param on.top Boolean that determines whether the grid lines are drawn op top of the map (\code{TRUE}) or under the map (\code{FALSE}).
+#' @param labels.col font color of the tick labels
+#' @param labels.inside.frame Show labels inside the frame?
 #' @export
-tm_grid <- function(n.x=8,
-					n.y=8,
-					col="grey50",
-					labels.size=.75,
-					labels.col="grey20",
-					on.top=TRUE) {
+tm_grid <- function(n.x=NA,
+					n.y=NA,
+					projection=NA,
+					col=NA,
+					lwd=1,
+					alpha=NA,
+					labels.size=.6,
+					labels.col=NA,
+					labels.inside.frame=TRUE) {
 	g <- list(tm_grid=as.list(environment()))
 	names(g$tm_grid) <- paste("grid", names(g$tm_grid), sep=".")
 	class(g) <- "tmap"
@@ -69,18 +79,27 @@ tm_grid <- function(n.x=8,
 #' 
 #' Creates a text annotation that could be used for credits or acknowledgements.
 #' 
-#' @param text text
+#' @param text text. Multiple lines can be created with the line break symbol \code{"\\n"}.
 #' @param size relative text size
-#' @param position position of the text. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "center" or "right" for the first value and "top", "center", or "bottom" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the center of the text. By default, it is placed in the right bottom corner.
+#' @param col color of the text. By default equal to the argument \code{attr.color} of \code{\link{tm_layout}}.
+#' @param alpha transparency number between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of \code{col} is used (normally 1).
+#' @param align horizontal alignment: \code{"left"} (default), \code{"center"}, or \code{"right"}. Only applicable if \code{text} contains multiple lines
 #' @param bg.color background color for the text
 #' @param bg.alpha Transparency number between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of the \code{bg.color} is used (normally 1).
+#' @param fontface font face of the text. By default, determined by the fontface argument of \code{\link{tm_layout}}.
+#' @param fontfamily font family of the text. By default, determined by the fontfamily argument of \code{\link{tm_layout}}.
+#' @param position position of the text. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the center of the text. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
 #' @export
 #' @example ../examples/tm_credits.R
 tm_credits <- function(text,
 					   size=.7,
-					   position=c("right", "bottom"),
+					   col=NA,
+					   alpha=NA,
+					   align="left",
 					   bg.color=NA,
-					   bg.alpha=NA) {
+					   bg.alpha=NA,
+					   fontface=NA, fontfamily=NA,
+					   position=NA) {
 	g <- list(tm_credits=as.list(environment()))
 	names(g$tm_credits) <- paste("credits", names(g$tm_credits), sep=".")
 	class(g) <- "tmap"
@@ -93,14 +112,22 @@ tm_credits <- function(text,
 #' 
 #' Creates a scale bar. By default, the coordinate units are assumed to be meters, and the map units in kilometers. This can be changed in \code{\link{tm_shape}}.
 #' 
-#' @param breaks breaks of the scale bar
-#' @param size relative text size
-#' @param position position of the text. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "center" or "right" for the first value and "top", "center", or "bottom" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left center of the text. By default, it is placed in the right bottom corner.
+#' @param breaks breaks of the scale bar. If not specified, breaks will be automatically be chosen given the prefered \code{width} of the scale bar.
+#' @param width (prefered) width of the scale bar. Only applicable when \code{breaks=N ULL}
+#' @param size relative text size (which is upperbound by the available label width)
+#' @param text.color color of the text. By default equal to the argument \code{attr.color} of \code{\link{tm_layout}}.
+#' @param color.dark color of the dark parts of the scale bar, typically (and by default) black.
+#' @param color.light color of the light parts of the scale bar, typically (and by default) white.
+#' @param position position of the text. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left bottom corner of the scale bar. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
 #' @export
 #' @example ../examples/tm_scale_bar.R
 tm_scale_bar <- function(breaks=NULL,
-					     size=.5,
-					     position=c("right", "bottom")) {
+						 width=.25, 
+						 size=.5,
+						 text.color=NA,
+						 color.dark="black", 
+						 color.light="white",
+						 position=NA) {
 	g <- list(tm_scale=as.list(environment()))
 	names(g$tm_scale) <- paste("scale", names(g$tm_scale), sep=".")
 	class(g) <- "tmap"
@@ -108,7 +135,38 @@ tm_scale_bar <- function(breaks=NULL,
 	g
 }
 
-
+#' Map compass
+#' 
+#' Creates a map compass.
+#' 
+#' @param north north direction in degrees: 0 means up, 90 right, etc.
+#' @param type compass type, one of: \code{"arrow"}, \code{"4star"}, \code{"8star"}, \code{"radar"}, \code{"rose"}. The default is controlled by \code{\link{tm_layout}} (which uses \code{"arrow"} for the default style)
+#' @param fontsize relative font size
+#' @param size size of the compass in number of text lines. The default values depend on the \code{type}: for \code{"arrow"} it is 2, for \code{"4star"} and \code{"8star"} it is 4, and for \code{"radar"} and \code{"rose"} it is 6.
+#' @param show.labels number that specifies which labels are shown: 0 means no labels, 1 (default) means only north, 2 means all four cardinal directions, and 3 means the four cardinal directions and the four intercardinal directions (e.g. north-east).
+#' @param cardinal.directions labels that are used for the cardinal directions north, east, south, and west.
+#' @param text.color color of the text. By default equal to the argument \code{attr.color} of \code{\link{tm_layout}}.
+#' @param color.dark color of the dark parts of the compass, typically (and by default) black.
+#' @param color.light color of the light parts of the compass, typically (and by default) white.
+#' @param position position of the text. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left bottom corner of the compass. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
+#' @export
+#' @example ../examples/tm_compass.R
+tm_compass <- function(north=0, 
+					   type=NA, 
+					   fontsize=.8, 
+					   size=NA,
+					   show.labels=1, 
+					   cardinal.directions=c("N", "E", "S", "W"), 
+					   text.color=NA,
+					   color.dark=NA, 
+					   color.light=NA,
+					   position=NA) {
+	g <- list(tm_compass=as.list(environment()))
+	names(g$tm_compass) <- paste("compass", names(g$tm_compass), sep=".")
+	class(g) <- "tmap"
+	attr(g, "call") <- names(match.call(expand.dots = TRUE)[-1])
+	g
+}
 
 
 

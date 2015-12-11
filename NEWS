@@ -1,3 +1,26 @@
+version 1.2
+- added read_osm, a function to read Open Street Map data
+- added bb, a handy bounding box function
+- added layout themes with tm_style and tm_format
+- added automatic text labeling
+- added interactive SVG, that can be opend in RStudio (see itmap)
+- added map compass (tm_compass)
+- added text aesthetics size and col
+- added automatic map coloring
+- added earth boundary, which is useful for projected world maps
+- added warped grid lines (e.g. long-lat lines can be shown in projected maps)
+- added new color scale modes (enabled with style="cat", "cont", and "order")
+- added save_tmap
+- added smooth_map, smooth_raster_cover, sample_dots, points_to_raster and poly_to_raster
+- added read_GPX
+- improved automatic layout regarding title, legend, and map attributes
+- layer arguments, e.g. palette, can take multiple values for small multiples
+- improved grid lines (labels can also be placed outside frame)
+- arguments free.coords and drop.shapes of tm_facets working
+- updated examples and vignette
+- fixed viewport bug
+- see ?tmap for a structured overview of all tmap functions
+
 version 1.0
 - added tm_credits and tm_scale_bar
 - added is.master argument to tm_shape, that determines which shape is the master

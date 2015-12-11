@@ -18,12 +18,15 @@ get_raster_data <- function(shp) {
 	if (inherits(shp, "RasterLayer")) {
 		data <- data.frame(get_RasterLayer_data_vector(shp))
 		names(data) <- names(shp)
+		if (shp@data@names[1]=="" && ncol(data)>=1) names(data)[1] <- "FILE__VALUES"
 	} else if (inherits(shp, "RasterStack")) {
 		data <- as.data.frame(lapply(shp@layers, get_RasterLayer_data_vector))
 		names(data) <- names(shp)
 	} else if (inherits(shp, "RasterBrick")) {
 		isfactor <- shp@data@isfactor
 		data <- as.data.frame(shp@data@values)
+		if (is.null(dimnames(shp@data@values))) names(data) <- shp@data@names
+		
 		atb <- shp@data@attributes
 		atb <- atb[sapply(atb, length)!=0]
 		
