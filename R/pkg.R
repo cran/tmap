@@ -1,8 +1,8 @@
 #' Thematic Maps
 #'
-#' Thematic maps are geographical maps in which statistical data are visualized. This package offers a flexible, layer-based, way to create thematic maps, such as choropleths and bubble maps. It is based on the grammar of graphics, and resembles the syntax of ggplot2.
+#' Thematic maps are geographical maps in which spatial data distributions are visualized. This package offers a flexible, layer-based, and easy to use approach to create thematic maps, such as choropleths and bubble maps. It is based on the grammar of graphics, and resembles the syntax of ggplot2.
 #' 
-#' This page provides a brief overview of all package functions. See \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}} for a short manual with examples.
+#' This page provides a brief overview of all package functions. See \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}} for a short introduction with examples. See \href{../doc/tmap-modes.html}{\code{vignette("tmap-modes")}} for a short demo of the two output modes: plot and interactive view.
 #'
 #' @section Quick plotting method:
 #' \tabular{ll}{
@@ -49,12 +49,22 @@
 #' \tabular{ll}{
 #' \code{\link{tm_layout}}\tab To adjust the layout (main function)\cr
 #' \code{\link{tm_legend}}\tab Shortcut to adjust the legend \cr
+#' \code{\link{tm_view}}\tab Options for the interactive view mode \cr
+#' --------------------------- \tab --------------------------------------------------------------------------------------------------- \cr
+#' }
+#' 
+#' Change options:
+#' \tabular{ll}{
+#' \code{\link{tmap_mode}}\tab To set the tmap mode: \code{"plot"} or \code{"view"}\cr
+#' \code{\link{ttm}}\tab To toggle between the modes\cr
+#' \code{\link{tmap_style}}\tab To set the default style \cr
 #' --------------------------- \tab --------------------------------------------------------------------------------------------------- \cr
 #' }
 #' 
 #' @section Handy tool functions: 
 #' \tabular{ll}{
 #' \code{\link{bb}}\tab To create, extract or modify a bounding box \cr
+#' \code{\link{geocode_OSM}}\tab To get geocode based on location \cr
 #' \code{\link{get_asp_ratio}}\tab To get the aspect ratio of a shape object \cr
 #' \code{\link{get_IDs}}\tab To get ID values of a shape object \cr
 #' \code{\link{append_data}}\tab To append a data frame to a shape object \cr
@@ -88,9 +98,10 @@
 #' 
 #' @section Output functions: 
 #' \tabular{ll}{
-#' \code{\link{itmap}}\tab Interactive tmap widget \cr
+#' \code{\link{print}}\tab Plot in graphics device or view interactively in web browser or RStudio's viewer pane \cr
+#' \code{\link{tmap_leaflet}}\tab Obtain a leaflet widget object \cr
 #' \code{\link{animation_tmap}}\tab Create an animation \cr
-#' \code{\link{save_tmap}}\tab To save thematic maps \cr
+#' \code{\link{save_tmap}}\tab To save thematic maps (both in plot and view mode) \cr
 #' \code{\link{write_shape}}\tab To write a shape object \cr
 #' --------------------------- \tab --------------------------------------------------------------------------------------------------- \cr
 #' }
@@ -113,6 +124,7 @@
 #' @author Martijn Tennekes \email{mtennekes@@gmail.com}
 #' @keywords GIS, thematic maps, statistical maps, choropleth, bubble map
 #' @seealso \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
+#' @seealso \href{../doc/tmap-modes.html}{\code{vignette("tmap-modes")}}
 NULL
 
 #' World, Europe, and Netherlands map
@@ -190,7 +202,7 @@ NULL
 #' @usage data(land)
 #' @name land
 #' @docType data
-#' @references Tateishi, R., Thanh Hoan, N., Kobayashi, T., Alsaaideh, B., Tana, G., Xuan Phong, D. (2014), Journal of Geography and Geology, 6 (3).
+#' @references Production of Global Land Cover Data - GLCNMO2008, Tateishi, R., Thanh Hoan, N., Kobayashi, T., Alsaaideh, B., Tana, G., Xuan Phong, D. (2014), Journal of Geography and Geology, 6 (3).
 #' @source \url{http://www.iscgm.org/gm/glcnmo.html}
 NULL
 
@@ -227,5 +239,6 @@ NULL
 #' 
 #' @name tmap-element
 #' @seealso \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
+#' @seealso \href{../doc/tmap-modes.html}{\code{vignette("tmap-modes")}}
 #' @seealso The examples in each of the element functions
 NULL

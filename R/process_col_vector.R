@@ -1,9 +1,11 @@
 process_col_vector <- function(x, sel, g, gt) {
 	values <- x
-	textNA <- ifelse(any(is.na(values[sel])), g$textNA, NA)
+	#textNA <- ifelse(any(is.na(values[sel])), g$textNA, NA)
+	#showNA <- if (is.na(g$showNA)) any(is.na(values[sel])) else FALSE
 	
 	x[!sel] <- NA
 	
+	if (length(na.omit(unique(x)))==1) g$style <- "cat"
 	
 	if (is.factor(x) || g$style=="cat") {
 		
@@ -19,17 +21,19 @@ process_col_vector <- function(x, sel, g, gt) {
 		}
 		colsLeg <- cat2pal(x,
 						   palette = palette,
+						   auto.palette.mapping = g$auto.palette.mapping,
 						   contrast = g$contrast,
 						   colorNA = g$colorNA,
 						   legend.labels=g$labels,
-						   legend.NA.text = textNA,
 						   max_levels=g$max.categories,
+						   legend.NA.text = g$textNA,
+						   showNA = g$showNA,
 						   process.colors=c(list(alpha=g$alpha), gt$pc))
 		breaks <- NA
 		
 			
 			
-		neutralID <- if (palette.type=="div") round(((length(legend.palette)-1)/2)+1) else 1
+		neutralID <- if (palette.type=="div") round(((length(colsLeg$legend.palette)-1)/2)+1) else 1
 		col.neutral <- colsLeg$legend.palette[1]
 		
 	} else {
@@ -44,7 +48,8 @@ process_col_vector <- function(x, sel, g, gt) {
 						   auto.palette.mapping = g$auto.palette.mapping,
 						   contrast = g$contrast, legend.labels=g$labels,
 						   colorNA=g$colorNA, 
-						   legend.NA.text = textNA,
+						   legend.NA.text = g$textNA,
+						   showNA = g$showNA,
 						   process.colors=c(list(alpha=g$alpha), gt$pc),
 						   legend.format=g$legend.format)
 		breaks <- colsLeg$breaks
@@ -91,7 +96,7 @@ process_dtcol <- function(dtcol, sel=NA, g, gt, nx, npol, check_dens=FALSE, show
 			isNum <- sapply(dtcol, is.numeric)
 			isDens <- sapply(gsc, "[[", "convert2density")
 			
-			if (any(isNum & isDens) && show_warning) warning("Density values are not correct, because the shape coordinates are not projected.")
+			if (any(isNum & isDens) && show_warning) warning("Density values are not correct, because the shape coordinates are not projected.", call. = FALSE)
 			dtcol[isNum & isDens] <- lapply(dtcol[isNum & isDens], function(d) {
 				d / areas
 			})
@@ -107,7 +112,7 @@ process_dtcol <- function(dtcol, sel=NA, g, gt, nx, npol, check_dens=FALSE, show
 	} else {
 		if (check_dens) {
 			if (is.numeric(dtcol) && g$convert2density) {
-				if (show_warning) warning("Density values are not correct, because the shape coordinates are not projected.")
+				if (show_warning) warning("Density values are not correct, because the shape coordinates are not projected.", call. = FALSE)
 				dtcol <- dtcol / areas
 			}
 		}

@@ -16,7 +16,7 @@ process_bubbles_size_vector <- function(x, g, rescale, gt) {
 	if (is.null(g$sizes.legend.labels)) {
 		bubble.size.legend.labels <- do.call("fancy_breaks", c(list(vec=x_legend, intervals=FALSE), g$legend.format))
 	} else {
-		if (length(g$sizes.legend.labels) != length(x_legend)) stop("length of sizes.legend.labels is not equal to the number of bubbles in the legend")
+		if (length(g$sizes.legend.labels) != length(x_legend)) stop("length of sizes.legend.labels is not equal to the number of bubbles in the legend", call. = FALSE)
 		bubble.size.legend.labels <- g$sizes.legend.labels
 	}
 	
@@ -32,7 +32,7 @@ process_bubbles_size_vector <- function(x, g, rescale, gt) {
 }
 
 
-process_bubbles <- function(data, g, gt, gby, z) {
+process_bubbles <- function(data, g, gt, gby, z, allow.small.mult) {
 	npol <- nrow(data)
 	by <- data$GROUP_BY
 	shpcols <- names(data)[1:(ncol(data)-1)]
@@ -44,9 +44,16 @@ process_bubbles <- function(data, g, gt, gby, z) {
 	xsize <- g$size
 	xcol <- g$col
 	
-	if (is.na(xcol)[1]) xcol <- if (g$are.dots) gt$aes.colors["dots"] else gt$aes.colors["bubbles"]
-	if (is.na(g$colorNA)[1]) g$colorNA <- gt$aes.colors["na"]
+	if (!allow.small.mult) xsize <- xsize[1]
+	if (!allow.small.mult) xcol <- xcol[1]
 	
+	
+	if (is.na(xcol)[1]) xcol <- if (g$are.dots) gt$aes.colors["dots"] else gt$aes.colors["bubbles"]
+	if (is.null(g$colorNA)) g$colorNA <- "#00000000"
+	if (is.na(g$colorNA)[1]) g$colorNA <- gt$aes.colors["na"]
+	if (g$colorNA=="#00000000") g$showNA <- FALSE
+	
+	if (!is.na(g$alpha) && !is.numeric(g$alpha)) stop("alpha argument in tm_bubbles/tm_dots is not a numeric", call. = FALSE)
 	
 	if (is.null(xsize)) {
 		return(list(bubble.size=NULL,
@@ -72,7 +79,7 @@ process_bubbles <- function(data, g, gt, gby, z) {
 	if (nxsize<nx) xsize <- rep(xsize, length.out=nx)
 	
 	if (!varysize) {
-		if (!all(is.numeric(xsize))) stop("Bubble sizes are neither numeric nor valid variable name(s)")
+		if (!all(is.numeric(xsize))) stop("Bubble sizes are neither numeric nor valid variable name(s)", call. = FALSE)
 		for (i in 1:nx) data[[paste("SIZE", i, sep="_")]] <- xsize[i]
 		xsize <- paste("SIZE", 1:nx, sep="_")
 		gby$free.scales.bubble.size <- FALSE
@@ -81,7 +88,7 @@ process_bubbles <- function(data, g, gt, gby, z) {
 	# check for direct color input
 	is.colors <- all(valid_colors(xcol))
 	if (!varycol) {
-		if (!is.colors) stop("Invalid bubble colors")
+		if (!is.colors) stop("Invalid bubble colors", call. = FALSE)
 		xcol <- do.call("process_color", c(list(col=col2hex(xcol), alpha=g$alpha), gt$pc))
 		for (i in 1:nx) data[[paste("COLOR", i, sep="_")]] <- xcol[i]
 		xcol <- paste("COLOR", 1:nx, sep="_")
@@ -93,17 +100,20 @@ process_bubbles <- function(data, g, gt, gby, z) {
 	dtcol <- process_data(data[, xcol, drop=FALSE], by=by, free.scales=gby$free.scales.bubble.col, is.colors=is.colors)
 	dtsize <- process_data(data[, xsize, drop=FALSE], by=by, free.scales=gby$free.scales.bubble.size, is.colors=FALSE)
 	
+	if (nlevels(by)>1) if (is.na(g$showNA)) g$showNA <- attr(dtcol, "anyNA")
+	
+	
 	if (is.list(dtsize)) {
 		# multiple variables for size are defined
 		gss <- split_g(g, n=nx)
-		if (!all(sapply(dtsize, is.numeric))) stop("size argument of tm_bubbles/tm_dots contains a non-numeric variable")
+		if (!all(sapply(dtsize, is.numeric))) stop("size argument of tm_bubbles/tm_dots contains a non-numeric variable", call. = FALSE)
 		res <- mapply(process_bubbles_size_vector, dtsize, gss, MoreArgs = list(rescale=varysize, gt), SIMPLIFY = FALSE)
 		bubble.size <- sapply(res, function(r)r$bubble.size)
 		bubble.size.legend.labels <- lapply(res, function(r)r$bubble.size.legend.labels)
 		bubble.legend.sizes <- lapply(res, function(r)r$bubble.legend.sizes)
 		bubble.max.size <- sapply(res, function(r)r$bubble.max.size)
 	} else {
-		if (!is.numeric(dtsize)) stop("size argument of tm_bubbles/tm_dots is not a numeric variable")
+		if (!is.numeric(dtsize)) stop("size argument of tm_bubbles/tm_dots is not a numeric variable", call. = FALSE)
 		res <- process_bubbles_size_vector(dtsize, g, rescale=varysize, gt)
 		bubble.size <- matrix(res$bubble.size, nrow=npol)
 		if (varysize) {
@@ -119,9 +129,17 @@ process_bubbles <- function(data, g, gt, gby, z) {
 		}
 	}
 	
+	# selection: which line widths are NA?
 	sel <- if (is.list(dtsize)) {
 		lapply(dtsize, function(i)!is.na(i))
-	} else !is.na(dtsize)
+	} else {
+		if (is.list(dtcol)) {
+			cnts <- vapply(dtcol, length, integer(1))
+			cnts2 <- 1:length(dtcol)
+			f <- factor(unlist(mapply(rep, cnts2, cnts, SIMPLIFY = FALSE)))
+			split(dtsize, f = f)
+		} else !is.na(dtsize)
+	} 
 	
 	dcr <- process_dtcol(dtcol, sel, g, gt, nx, npol)
 	if (dcr$is.constant) xcol <- rep(NA, nx)
@@ -159,6 +177,9 @@ process_bubbles <- function(data, g, gt, gby, z) {
 	
 	bubble.border.col <- do.call("process_color", c(list(col=g$border.col, alpha=g$border.alpha), gt$pc))
 	
+	if (!g$legend.size.show) bubble.size.legend.title <- NA
+	if (!g$legend.col.show) bubble.col.legend.title <- NA
+
 	list(bubble.size=bubble.size,
 		 bubble.col=col,
 		 bubble.border.lwd=g$border.lwd,
@@ -171,6 +192,7 @@ process_bubbles <- function(data, g, gt, gby, z) {
 		 bubble.size.legend.palette= col.neutral,
 		 bubble.size.legend.misc=list(bubble.border.lwd=g$border.lwd, bubble.border.col=bubble.border.col, legend.sizes=bubble.legend.sizes),
 		 bubble.col.legend.hist.misc=list(values=values, breaks=breaks),
+		 bubble.misc = list(bubble.are.dots=g$are.dots),
 		 xsize=xsize,
 		 xcol=xcol,
 		 bubble.xmod=xmod,

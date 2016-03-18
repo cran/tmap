@@ -1,5 +1,5 @@
 num2breaks <- function(x, n, style, breaks, approx=FALSE) {
-	if (length(x)==1) stop("Statistical numerical variable only contains one value. Please use a constant value instead.")
+	if (length(x)==1) stop("Statistical numerical variable only contains one value. Please use a constant value instead.", call. = FALSE)
 	# create intervals and assign colors
 	q <- suppressWarnings(if (style=="fixed") {
 		classIntervals(x, n, style= style, fixedBreaks=breaks) 
@@ -7,20 +7,27 @@ num2breaks <- function(x, n, style, breaks, approx=FALSE) {
 		classIntervals(x, n, style= style)
 	})
 	
-	# to prevent ugly rounded breaks such as -.5, .5, ..., 100.5 for n=101
 	if (approx && style != "fixed") {
-		brks <- q$brks
-		qm1 <- suppressWarnings(classIntervals(x, n-1, style= style))
-		brksm1 <- qm1$brks
-		qp1 <- suppressWarnings(classIntervals(x, n+1, style= style))
-		brksp1 <- qp1$brks
-		if (min(brksm1) > min(brks) && max(brksm1) < max(brks)) {
-			q <- qm1
-		} else if (min(brksp1) > min(brks) && max(brksp1) < max(brks)) {
-			q <- qp1
-		}
+	  if (n >= length(unique(x)) && style=="equal") {
+	    # to prevent classIntervals to set style to "unique"
+      q <- list(var=x, brks=seq(min(x, na.rm=TRUE), max(x, na.rm=TRUE), length.out=n))
+      attr(q, "intervalClosure") <- "left"
+      class(q) <- "classIntervals"
+	  } else {
+	    brks <- q$brks
+
+	    # to prevent ugly rounded breaks such as -.5, .5, ..., 100.5 for n=101
+	    qm1 <- suppressWarnings(classIntervals(x, n-1, style= style))
+	    brksm1 <- qm1$brks
+	    qp1 <- suppressWarnings(classIntervals(x, n+1, style= style))
+	    brksp1 <- qp1$brks
+	    if (min(brksm1) > min(brks) && max(brksm1) < max(brks)) {
+	      q <- qm1
+	    } else if (min(brksp1) > min(brks) && max(brksp1) < max(brks)) {
+	      q <- qp1
+	    }
+	  }
 	}
-	
 	q
 }
 
@@ -33,6 +40,7 @@ num2pal <- function(x, n = 5,
 					   legend.labels = NULL,
 					   colorNA = "#FF1414",
 					   legend.NA.text = "Missing",
+					   showNA=NA,
 					   process.colors=NULL,
 					   legend.format=list(scientific=FALSE)) {
 	breaks.specified <- !is.null(breaks)
@@ -69,20 +77,10 @@ num2pal <- function(x, n = 5,
 		mc <- brewer.pal.info[palette, "maxcolors"]
 		pal.div <- (brewer.pal.info[palette, "category"]=="div")
 	} else {
-# 		k <- length(palette)
-# 		m <- floor((k-1)/2)
-# 		
-# 		colpal_light <- get_light(palette)
-# 		
-# 		
-# 		s <- sign(colpal_light[-1] - colpal_light[-k])
-# 		
-# 		pal.div <- ((all(s[1:m]==1) && all(s[(k-m+1):k]==-1)) ||
-# 						(all(s[1:m]==-1) && all(s[(k-m+1):k]==1)))
 		palette.type <- palette_type(palette)
 		
 		if (auto.palette.mapping && palette.type=="cat") {
-			warning("could not determine whether palette is sequential or diverging. auto.palette.mapping will be set to FALSE.")
+			warning("could not determine whether palette is sequential or diverging. auto.palette.mapping will be set to FALSE.", call. = FALSE)
 			auto.palette.mapping <- FALSE
 		}
 		pal.div <- palette.type=="div"
@@ -92,17 +90,19 @@ num2pal <- function(x, n = 5,
 		# figure out whether palette is diverging
 		pal.div <- ((colpal_light[2]>colpal_light[1] && colpal_light[2]>colpal_light[3]) || (colpal_light[2]<colpal_light[1] && colpal_light[2]<colpal_light[3]))
 	}
-	
+
 	if (auto.palette.mapping) {
 		if (is.brewer) {
-			colpal <- colorRampPalette(revPal(brewer.pal(mc, palette)))(101)
+			colpal <- colorRampPalette(revPal(brewer.pal(mc, palette)), space="rgb")(101)
 		} else {
-			colpal <- colorRampPalette(revPal(palette))(101)
+			colpal <- colorRampPalette(revPal(palette), space="rgb")(101)
 		}
 		
 		ids <- if (pal.div) {
+			if (is.na(contrast[1])) contrast <- if (is.brewer) default_contrast_div(n) else c(0, 1)
 			map2divscaleID(breaks, n=101, contrast=contrast)
 		} else {
+			if (is.na(contrast[1])) contrast <- if (is.brewer) default_contrast_seq(n) else c(0, 1)
 			map2seqscaleID(breaks, n=101, contrast=contrast, breaks.specified=breaks.specified)
 		}
 		
@@ -117,10 +117,10 @@ num2pal <- function(x, n = 5,
 	} else {
 		if (is.brewer) {
 			if (nbrks-1 > mc) {
-				legend.palette <- colorRampPalette(revPal(brewer.pal(mc, palette)))(nbrks-1)
+				legend.palette <- colorRampPalette(revPal(brewer.pal(mc, palette)), space="rgb")(nbrks-1)
 			} else legend.palette <- revPal(brewer.pal(nbrks-1, palette))
 		} else {
-			legend.palette <- colorRampPalette(revPal(palette))(nbrks-1) #rep(palette, length.out=nbrks-1)
+			legend.palette <- colorRampPalette(revPal(palette), space="rgb")(nbrks-1) #rep(palette, length.out=nbrks-1)
 		}
 		neutralID <- if (pal.div) round(((length(legend.palette)-1)/2)+1) else 1
 		legend.neutral.col <- legend.palette[neutralID]
@@ -146,10 +146,15 @@ num2pal <- function(x, n = 5,
 	anyNA <- any(is.na(cols))
 	breaks.palette <- legend.palette
 	if (anyNA) {
+		if (is.na(showNA)) showNA <- TRUE
 		cols[is.na(cols)] <- colorNA
-		if (!is.na(legend.NA.text) && !is.cont) legend.palette <- c(legend.palette, colorNA)
+	} else {
+		if (is.na(showNA)) showNA <- FALSE
 	}
 
+	if (showNA && !is.cont) legend.palette <- c(legend.palette, colorNA)
+	
+	
 	if (is.cont) {
 		# recreate legend palette for continuous cases
 		if (style=="quantile") {
@@ -170,7 +175,7 @@ num2pal <- function(x, n = 5,
 			res
 		})
 		legend.palette <- lapply(id_lst, function(i) legend.palette[i])
-		if (anyNA && !is.na(legend.NA.text)) legend.palette <- c(legend.palette, colorNA)
+		if (showNA) legend.palette <- c(legend.palette, colorNA)
 		
 		# temporarily stack gradient colors
 		legend.palette <- sapply(legend.palette, paste, collapse="-")
@@ -181,22 +186,20 @@ num2pal <- function(x, n = 5,
 		} else {
 			legend.labels <- rep(legend.labels, length.out=nbrks_cont)
 		}
-		if (anyNA && !is.na(legend.NA.text)) {
+		if (showNA) {
 			legend.labels <- c(legend.labels, legend.NA.text)
 		}		
-
+		attr(legend.palette, "style") <- style
 	} else {
 		# create legend labels for discrete cases
 		if (is.null(legend.labels)) {
 			legend.labels <- do.call("fancy_breaks", c(list(vec=breaks, intervals=TRUE), legend.format)) 
 		} else {
-			if (length(legend.labels)!=nbrks-1) warning(paste("number of legend labels should be", nbrks-1))
+			if (length(legend.labels)!=nbrks-1) warning("number of legend labels should be ", nbrks-1, call. = FALSE)
 			legend.labels <- rep(legend.labels, length.out=nbrks-1)
 		}
 		
-		if (anyNA && !is.na(legend.NA.text)) {
-			legend.labels <- c(legend.labels, legend.NA.text)
-		}
+		if (showNA) legend.labels <- c(legend.labels, legend.NA.text)
 	}
 	list(cols=cols, legend.labels=legend.labels, legend.palette=legend.palette, breaks=breaks, breaks.palette=breaks.palette, legend.neutral.col = legend.neutral.col)
 }

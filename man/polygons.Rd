@@ -9,8 +9,8 @@
 tm_fill(col = NA, alpha = NA, palette = NULL, convert2density = FALSE,
   area = NULL, n = 5, style = ifelse(is.null(breaks), "pretty", "fixed"),
   breaks = NULL, labels = NULL, auto.palette.mapping = TRUE,
-  contrast = 1, max.categories = 12, colorNA = NA, textNA = "Missing",
-  thres.poly = 1e-05, title = NA, legend.show = TRUE,
+  contrast = NA, max.categories = 12, colorNA = NA, textNA = "Missing",
+  showNA = NA, thres.poly = 0, title = NA, legend.show = TRUE,
   legend.format = list(), legend.is.portrait = TRUE, legend.hist = FALSE,
   legend.hist.title = NA, legend.z = NA, legend.hist.z = NA, id = NA,
   ...)
@@ -43,17 +43,19 @@ For \code{tm_borders}, it is a single color value that specifies the border line
 
 \item{labels}{labels of the classes.}
 
-\item{auto.palette.mapping}{When diverging colour palettes are used (i.e. "RdBu") this method automatically maps colors to values such that the middle colors (mostly white or yellow) are assigned to values of 0, and the two sides of the color palette are assigned to negative respectively positive values.}
+\item{auto.palette.mapping}{When diverging colour palettes are used (i.e. "RdBu") this method automatically maps colors to values such that the middle colors (mostly white or yellow) are assigned to values of 0, and the two sides of the color palette are assigned to negative respectively positive values. When categorical color palettes are used, this method stretches the palette is there are more levels than colors.}
 
 \item{contrast}{vector of two numbers that determine the range that is used for sequential and diverging palettes (applicable when \code{auto.palette.mapping=TRUE}). Both numbers should be between 0 and 1. The first number determines where the palette begins, and the second number where it ends. For sequential palettes, 0 means the brightest color, and 1 the darkest color. For diverging palettes, 0 means the middle color, and 1 both extremes. If only one number is provided, this number is interpreted as the endpoint (with 0 taken as the start).}
 
-\item{max.categories}{in case \code{col} is the name of a categorical variable, this value determines how many categories (levels) it can have maximally. If the number of levels is higher than \code{max.categories}, then levels are combined.}
+\item{max.categories}{in case \code{col} is the name of a categorical variable, this value determines how many categories (levels) it can have maximally. If the number of levels is higher than \code{max.categories} and \code{auto.palette.mapping} is \code{FALSE}, then levels are combined.}
 
-\item{colorNA}{color used for missing values}
+\item{colorNA}{color used for missing values. Use \code{NULL} for transparency.}
 
-\item{textNA}{text used for missing values. Use \code{NA} to omit text for missing values in the legend}
+\item{textNA}{text used for missing values.}
 
-\item{thres.poly}{number that specifies the threshold at which polygons are taken into account. The number itself corresponds to the proportion of the area sizes of the polygons to the total polygon size.}
+\item{showNA}{logical that determines whether missing values are named in the legend. By default (\code{NA}), this depends on the presence of missing values.}
+
+\item{thres.poly}{number that specifies the threshold at which polygons are taken into account. The number itself corresponds to the proportion of the area sizes of the polygons to the total polygon size. By default, all polygons are drawn. To ignore polygons that are not visible in a normal plot, a value like \code{1e-05} is recommended.}
 
 \item{title}{title of the legend element}
 
@@ -80,7 +82,7 @@ For \code{tm_borders}, it is a single color value that specifies the border line
 
 \item{legend.hist.z}{index value that determines the position of the histogram legend element}
 
-\item{id}{name of the data variable that specifies the indices of the polygons. Only used for SVG output (see \code{\link{itmap}}).}
+\item{id}{name of the data variable that specifies the indices of the polygons. Only used for \code{"view"} mode (see \code{\link{tmap_mode}}).}
 
 \item{...}{for \code{tm_polygons}, these arguments passed to either \code{tm_fill} or \code{tm_borders}. For \code{tm_fill}, these arguments are passed on to \code{\link{map_coloring}}.}
 
@@ -119,7 +121,7 @@ tm_layout("Find the Netherlands!")
 # Numeric data variable
 tm_shape(NLD_muni) +
     tm_fill(col="population", convert2density=TRUE, 
-        style="kmeans", title="Population (per km2)", legend.hist=TRUE) +
+        style="kmeans", title="Population (per km2)", legend.hist=TRUE, id="name") +
     tm_borders("grey25", alpha=.5) + 
 tm_shape(NLD_prov) +
     tm_borders("grey40", lwd=2) +
@@ -127,14 +129,14 @@ tm_format_NLD_wide(bg.color="white", frame = FALSE, legend.hist.bg.color="grey90
 
 tm_shape(World) +
     tm_polygons("HPI", palette="RdYlGn", style="cont", n=8, auto.palette.mapping=FALSE, 
-    			title="Happy Planet Index") +
+    			title="Happy Planet Index", id="name") +
     tm_text("iso_a3", size="AREA", scale=1.5) +
 tm_format_World() + 
 tm_style_grey()
 
 # Categorical data variable
 tm_shape(World) +
-    tm_polygons("economy", title="Economy") +
+    tm_polygons("economy", title="Economy", id="name") +
     tm_text("iso_a3", size="AREA", scale=1.5) +
 tm_format_World()
 
@@ -147,6 +149,8 @@ tm_shape(NLD_prov) +
     tm_borders(lwd=2) +
     tm_text("name", shadow=TRUE) +
 tm_format_NLD(title="Dutch provinces and\\nmunicipalities", bg.color="white")
+
+# TIP: check out these examples in view mode, enabled with tmap_mode("view")
 }
 \seealso{
 \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}

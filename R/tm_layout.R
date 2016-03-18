@@ -32,7 +32,7 @@
 #' @param scale numeric value that serves as the global scale parameter. All font sizes, bubble sizes, border widths, and line widths are controled by this value. Each of these elements can be scaled independantly with the \code{scale}, \code{lwd}, or \code{size} arguments provided by the \code{\link{tmap-element}s}.
 #' @param title.size Relative size of the title
 #' @param bg.color Background color. By default it is \code{"white"}. A recommended alternative for choropleths is light grey (e.g., \code{"grey85"}).
-#' @param aes.color Default color values for the aesthetics layers. Should be a named vector with the names chosen from: \code{fill}, \code{borders}, \code{bubbles}, \code{dots}, \code{lines}, \code{text}, \code{na}.
+#' @param aes.color Default color values for the aesthetics layers. Should be a named vector with the names chosen from: \code{fill}, \code{borders}, \code{bubbles}, \code{dots}, \code{lines}, \code{text}, \code{na}. Use \code{"#00000000"} for transparency.
 #' @param aes.palette Default color palettes for the aesthetics. It takes a list of three items: \code{seq} for sequential palettes, \code{div} for diverging palettes, and \code{cat} for categorical palettes. By default, Color Brewer palettes (see (see \code{RColorBrewer::display.brewer.all})) are used. It is also possible provide a vector of colors for any of these items.
 #' @param attr.color Default color value for map attributes
 #' @param sepia.intensity Number between 0 and 1 that defines the amount of sepia effect, which gives the map a brown/yellowish flavour. By default this effect is disabled (\code{sepia.intensity=0}). All colored used in the map are adjusted with this effect.
@@ -41,8 +41,9 @@
 #' @param frame.lwd width of the frame
 #' @param frame.double.line draw a double frame line border?
 #' @param asp Aspect ratio. The aspect ratio of the map (width/height). If \code{NA}, it is determined by the bounding box (see argument \code{bbox} of \code{\link{tm_shape}}), the \code{outer.margins}, and the \code{inner.margins}. If \code{0}, then the aspect ratio is adjusted to the aspect ratio of the device.
-#' @param outer.margins Relative margins between device and frame. Vector of four values specifying the bottom, left, top, and right margin. Values are between 0 and 1.
+#' @param outer.margins Relative margins between device and frame. Vector of four values specifying the bottom, left, top, and right margin. Values are between 0 and 1. When facets are created, the outer margins are the margins between the outer panels and the device borders (see also \code{between.margin})
 #' @param inner.margins Relative margins inside the frame. Vector of four values specifying the bottom, left, top, and right margin. Values are between 0 and 1. By default, 0 for each side if master shape is a raster, otherwise 0.02.
+#' @param between.margin Margin between facets (small multiples) in number of text line heights. The height of a text line is automatically scaled down based on the number of facets. 
 #' @param outer.bg.color Background color outside the frame.
 #' @param fontface font face of all text in the map.
 #' @param fontfamily font family of the text labels.
@@ -54,6 +55,9 @@
 #' @param space.color Color of the space, i.e. the region inside the frame, and outsise the earth boundary.
 #' @param legend.show Logical that determines whether the legend is shown.
 #' @param legend.only logical. Only draw the legend (without map)? Particularly useful for small multiples with a common legend.
+#' @param legend.outside Logical that determines whether the legend is plot outside of the map/facets. Especially useful when using facets that have a common legend (i.e. with \code{free.scales=FALSE}).
+#' @param legend.outside.position Character vector of two values that determine the outside position of the legend. Only applicable when \code{legend.outside=TRUE}. The first value determines the side of the map/facets, one of: \code{"right"}, \code{"left"}, \code{"top"}, or \code{"bottom"}. The second value determines the alignment of the legend, one of \code{"top"}, \code{"center"}, or \code{"bottom"} when the first value is \code{"left"} or \code{"right"}; one of \code{"left"}, \code{"center"}, \code{"right"} when the first value is \code{"top"} or \code{"bottom"}.
+#' @param legend.outside.size Numeric value that determines the relative size of the legend, when \code{legend.outside=TRUE}. If the first value of \code{legend.outside.position} is \code{"top"} or \code{"bottom"}, then it is the width of the legend, else it is the height of the legend.
 #' @param legend.position Position of the legend. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y coordinates of the left bottom corner of the legend. The uppercase values correspond to the position without margins (so tighter to the frame). By default, it is automatically placed in the corner with most space based on the (first) shape object.
 #' @param legend.width maximum width of the legend
 #' @param legend.height maximum height of the legend.
@@ -84,8 +88,17 @@
 #' @param legend.frame either a logical that determines whether the legend is placed inside a frame, or a color that directly specifies the frame border color. The width of the frame is automatically determined, but is upper-bounded by \code{legend.width}.
 #' @param title.bg.color background color of the title. Use \code{TRUE} to match with the overall background color \code{bg.color}.
 #' @param title.bg.alpha Transparency number between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of the \code{title.bg.color} is used (normally 1).
+#' @param panel.show Logical that determines if the map(s) are shown as panels. If \code{TRUE}, the title will be placed in the panel header instead of inside the map. By default, it is \code{TRUE} when small multiples are created with the \code{by} variable. (See \code{\link{tm_facets}}) 
+#' @param panel.label.size Relative font size of the panel labels
+#' @param panel.label.color Font color of the panel labels
+#' @param panel.label.bg.color Background color of the panel labels
+#' @param panel.label.height Height of the labels in number of text line heights.
+#' @param panel.label.rot Rotation angles of the panel labels. Vector of two values: the first is the rotation angle (in degrees) of the row panels, which are only used in cross-table facets (when \code{\link{tm_facets}}'s \code{by} is specified with two variables). The second is the rotation angle of the column panels.
 #' @param attr.position Position of the map attributes, which are \code{\link{tm_credits}}, \code{\link{tm_scale_bar}} and \code{\link{tm_compass}}. Vector of two values, specifing the x and y coordinates. The first value is "left", "LEFT", "center", "right", or "RIGHT", and the second value "top", "TOP", "center", "bottom", or "BOTTOM". The uppercase values correspond to the position without margins (so tighter to the frame). Positions can also be set separately in the map attribute fuctions.
 #' @param design.mode Logical that enables the design mode. If \code{TRUE}, inner and outer margins, legend position, aspect ratio are explicitely shown. Also, feedback text in the console is given.
+#' @param basemaps vector of one or more names of baselayer maps used in the interactive view mode. See \code{\link{tm_view}}.
+#' @param bg.overlay color of the background overlay rectangle used in the interactive view mode. See \code{\link{tm_view}}.
+#' @param bg.overlay.alpha alpha transparency of \code{bg.overlay}
 #' @param ... other arguments from \code{tm_layout}
 #' @seealso \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
 #' @example ../examples/tm_layout.R
@@ -105,9 +118,10 @@ tm_layout <- function(title=NA,
 					  asp = NA,
 					  outer.margins = rep(0.02, 4),
 					  inner.margins = NA,
+					  between.margin = .5,
 					  outer.bg.color=NULL,
 					  fontface="plain", 
-					  fontfamily="sans",
+					  fontfamily="",
  					  compass.type="arrow",
 					  earth.boundary=FALSE,
 					  earth.boundary.color=attr.color,
@@ -116,8 +130,11 @@ tm_layout <- function(title=NA,
 					  space.color=NULL,
 					  legend.show = TRUE,
 					  legend.only = FALSE,
+					  legend.outside=NA,
+					  legend.outside.position="right",
+					  legend.outside.size=0.3,
 					  legend.position = NULL,
-					  legend.width = 0.3,
+					  legend.width = 0.4,
 					  legend.height = 0.9,
 					  legend.hist.height = 0.3,
 					  legend.hist.width = legend.width,
@@ -138,8 +155,17 @@ tm_layout <- function(title=NA,
 					  title.color=attr.color,
 					  title.bg.color=NA,
 					  title.bg.alpha = 1,
+					  panel.show = NA,
+					  panel.label.size = 1,
+					  panel.label.color = "black",
+					  panel.label.bg.color = "grey80",
+					  panel.label.height = 1.25,
+					  panel.label.rot = c(90, 0),
 					  attr.position = c("right", "bottom"),
-					  design.mode = FALSE) {
+					  design.mode = FALSE,
+					  basemaps = c("CartoDB.Positron", "OpenStreetMap", "Esri.WorldTopoMap"),
+					  bg.overlay=NULL,
+					  bg.overlay.alpha=0) {
 	g <- list(tm_layout=c(as.list(environment()), list(call=names(match.call(expand.dots = TRUE)[-1]))))
 	class(g) <- "tm"
 	g
@@ -178,7 +204,6 @@ tm_format_World_wide <- function(title=NA,
 								 inner.margins=c(0, 0.2, 0.025, 0.01),
 							legend.position=c("left", "bottom"), 
 							attr.position=c("right", "bottom"),
-							legend.width=0.4,
 							scale=.8,
 							...) {
 	args <- c(as.list(environment()), list(...))
@@ -205,8 +230,6 @@ tm_format_Europe_wide <- function(title=NA,
 							 legend.position=c("left", "top"), 
 							 attr.position=c("left", "bottom"),
 							 inner.margins=c(0, 0.25, 0, 0),
-							 legend.width=0.4,
-							 legend.hist.width=0.4,
 							 ...) {
 	args <- c(as.list(environment()), list(...))
 	do.call("tm_layout", args)
@@ -220,7 +243,6 @@ tm_format_NLD <- function(title=NA,
 						  frame=FALSE, 
 						  inner.margins=c(.02, .2, .06, .02),
 						  legend.position=c("left", "top"), 
-						  legend.width=0.4,
 						  attr.position=c("left", "bottom"),
 						  ...) {
 	args <- c(as.list(environment()), list(...))
@@ -233,8 +255,6 @@ tm_format_NLD_wide <- function(title=NA,
 						  frame=FALSE, 
 						  inner.margins=c(.02, .3, .06, .02),
 						  legend.position=c("left", "top"), 
-						  legend.width=0.5,
-						  legend.hist.width=0.35,
 						  attr.position=c("left", "bottom"),
 						  ...) {
 	args <- c(as.list(environment()), list(...))
@@ -271,6 +291,7 @@ tm_style_natural <- function(bg.color="lightskyblue1",
 							 attr.color="black", 
 							 space.color="white",
 							 earth.boundary=TRUE,
+							 basemaps="MapQuestOpen.OSM",
 							 ...) {
 
 	args <- c(as.list(environment()), list(...))
@@ -286,9 +307,11 @@ tm_style_grey <- tm_style_gray
 #' @rdname tm_layout
 #' @export
 tm_style_cobalt <- function(bg.color="#002240",
-							 aes.color=c(fill="#0088FF", borders="#002240", bubbles="#FF9D00", dots="#FF9D00", lines="#FFEE80", text="white", na="grey60"),
-							 aes.palette=list(seq="YlGn", div="RdYlGn", cat="Set3"),
-							 attr.color="white", ...) {
+							aes.color=c(fill="#0088FF", borders="#002240", bubbles="#FF9D00", dots="#FF9D00", lines="#FFEE80", text="white", na="grey60"),
+							aes.palette=list(seq="YlGn", div="RdYlGn", cat="Set3"),
+							attr.color="white", 
+							bg.overlay.alpha=.3,
+							...) {
 	# Bu="#0088FF" DaBu="#002240" LiBu="#BED6FF" Or="#FF9D00", W="white" Yl="FFEE80"
 	# See https://www.hartwork.org/beamer-theme-matrix/
 	
@@ -317,7 +340,9 @@ tm_style_col_blind <- function(bg.color="white",
 tm_style_albatross <- function(bg.color="#00007F",
 								aes.color=c(fill="#4C4C88", borders="#00004C", bubbles="#BFBFFF", dots="#BFBFFF", lines="#BFBFFF", text="#FFE700", na="grey60"),
 								aes.palette=list(seq="YlOrRd", div="RdYlGn", cat="Set3"),
-								attr.color="#BFBFFF", ...) {
+								attr.color="#BFBFFF",
+								bg.overlay.alpha=.3,
+								...) {
 	# Y="#FFE700", Bu="#00007F", DaBu="#00004C", Gr="#BFBFFF", DaGr="#4C4C88"
 	# See https://www.hartwork.org/beamer-theme-matrix/
 	
@@ -353,7 +378,14 @@ tm_style_bw <- function(saturation=0, ...) {
 
 #' @rdname tm_layout
 #' @export
-tm_style_classic <- function(sepia.intensity=.7, fontfamily="serif", frame.double.line=TRUE, compass.type="rose", ...) {
+tm_style_classic <- function(sepia.intensity=.7, 
+							 fontfamily="serif", 
+							 frame.double.line=TRUE, 
+							 compass.type="rose",
+							 bg.overlay="gold",
+							 bg.overlay.alpha=.5,
+							 basemaps="Esri.WorldTopoMap",
+							 ...) {
 	args <- c(as.list(environment()), list(...))
 	g <- do.call("tm_layout", args)
 	g$tm_layout$call <- union(g$tm_layout$call, style_args)

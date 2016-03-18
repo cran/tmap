@@ -9,7 +9,7 @@ tm_credits(text, size = 0.7, col = NA, alpha = NA, align = "left",
   position = NA)
 }
 \arguments{
-\item{text}{text. Multiple lines can be created with the line break symbol \code{"\\n"}.}
+\item{text}{text. Multiple lines can be created with the line break symbol \code{"\\n"}. Facets can have different texts: in that case a vector of characters is required. Use \code{""} to omit the credits for specific facets.}
 
 \item{size}{relative text size}
 
@@ -33,6 +33,8 @@ tm_credits(text, size = 0.7, col = NA, alpha = NA, align = "left",
 Creates a text annotation that could be used for credits or acknowledgements.
 }
 \examples{
+current.mode <- tmap_mode("plot")
+
 data(NLD_muni, NLD_prov)
 
 tm_shape(NLD_muni) +
@@ -43,5 +45,8 @@ tm_shape(NLD_muni) +
     tm_borders("grey40", lwd=2) +
 tm_format_NLD(bg.color="white", frame = TRUE) +
 tm_credits("(c) Statistics Netherlands (CBS) and\\nKadaster Nederland", position=c("left", "bottom"))
+
+# restore current mode
+tmap_mode(current.mode)
 }
 

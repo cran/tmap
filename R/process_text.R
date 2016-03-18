@@ -16,7 +16,7 @@ process_text_size_vector <- function(x, text, g, rescale, gt) {
 	if (is.null(g$sizes.legend.labels)) {
 		size.legend.labels <- do.call("fancy_breaks", c(list(vec=x_legend, intervals=FALSE), g$legend.format))
 	} else {
-		if (length(g$sizes.legend.labels) != length(x_legend)) stop("length of sizes.legend.labels is not equal to the number of texts in the legend")
+		if (length(g$sizes.legend.labels) != length(x_legend)) stop("length of sizes.legend.labels is not equal to the number of texts in the legend", call. = FALSE)
 		size.legend.labels <- g$sizes.legend.labels
 	}
 	
@@ -53,7 +53,7 @@ process_text_size_vector <- function(x, text, g, rescale, gt) {
 
 
 
-process_text <- function(data, g, fill, gt, gby, z) {
+process_text <- function(data, g, fill, gt, gby, z, allow.small.mult) {
 	root <- NULL; size.lowerbound <- NULL; scale <- NULL; bg.alpha <- NULL; case <- NULL; alpha <- NULL
 	shadow <- NULL
 	gsc <- NULL
@@ -82,9 +82,15 @@ process_text <- function(data, g, fill, gt, gby, z) {
 	xtcol <- g$col
 	xtext <- g$text
 	
-	#if (is.na(xtcol)[1]) xtcol <- gt$aes.colors["text"]
-	if (is.na(g$colorNA)[1]) g$colorNA <- gt$aes.colors["na"]
+	if (!allow.small.mult) xtsize <- xtsize[1]
+	if (!allow.small.mult) xtcol <- xtcol[1]
+	if (!allow.small.mult) xtext <- xtext[1]
 	
+	if (is.null(g$colorNA)) g$colorNA <- "#00000000"
+	if (is.na(g$colorNA)[1]) g$colorNA <- gt$aes.colors["na"]
+	if (g$colorNA=="#00000000") g$showNA <- FALSE
+	
+	if (!is.na(g$alpha) && !is.numeric(g$alpha)) stop("alpha argument in tm_text is not a numeric", call. = FALSE)
 	
 	# if by is specified, use first value only
 	if (nlevels(by)>1) {
@@ -105,10 +111,11 @@ process_text <- function(data, g, fill, gt, gby, z) {
 	if (nxtext<nx) xtext <- rep(xtext, length.out=nx)
 	
 	if (!varysize) {
-		if (!all(is.numeric(xtsize) | xtsize=="AREA")) stop("Incorrect text sizes.")
+		if (!all(is.numeric(xtsize) | xtsize=="AREA")) stop("Incorrect text sizes.", call. = FALSE)
 		if (is.numeric(xtsize[1])) {
 			g$size.lowerbound <- 0
 		}
+		if (any(xtsize=="AREA") && !("SHAPE_AREAS" %in% shpcols)) stop("size=\"AREA\" only valid for spatial polygons.", call.=FALSE)
 		for (i in 1:nx) data[[paste("SIZE", i, sep="_")]] <- if (is.numeric(xtsize[i])) xtsize[i] else {
 			tmp <- data$SHAPE_AREAS
 			(tmp / max(tmp, na.rm=TRUE)) ^ (1/g$root)
@@ -120,7 +127,7 @@ process_text <- function(data, g, fill, gt, gby, z) {
 	# check for direct color input
 	is.colors <- all(valid_colors(xtcol)) || is.na(xtcol[1])
 	if (!varycol) {
-		if (!is.colors) stop("Invalid text colors")
+		if (!is.colors) stop("Invalid text colors", call. = FALSE)
 		if (is.na(xtcol)[1]) {
 			if (is.matrix(fill)) {
 				cols <- apply(fill, MARGIN=2, function(f) {
@@ -156,8 +163,10 @@ process_text <- function(data, g, fill, gt, gby, z) {
 	dtcol <- process_data(data[, xtcol, drop=FALSE], by=by, free.scales=gby$free.scales.text.col, is.colors=is.colors)	
 	dtsize <- process_data(data[, xtsize, drop=FALSE], by=by, free.scales=gby$free.scales.text.size, is.colors=FALSE)
 	
+	if (nlevels(by)>1) if (is.na(g$showNA)) g$showNA <- attr(dtcol, "anyNA")
+	
 	##
-	if (!all(xtext %in% shpcols)) stop("Incorrect data variable used for the text")
+	if (!all(xtext %in% shpcols)) stop("Incorrect data variable used for the text", call. = FALSE)
 
 	text <- if (nx > 1) matrix(unlist(lapply(data[, xtext], as.character)), nrow=npol, ncol=nx) else as.character(data[[xtext]])
 	if (!is.na(g$case)) text <- if(case=="upper") toupper(text) else tolower(text)
@@ -213,6 +222,19 @@ process_text <- function(data, g, fill, gt, gby, z) {
 	
 	sel <- if (is.list(dtcol)) as.list(as.data.frame(text_sel)) else as.vector(text_sel)
 	
+	# 
+	# # selection: which line widths are NA?
+	# sel <- if (is.list(dtsize)) {
+	# 	lapply(dtsize, function(i)!is.na(i))
+	# } else {
+	# 	if (is.list(dtcol)) {
+	# 		cnts <- vapply(dtcol, length, integer(1))
+	# 		cnts2 <- 1:length(dtcol)
+	# 		f <- factor(unlist(mapply(rep, cnts2, cnts, SIMPLIFY = FALSE)))
+	# 		split(dtsize, f = f)
+	# 	} else !is.na(dtsize)
+	# } 
+	
 	dcr <- process_dtcol(dtcol, sel=sel, g, gt, nx, npol)
 	if (dcr$is.constant) {
 		xtcol <- rep(NA, nx)
@@ -222,11 +244,14 @@ process_text <- function(data, g, fill, gt, gby, z) {
 	col <- dcr$col
 	col.legend.labels <- dcr$legend.labels
 	col.legend.palette <- dcr$legend.palette
-	col.neutral <- gt$aes.color[["text"]] # preferable over dcr$col.neutral to match examples
+	col.neutral <- gt$aes.colors[["text"]] # preferable over dcr$col.neutral to match examples
 	breaks <- dcr$breaks
 	values <- dcr$values
 	
-
+	if (is.list(dtcol)) {
+		gsc <- split_g(g, n=nx)
+	}
+	
 	if (is.list(values)) {
 		# process legend text
 		col.legend.text <- mapply(function(txt, v, s, l, gsci) {
@@ -297,6 +322,10 @@ process_text <- function(data, g, fill, gt, gby, z) {
 		text.col.legend.hist.title <- g$legend.hist.title
 	} else text.col.legend.hist.title <- ""
 
+	if (!g$legend.size.show) text.size.legend.title <- NA
+	if (!g$legend.col.show) text.col.legend.title <- NA
+	
+	
 	list(text=text,
 		 text.size=size,
 		 #root=g$root,

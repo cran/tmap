@@ -27,22 +27,28 @@ tm_layout(title = NA, scale = 1, title.size = 1.3, bg.color = "white",
   aes.palette = list(seq = "YlOrBr", div = "RdYlGn", cat = "Set3"),
   attr.color = "black", sepia.intensity = 0, saturation = 1,
   frame = TRUE, frame.lwd = 1, frame.double.line = FALSE, asp = NA,
-  outer.margins = rep(0.02, 4), inner.margins = NA, outer.bg.color = NULL,
-  fontface = "plain", fontfamily = "sans", compass.type = "arrow",
-  earth.boundary = FALSE, earth.boundary.color = attr.color,
-  earth.boundary.lwd = 1, earth.datum = "WGS84", space.color = NULL,
-  legend.show = TRUE, legend.only = FALSE, legend.position = NULL,
-  legend.width = 0.3, legend.height = 0.9, legend.hist.height = 0.3,
-  legend.hist.width = legend.width, legend.title.size = 1.1,
-  legend.text.size = 0.7, legend.hist.size = 0.7,
+  outer.margins = rep(0.02, 4), inner.margins = NA, between.margin = 0.5,
+  outer.bg.color = NULL, fontface = "plain", fontfamily = "",
+  compass.type = "arrow", earth.boundary = FALSE,
+  earth.boundary.color = attr.color, earth.boundary.lwd = 1,
+  earth.datum = "WGS84", space.color = NULL, legend.show = TRUE,
+  legend.only = FALSE, legend.outside = NA,
+  legend.outside.position = "right", legend.outside.size = 0.3,
+  legend.position = NULL, legend.width = 0.4, legend.height = 0.9,
+  legend.hist.height = 0.3, legend.hist.width = legend.width,
+  legend.title.size = 1.1, legend.text.size = 0.7, legend.hist.size = 0.7,
   legend.format = list(scientific = FALSE, digits = NA, text.separator = "to",
   text.less.than = "Less than", text.or.more = "or more"),
   legend.frame = FALSE, legend.text.color = attr.color,
   legend.bg.color = NA, legend.bg.alpha = 1, legend.hist.bg.color = NA,
   legend.hist.bg.alpha = 1, title.snap.to.legend = FALSE,
   title.position = c("left", "top"), title.color = attr.color,
-  title.bg.color = NA, title.bg.alpha = 1, attr.position = c("right",
-  "bottom"), design.mode = FALSE)
+  title.bg.color = NA, title.bg.alpha = 1, panel.show = NA,
+  panel.label.size = 1, panel.label.color = "black",
+  panel.label.bg.color = "grey80", panel.label.height = 1.25,
+  panel.label.rot = c(90, 0), attr.position = c("right", "bottom"),
+  design.mode = FALSE, basemaps = c("CartoDB.Positron", "OpenStreetMap",
+  "Esri.WorldTopoMap"), bg.overlay = NULL, bg.overlay.alpha = 0)
 
 tm_legend(...)
 
@@ -52,7 +58,7 @@ tm_format_World(title = NA, inner.margins = c(0, 0.05, 0.025, 0.01),
 
 tm_format_World_wide(title = NA, inner.margins = c(0, 0.2, 0.025, 0.01),
   legend.position = c("left", "bottom"), attr.position = c("right",
-  "bottom"), legend.width = 0.4, scale = 0.8, ...)
+  "bottom"), scale = 0.8, ...)
 
 tm_format_Europe(title = NA, title.position = c("left", "top"),
   legend.position = c("left", "top"), attr.position = c("left", "bottom"),
@@ -60,16 +66,15 @@ tm_format_Europe(title = NA, title.position = c("left", "top"),
 
 tm_format_Europe_wide(title = NA, title.position = c("left", "top"),
   legend.position = c("left", "top"), attr.position = c("left", "bottom"),
-  inner.margins = c(0, 0.25, 0, 0), legend.width = 0.4,
-  legend.hist.width = 0.4, ...)
+  inner.margins = c(0, 0.25, 0, 0), ...)
 
 tm_format_NLD(title = NA, frame = FALSE, inner.margins = c(0.02, 0.2,
-  0.06, 0.02), legend.position = c("left", "top"), legend.width = 0.4,
-  attr.position = c("left", "bottom"), ...)
+  0.06, 0.02), legend.position = c("left", "top"), attr.position = c("left",
+  "bottom"), ...)
 
 tm_format_NLD_wide(title = NA, frame = FALSE, inner.margins = c(0.02, 0.3,
-  0.06, 0.02), legend.position = c("left", "top"), legend.width = 0.5,
-  legend.hist.width = 0.35, attr.position = c("left", "bottom"), ...)
+  0.06, 0.02), legend.position = c("left", "top"), attr.position = c("left",
+  "bottom"), ...)
 
 tm_style_white(...)
 
@@ -81,7 +86,8 @@ tm_style_natural(bg.color = "lightskyblue1", aes.color = c(fill =
   "darkolivegreen3", borders = "black", bubbles = "tomato2", dots = "firebrick",
   lines = "steelblue", text = "black", na = "white"), aes.palette = list(seq =
   "YlGn", div = "RdYlGn", cat = "Set3"), attr.color = "black",
-  space.color = "white", earth.boundary = TRUE, ...)
+  space.color = "white", earth.boundary = TRUE,
+  basemaps = "MapQuestOpen.OSM", ...)
 
 tm_style_grey(bg.color = "grey85", aes.color = c(fill = "grey70", borders =
   "grey20", bubbles = "blueviolet", dots = "black", lines = "red", text =
@@ -90,7 +96,8 @@ tm_style_grey(bg.color = "grey85", aes.color = c(fill = "grey70", borders =
 tm_style_cobalt(bg.color = "#002240", aes.color = c(fill = "#0088FF",
   borders = "#002240", bubbles = "#FF9D00", dots = "#FF9D00", lines = "#FFEE80",
   text = "white", na = "grey60"), aes.palette = list(seq = "YlGn", div =
-  "RdYlGn", cat = "Set3"), attr.color = "white", ...)
+  "RdYlGn", cat = "Set3"), attr.color = "white", bg.overlay.alpha = 0.3,
+  ...)
 
 tm_style_col_blind(bg.color = "white", aes.color = c(fill = "grey85",
   borders = "black", bubbles = "#D55E00", dots = "#0072B2", lines = "#009E73",
@@ -101,7 +108,8 @@ tm_style_col_blind(bg.color = "white", aes.color = c(fill = "grey85",
 tm_style_albatross(bg.color = "#00007F", aes.color = c(fill = "#4C4C88",
   borders = "#00004C", bubbles = "#BFBFFF", dots = "#BFBFFF", lines = "#BFBFFF",
   text = "#FFE700", na = "grey60"), aes.palette = list(seq = "YlOrRd", div =
-  "RdYlGn", cat = "Set3"), attr.color = "#BFBFFF", ...)
+  "RdYlGn", cat = "Set3"), attr.color = "#BFBFFF", bg.overlay.alpha = 0.3,
+  ...)
 
 tm_style_beaver(bg.color = "#FFFFFF", aes.color = c(fill = "#FFE200",
   borders = "#000000", bubbles = "#A30000", dots = "#A30000", lines = "#A30000",
@@ -111,7 +119,8 @@ tm_style_beaver(bg.color = "#FFFFFF", aes.color = c(fill = "#FFE200",
 tm_style_bw(saturation = 0, ...)
 
 tm_style_classic(sepia.intensity = 0.7, fontfamily = "serif",
-  frame.double.line = TRUE, compass.type = "rose", ...)
+  frame.double.line = TRUE, compass.type = "rose", bg.overlay = "gold",
+  bg.overlay.alpha = 0.5, basemaps = "Esri.WorldTopoMap", ...)
 }
 \arguments{
 \item{title}{Title(s). By default, the name of the statistical variable of which the legend is drawn at the top (see \code{legend.config}) is used as a title.}
@@ -122,7 +131,7 @@ tm_style_classic(sepia.intensity = 0.7, fontfamily = "serif",
 
 \item{bg.color}{Background color. By default it is \code{"white"}. A recommended alternative for choropleths is light grey (e.g., \code{"grey85"}).}
 
-\item{aes.color}{Default color values for the aesthetics layers. Should be a named vector with the names chosen from: \code{fill}, \code{borders}, \code{bubbles}, \code{dots}, \code{lines}, \code{text}, \code{na}.}
+\item{aes.color}{Default color values for the aesthetics layers. Should be a named vector with the names chosen from: \code{fill}, \code{borders}, \code{bubbles}, \code{dots}, \code{lines}, \code{text}, \code{na}. Use \code{"#00000000"} for transparency.}
 
 \item{aes.palette}{Default color palettes for the aesthetics. It takes a list of three items: \code{seq} for sequential palettes, \code{div} for diverging palettes, and \code{cat} for categorical palettes. By default, Color Brewer palettes (see (see \code{RColorBrewer::display.brewer.all})) are used. It is also possible provide a vector of colors for any of these items.}
 
@@ -140,9 +149,11 @@ tm_style_classic(sepia.intensity = 0.7, fontfamily = "serif",
 
 \item{asp}{Aspect ratio. The aspect ratio of the map (width/height). If \code{NA}, it is determined by the bounding box (see argument \code{bbox} of \code{\link{tm_shape}}), the \code{outer.margins}, and the \code{inner.margins}. If \code{0}, then the aspect ratio is adjusted to the aspect ratio of the device.}
 
-\item{outer.margins}{Relative margins between device and frame. Vector of four values specifying the bottom, left, top, and right margin. Values are between 0 and 1.}
+\item{outer.margins}{Relative margins between device and frame. Vector of four values specifying the bottom, left, top, and right margin. Values are between 0 and 1. When facets are created, the outer margins are the margins between the outer panels and the device borders (see also \code{between.margin})}
 
 \item{inner.margins}{Relative margins inside the frame. Vector of four values specifying the bottom, left, top, and right margin. Values are between 0 and 1. By default, 0 for each side if master shape is a raster, otherwise 0.02.}
+
+\item{between.margin}{Margin between facets (small multiples) in number of text line heights. The height of a text line is automatically scaled down based on the number of facets.}
 
 \item{outer.bg.color}{Background color outside the frame.}
 
@@ -165,6 +176,12 @@ tm_style_classic(sepia.intensity = 0.7, fontfamily = "serif",
 \item{legend.show}{Logical that determines whether the legend is shown.}
 
 \item{legend.only}{logical. Only draw the legend (without map)? Particularly useful for small multiples with a common legend.}
+
+\item{legend.outside}{Logical that determines whether the legend is plot outside of the map/facets. Especially useful when using facets that have a common legend (i.e. with \code{free.scales=FALSE}).}
+
+\item{legend.outside.position}{Character vector of two values that determine the outside position of the legend. Only applicable when \code{legend.outside=TRUE}. The first value determines the side of the map/facets, one of: \code{"right"}, \code{"left"}, \code{"top"}, or \code{"bottom"}. The second value determines the alignment of the legend, one of \code{"top"}, \code{"center"}, or \code{"bottom"} when the first value is \code{"left"} or \code{"right"}; one of \code{"left"}, \code{"center"}, \code{"right"} when the first value is \code{"top"} or \code{"bottom"}.}
+
+\item{legend.outside.size}{Numeric value that determines the relative size of the legend, when \code{legend.outside=TRUE}. If the first value of \code{legend.outside.position} is \code{"top"} or \code{"bottom"}, then it is the width of the legend, else it is the height of the legend.}
 
 \item{legend.position}{Position of the legend. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y coordinates of the left bottom corner of the legend. The uppercase values correspond to the position without margins (so tighter to the frame). By default, it is automatically placed in the corner with most space based on the (first) shape object.}
 
@@ -216,9 +233,27 @@ By default the title is placed on top of the legend (determined by \code{legend.
 
 \item{title.bg.alpha}{Transparency number between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of the \code{title.bg.color} is used (normally 1).}
 
+\item{panel.show}{Logical that determines if the map(s) are shown as panels. If \code{TRUE}, the title will be placed in the panel header instead of inside the map. By default, it is \code{TRUE} when small multiples are created with the \code{by} variable. (See \code{\link{tm_facets}})}
+
+\item{panel.label.size}{Relative font size of the panel labels}
+
+\item{panel.label.color}{Font color of the panel labels}
+
+\item{panel.label.bg.color}{Background color of the panel labels}
+
+\item{panel.label.height}{Height of the labels in number of text line heights.}
+
+\item{panel.label.rot}{Rotation angles of the panel labels. Vector of two values: the first is the rotation angle (in degrees) of the row panels, which are only used in cross-table facets (when \code{\link{tm_facets}}'s \code{by} is specified with two variables). The second is the rotation angle of the column panels.}
+
 \item{attr.position}{Position of the map attributes, which are \code{\link{tm_credits}}, \code{\link{tm_scale_bar}} and \code{\link{tm_compass}}. Vector of two values, specifing the x and y coordinates. The first value is "left", "LEFT", "center", "right", or "RIGHT", and the second value "top", "TOP", "center", "bottom", or "BOTTOM". The uppercase values correspond to the position without margins (so tighter to the frame). Positions can also be set separately in the map attribute fuctions.}
 
 \item{design.mode}{Logical that enables the design mode. If \code{TRUE}, inner and outer margins, legend position, aspect ratio are explicitely shown. Also, feedback text in the console is given.}
+
+\item{basemaps}{vector of one or more names of baselayer maps used in the interactive view mode. See \code{\link{tm_view}}.}
+
+\item{bg.overlay}{color of the background overlay rectangle used in the interactive view mode. See \code{\link{tm_view}}.}
+
+\item{bg.overlay.alpha}{alpha transparency of \code{bg.overlay}}
 
 \item{...}{other arguments from \code{tm_layout}}
 }
@@ -257,12 +292,11 @@ tm_shape(World) +
     tm_fill("pop_est_dens", style="kmeans", title="Population density") +
 tm_format_World(title="The World") + tm_style_albatross(frame.lwd=10)
 
-land_eck4 <- set_projection(land, "eck4") # convert to Eckert IV projection
-
-tm_shape(land_eck4) +
+\dontrun{
+tm_shape(land) +
 	tm_raster("elevation", breaks=c(-Inf, 250, 500, 1000, 1500, 2000, 2500, 3000, 4000, Inf),  
 		palette = terrain.colors(9), title="Elevation", auto.palette.mapping = FALSE) +
-tm_shape(World) +
+tm_shape(World, is.master=TRUE) +
 	tm_borders("grey20") +
 	tm_grid(projection="longlat", labels.size = .5) +
 	tm_text("name", size="AREA") +
@@ -275,12 +309,13 @@ tm_style_classic(bg.color="lightblue") +
 tm_legend(position = c("left", "bottom"), 
 	frame = TRUE,
 	bg.color="lightblue")
-
+}
+	
 WorldOne <- rgeos::gUnaryUnion(World)
 tm_shape(World, projection="wintri") +
 	tm_fill("HPI", palette="div", auto.palette.mapping = FALSE, n=7, 
 			title = "Happy Planet Index") +
-	tm_shape(WorldOne) + 
+tm_shape(WorldOne) + 
 	tm_borders() +
 	tm_grid(projection = "longlat") +
 tm_credits("Winkel Tripel projection", position = c("right", "BOTTOM")) +
@@ -288,26 +323,17 @@ tm_style_natural(earth.boundary = c(-180,180,-87,87), inner.margins = .05) +
 tm_legend(position=c("left", "bottom"), bg.color="grey95", frame=TRUE)
 
 \dontrun{
-# the last three elements (tm_layout, tm_style_classic, and tm_legend)
-# can also be merged into one element function:
-tm_style_classic(inner.margins=c(.04,.03, .02, .01), 
-	earth.boundary = TRUE, 
-	space.color="grey90",
-	bg.color="lightblue", 
-	legend.position = c("left", "bottom"), 
-	legend.frame = TRUE,
-	legend.bg.color="lightblue")
-}
-
-\dontrun{
 # global option tmap.style:
 qtm(World, fill="economy", format="World")
-options(tmap.style = "col_blind")
+tmap_style("col_blind")
 qtm(World, fill="economy", format="World")
-options(tmap.style = "cobalt")
+tmap_style("cobalt")
 qtm(World, fill="economy", format="World")
-options(tmap.style = "white") # the default
+tmap_style("white")
 }
+
+# TIP: check out these examples in view mode, enabled with tmap_mode("view")
+
 }
 \seealso{
 \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}

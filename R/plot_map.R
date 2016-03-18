@@ -27,52 +27,12 @@ plot_map <- function(i, gp, gt, shps, bbx, proj, sasp) {
 		
 		## obtain coordinates (to draw bubbles and text)
 		if (inherits(shp, "Spatial")) {
-			if (inherits(shp, "SpatialLines")) {
-				
- 				if (gt$line.center.type[1]=="segment") {
- 					ns <- length(shp)
- 					shp_lst <- one_line_per_lines(shp)
- 					shp <- shp_lst$shp
- 					attr(shp, "bbox") <- bbx
- 					id <- shp_lst$id
- 					
- 					aes <- intersect(names(gpl), c("line.col", "line.lwd", "bubble.size", "text", "text.size", "text.color", "text.xmod", "text.ymod", "text_sel", "bubble.size", "bubble.col", "bubble.xmod", "bubble.ymod"))
- 					
- 					gpl[aes] <- lapply(gpl[aes], function(a) {
- 						if (length(a)==ns) {
- 							a[id]
- 						} else a
- 					})
- 				}
-
-				if (gt$line.center.type[2]=="midpoint") {
-					co <- lines_midpoints(shp)@coords
-					
-					if (gt$line.center.type[1]=="feature") {
-						lC <- gCentroid(shp, byid=TRUE)@coords
-						lCX <- lC[,1]
-						lCY <- lC[,2]
-						lens <- sapply(shp@lines, function(lns)length(lns@Lines))
-						
-						X <- co[,1]
-						Y <- co[,2]
-						ID <- do.call("c", mapply(rep, 1:length(lens), lens, SIMPLIFY=FALSE))
-						Xs <- split(X, ID)
-						Ys <- split(Y, ID)
-						
-						co <- t(mapply(function(x1, y1, x2, y2) {
-							minid <- which.min(sqrt((x1-x2)^2 + (y1-y2)^2))
-							c(x2[minid], y2[minid])
-						}, lCX, lCY, Xs, Ys, SIMPLIFY=TRUE))
-					}
-				} else {
-					co <- gCentroid(shp, byid=TRUE)@coords
-				}
-
-			} else {
-				co <- coordinates(shp) # prefered over gCentroid since coordinates correspond to first (normally largest) polygon of each object
-			}
-			co.npc <- co
+			res <- get_sp_coordinates(shp, gpl, gt, bbx)
+			co.npc <- res$co
+			if (gt$line.center.type[1]=="segment") {
+				gpl <- res$gpl
+				shp <- res$shp
+			}	
 			co.npc[,1] <- if (bbx[1, 2]-bbx[1,1]==0) .5 else {
 				(co.npc[,1]-bbx[1,1]) / (bbx[1, 2]-bbx[1,1])	
 			}
@@ -85,12 +45,12 @@ plot_map <- function(i, gp, gt, shps, bbx, proj, sasp) {
 
 		plot_tm_fill <- function() {
 			fill <- if (is.null(gpl$fill)) NA else gpl$fill
-			col <- do.call("process_color", c(list(gpl$col, alpha=gpl$alpha), gt$pc))
+			col <- gpl$col
 			grid.shape(shp, gp=gpar(fill=fill, col=col, lwd=gpl$lwd, lty=gpl$lty), bg.col=gt$bg.color, i, k)
 		}
 		
 		plot_tm_lines <- function() {
-			col <- do.call("process_color", c(list(gpl$line.col, alpha=gpl$line.alpha), gt$pc))
+			col <- gpl$line.col
 			grid.shplines(shp, gp=gpar(col=col, lwd=gpl$line.lwd, lty=gpl$line.lty,
 									   lineend="butt"), i, k)
 		}
@@ -118,9 +78,8 @@ plot_map <- function(i, gp, gt, shps, bbx, proj, sasp) {
 			
 			x <- (cent[1] - bb_target[1,1]) / (bb_target[1,2] - bb_target[1,1])
 			y <- (cent[2] - bb_target[2,1]) / (bb_target[2,2] - bb_target[2,1])
-			
 			#if (inherits(shp, "Spatial")) shp <- as(shp, "RasterLayer")
-			rasterGrob(matrix(rast, ncol=shp@ncols, nrow=shp@nrows, byrow = TRUE), x=x, y=y, width=width, height=height)
+			rasterGrob(matrix(rast, ncol=shp@ncols, nrow=shp@nrows, byrow = TRUE), x=x, y=y, width=width, height=height, interpolate = FALSE)
 		} 
 		
 		e <- environment()
@@ -182,7 +141,7 @@ plot_map <- function(i, gp, gt, shps, bbx, proj, sasp) {
 				
 				# Automatic label placement (Simulated Annealing)
 				if (gpl$text.auto.placement || identical(gpl$text.auto.placement, 0)) {
-					el <- if (is.numeric(gpl$text.auto.placement)) gpl$text.auto.placement else 0
+					el <- if (is.numeric(gpl$text.auto.placement)) gpl$text.auto.placement * .5 else 0
 					textSizes <- gpl$text.size[gpl$text_sel]
 					elX <- convertWidth(unit(textSizes, "lines"), "npc", valueOnly = TRUE) * el
 					elY <- convertHeight(unit(textSizes, "lines"), "npc", valueOnly = TRUE) * el
@@ -239,7 +198,6 @@ plot_map <- function(i, gp, gt, shps, bbx, proj, sasp) {
 				}
 				tGrob <- do.call("gList", lapply(tGrob, .editGrob, sel=sel, shiftX=shiftX, shiftY=shiftY, angles=angles))
 				
-
 				if (gpl$text.overwrite.lines && "plot_tm_lines" %in% fnames) {
 					# Remove line where labels overlap
 					lGrob <- grobs[[which(fnames=="plot_tm_lines")]]

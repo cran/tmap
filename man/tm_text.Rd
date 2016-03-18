@@ -8,10 +8,10 @@ tm_text(text, size = 1, col = NA, root = 3, size.lim = NA,
   sizes.legend = NULL, sizes.legend.labels = NULL,
   sizes.legend.text = "Abc", n = 5, style = ifelse(is.null(breaks),
   "pretty", "fixed"), breaks = NULL, palette = NULL, labels = NULL,
-  labels.text = NA, auto.palette.mapping = TRUE, contrast = 1,
-  max.categories = 12, colorNA = NA, textNA = "Missing", fontface = NA,
-  fontfamily = NA, alpha = NA, case = NA, shadow = FALSE,
-  bg.color = NA, bg.alpha = NA, size.lowerbound = 0.4,
+  labels.text = NA, auto.palette.mapping = TRUE, contrast = NA,
+  max.categories = 12, colorNA = NA, textNA = "Missing", showNA = NA,
+  fontface = NA, fontfamily = NA, alpha = NA, case = NA,
+  shadow = FALSE, bg.color = NA, bg.alpha = NA, size.lowerbound = 0.4,
   print.tiny = FALSE, scale = 1, auto.placement = FALSE,
   remove.overlap = FALSE, along.lines = FALSE, overwrite.lines = FALSE,
   xmod = 0, ymod = 0, title.size = NA, title.col = NA,
@@ -49,15 +49,17 @@ tm_text(text, size = 1, col = NA, root = 3, size.lim = NA,
 
 \item{labels.text}{Example text to show in the legend next to the \code{labels}. When \code{NA} (default), examples from the data variable are taken and \code{"NA"} for classes where they don't exist.}
 
-\item{auto.palette.mapping}{When diverging colour palettes are used (i.e. "RdBu") this method automatically maps colors to values such that the middle colors (mostly white or yellow) are assigned to values of 0, and the two sides of the color palette are assigned to negative respectively positive values.}
+\item{auto.palette.mapping}{When diverging colour palettes are used (i.e. "RdBu") this method automatically maps colors to values such that the middle colors (mostly white or yellow) are assigned to values of 0, and the two sides of the color palette are assigned to negative respectively positive values. When categorical color palettes are used, this method stretches the palette is there are more levels than colors.}
 
 \item{contrast}{vector of two numbers that determine the range that is used for sequential and diverging palettes (applicable when \code{auto.palette.mapping=TRUE}). Both numbers should be between 0 and 1. The first number determines where the palette begins, and the second number where it ends. For sequential palettes, 0 means the brightest color, and 1 the darkest color. For diverging palettes, 0 means the middle color, and 1 both extremes. If only one number is provided, this number is interpreted as the endpoint (with 0 taken as the start).}
 
-\item{max.categories}{in case \code{col} is the name of a categorical variable, this value determines how many categories (levels) it can have maximally. If the number of levels is higher than \code{max.categories}, then levels are combined.}
+\item{max.categories}{in case \code{col} is the name of a categorical variable, this value determines how many categories (levels) it can have maximally. If the number of levels is higher than \code{max.categories} and \code{auto.palette.mapping} is \code{FALSE}, then levels are combined.}
 
-\item{colorNA}{colour for missing values}
+\item{colorNA}{colour for missing values. Use \code{NULL} for transparency.}
 
-\item{textNA}{text used for missing values. Use \code{NA} to omit text for missing values in the legend}
+\item{textNA}{text used for missing values.}
+
+\item{showNA}{logical that determines whether missing values are named in the legend. By default (\code{NA}), this depends on the presence of missing values.}
 
 \item{fontface}{font face of the text labels. By default, determined by the fontface argument of \code{\link{tm_layout}}.}
 
@@ -124,7 +126,7 @@ tm_text(text, size = 1, col = NA, root = 3, size.lim = NA,
 
 \item{legend.hist.z}{index value that determines the position of the histogram legend element. (See \code{legend.size.z})}
 
-\item{id}{name of the data variable that specifies the indices of the text labels. Only used for SVG output (see \code{\link{itmap}}).}
+\item{id}{name of the data variable that specifies the indices of the text labels. Only used for \code{"view"} mode (see \code{\link{tmap_mode}}).}
 }
 \value{
 \code{\link{tmap-element}}
@@ -136,6 +138,8 @@ Creates a \code{\link{tmap-element}} that adds text labels.
 The absolute fontsize (in points) is determined by the (ROOT) viewport, which may depend on the graphics device.
 }
 \examples{
+current.mode <- tmap_mode("plot")
+
 data(World, Europe, metro)
 
 tm_shape(World) +
@@ -159,7 +163,11 @@ tm_shape(metro[metro$pop2010>=2e6, ]) +
 
 tm_shape(World) +
 	tm_text("name", size="pop_est", col="continent", palette="Dark2", 
-			title.size = "Population", title.col="Continent")
+			title.size = "Population", title.col="Continent") +
+	tm_legend(outside = TRUE)
+
+# restore current mode
+tmap_mode(current.mode)
 }
 \seealso{
 \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}

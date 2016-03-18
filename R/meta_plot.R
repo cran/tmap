@@ -1,4 +1,4 @@
-meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY) {
+meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY) {
 	# are there any legend elements? if not, title.only=TRUE
 	#title.only <- all(sapply(x, is.null))
 	has.legend <- !is.null(x)
@@ -36,7 +36,7 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY) {
 	title.size <- min((1-2*mx) / title.width, gt$title.size)
 	
 	titleWidth <- title.width * title.size
-	titleHeight <- lineHeight * (nlines) * title.size
+	titleHeight <- lineHeight * (nlines*1.2) * title.size
 	
 	if (has.legend) {
 
@@ -108,47 +108,53 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY) {
 		}
 		if (is.character(gt$legend.position)) {
 			legend.position <- c(switch(gt$legend.position[1], 
-										left=mx+metaX, 
+										left=frameX+mx+metaX, 
 										center=(1-legendWidth)/2, 
 										centre=(1-legendWidth)/2, 
-										right=1-mx-legendWidth,
-										LEFT=0,
-										RIGHT=1-legendWidth,
+										right=1-mx-legendWidth-frameX,
+										LEFT=frameX,
+										RIGHT=1-legendWidth-frameX,
 										as.numeric(gt$legend.position[1])),
 								 switch(gt$legend.position[2], 
-								 	   top= 1 - legendHeight - ifelse(titleg && !snap && gt$title!="", titleHeight+ifelse(gt$title.position[2]=="top", 1.5*my,.5*my), my), 
+								 	   top= 1 - legendHeight - ifelse(titleg && !snap && gt$title!="", titleHeight+ifelse(gt$title.position[2]=="top", 1.5*my,.5*my), my) - frameY, 
 								 	   center=(1-legendHeight)/2, 
 								 	   centre=(1-legendHeight)/2, 
-								 	   bottom=my+metaY,
-								 	   TOP= 1 - legendHeight - ifelse(titleg && !snap && gt$title!="", titleHeight+ifelse(gt$title.position[2]=="top", my,0), 0), 
-								 	   BOTTOM=0,
-								 	   as.numeric(gt$legend.position[2])))		
-		} else legend.position <- gt$legend.position
-		if (any(is.na(legend.position))) stop("Wrong position argument for legend")
+								 	   bottom=my+metaY + frameY,
+								 	   TOP= 1 - legendHeight - ifelse(titleg && !snap && gt$title!="", titleHeight+ifelse(gt$title.position[2]=="top", my,0), 0) - frameY, 
+								 	   BOTTOM=frameY,
+								 	   as.numeric(gt$legend.position[2])))	
+			legSnapToRight <- gt$legend.position[1] %in% c("right", "RIGHT")
+			legWidthCorr <- if(gt$legend.position[1] == c("right")) mx else 0 
+		} else {
+			legend.position <- gt$legend.position
+			legSnapToRight <- FALSE
+			legWidthCorr <- 0
+		}
+		if (any(is.na(legend.position))) stop("Wrong position argument for legend", call. = FALSE)
 		
 	}
 	
 	if (is.character(gt$title.position) || snap) {
 		title.position <- if (snap) NULL else {
 			c(switch(gt$title.position[1], 
-					 left=mx+metaX,
+					 left=frameX+mx+metaX,
 					 center=(1-titleWidth)/2,
 					 centre=(1-titleWidth)/2,
-					 right=1-mx-titleWidth,
-					 LEFT=0,
-					 RIGHT=1-titleWidth,
+					 right=1-mx-frameX-titleWidth,
+					 LEFT=frameX+.5*mx,
+					 RIGHT=1-titleWidth-frameX-.5*mx,
 					 as.numeric(gt$title.position[1])),
 			  switch(gt$title.position[2],
-			  	     top=1-titleHeight*.5-my,
+			  	     top=1-titleHeight*.5-my-frameY,
 			  	     center=.5,
 			  	     centre=.5,
-			  	     bottom=metaY+titleHeight*.5 + ifelse(titleg && !snap && gt$title!="", legendHeight + ifelse(gt$legend.position[2]=="bottom", 1.5*my,.5*my), my),
-			  	     TOP=1-titleHeight*.5,
-			  	     BOTTOM=titleHeight*.5 + ifelse(titleg && !snap && gt$title!="", legendHeight + ifelse(gt$legend.position[2]=="bottom", my,0), 0),
+			  	     bottom=frameY+metaY+titleHeight*.5 + ifelse(titleg && !snap && gt$title!="", legendHeight + ifelse(gt$legend.position[2]=="bottom", 1.5*my,.5*my), my),
+			  	     TOP=1-titleHeight*.5-frameY,
+			  	     BOTTOM=frameY+titleHeight*.5 + ifelse(titleg && !snap && gt$title!="", legendHeight + ifelse(gt$legend.position[2]=="bottom", my,0), 0),
 			  	     as.numeric(gt$title.position[2])))	
 		}
 	} else title.position <- gt$title.position
-	if (!snap && any(is.na(title.position))) stop("Wrong position argument for title")
+	if (!snap && any(is.na(title.position))) stop("Wrong position argument for title", call. = FALSE)
 	
 	grobTitle <- if (snap || gt$title=="") {
 		NULL
@@ -168,7 +174,7 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY) {
 		elems <- do.call("rbind", list(
 			if (gt$credits.show) data.frame(type="credits",
 				 height=unname(mapply(function(txt, sz) {
-				 	lineHeight * (length(strsplit(txt, "\n")[[1]])+1) * 
+				 	lineHeight * (length(strsplit(txt, "\n")[[1]])*1.2+.25) * 
 				 	min((1-2*convertWidth(convertHeight(unit(lineHeight / 2, "npc"), "inch"), "npc", TRUE)) / 
 				 			convertWidth(stringWidth(txt), "npc", valueOnly=TRUE), sz)
 				 	}, gt$credits.text, gt$credits.size)),
@@ -212,62 +218,65 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY) {
 			elemleg <- all(tolower(elpos)==tolower(gt$legend.position)) && has.legend
 			elemtitle <- all(tolower(elpos)==tolower(gt$title.position)) && gt$title!="" && !snap
 			if (elemleg) {
+				elemSnapToRight <- legSnapToRight
 				elem.position <- c(switch(elpos[1], 
-										  left=metaX+mx+legendWidth+ifelse(gt$legend.position[1]=="left", mx, 0),
+										  left=frameX+metaX+mx+legendWidth+ifelse(gt$legend.position[1]=="left", mx, 0),
 										  center=.5 + mx + legendWidth/2,
 										  centre=.5 + mx + legendWidth/2,
-										  right=1-mx-legendWidth - ifelse(gt$legend.position[1]=="right", mx, 0),
-										  LEFT=legendWidth+ifelse(gt$legend.position[1]=="left", mx, 0),
-										  RIGHT=1-legendWidth-ifelse(gt$legend.position[1]=="right", mx, 0),
+										  right=1-mx-frameX-legendWidth - ifelse(gt$legend.position[1]=="right", mx, 0),
+										  LEFT=frameX+legendWidth+ifelse(gt$legend.position[1]=="left", mx, 0),
+										  RIGHT=1-frameX-legendWidth-ifelse(gt$legend.position[1]=="right", mx, 0),
 								   		  as.numeric(elpos[1])),
 								   switch(elpos[2],
-								   	   top= 1-my-elemHeight, 
+								   	   top= 1-my-frameY-elemHeight, 
 								   	   center=.5, 
 								   	   centre=.5, 
-								   	   bottom=my+metaY,
-								   	   TOP=1-elemHeight,
-								   	   BOTTOM=0,
+								   	   bottom=my+metaY+frameY,
+								   	   TOP=1-frameY-elemHeight,
+								   	   BOTTOM=frameY,
 								   	   as.numeric(elpos[2])))	
-				if (any(is.na(elem.position))) stop("Wrong position argument for attributes")
-				elem.max.width <- 1 - mx - legendWidth - metaX - ifelse(gt$legend.position[1] %in% c("left", "right"), mx, 0) - ifelse(elpos[1] %in% c("left", "right"), mx, 0)
+				if (any(is.na(elem.position))) stop("Wrong position argument for attributes", call. = FALSE)
+				elem.max.width <- 1 - mx - legendWidth - metaX - ifelse(gt$legend.position[1] %in% c("left", "right"), mx, 0) - ifelse(elpos[1] %in% c("left", "right"), mx, 0) - 2*frameX
 			} else if (elemtitle) {
+				elemSnapToRight <- FALSE
 				elem.position <- c(switch(elpos[1], 
-										  left=mx+metaX,
+										  left=mx+metaX+frameX,
 										  center=.5,
 										  centre=.5,
-										  right=1-mx,
-										  LEFT=0,
-										  RIGHT=1,
+										  right=1-mx-frameX,
+										  LEFT=frameX,
+										  RIGHT=1-frameX,
 										  as.numeric(elpos[1])),
 								   switch(elpos[2],
-								   	   top= 1-ifelse(gt$title.position[2]=="top", my, 0) - elemHeight - titleHeight, 
+								   	   top= 1-frameY-ifelse(gt$title.position[2]=="top", my, 0) - elemHeight - titleHeight, 
 								   	   center=.5, 
 								   	   centre=.5, 
-								   	   bottom=ifelse(gt$title.position[2]=="bottom", my, 0)+metaY+titleHeight,
-								   	   TOP=1-ifelse(gt$title.position[2]=="top", my, 0) - elemHeight - titleHeight,
-								   	   BOTTOM=ifelse(gt$title.position[2]=="bottom", my, 0)+titleHeight,
+								   	   bottom=frameY + ifelse(gt$title.position[2]=="bottom", my, 0)+metaY+titleHeight,
+								   	   TOP=1-frameY-ifelse(gt$title.position[2]=="top", my, 0) - elemHeight - titleHeight,
+								   	   BOTTOM=frameY+ifelse(gt$title.position[2]=="bottom", my, 0)+titleHeight,
 								   	   as.numeric(elpos[2])))	
-				if (any(is.na(elem.position))) stop("Wrong position argument for attributes")
-				elem.max.width <- 1 - (if (has.legend && tolower(elpos[2])==tolower(gt$legend.position[2])) 2*mx + legendWidth else mx) - ifelse(elpos[1] %in% c("left", "right"), mx, 0) - metaX
+				if (any(is.na(elem.position))) stop("Wrong position argument for attributes", call. = FALSE)
+				elem.max.width <- 1 - (if (has.legend && tolower(elpos[2])==tolower(gt$legend.position[2])) 2*mx + legendWidth else mx) - ifelse(elpos[1] %in% c("left", "right"), mx, 0) - metaX - 2 * frameX
 			} else {
+				elemSnapToRight <- FALSE
 				elem.position <- c(switch(elpos[1], 
-										  left=mx+metaX,
+										  left=mx+metaX+frameX,
 										  center=.5,
 										  centre=.5,
-										  right=1-mx,
-										  LEFT=0,
-										  RIGHT=1,
+										  right=1-mx-frameX,
+										  LEFT=frameX,
+										  RIGHT=1-frameX,
 										  as.numeric(elpos[1])),
 								   switch(elpos[2],
-								   	   top= 1-my-elemHeight, 
+								   	   top= 1-my-elemHeight-frameY, 
 								   	   center=.5, 
 								   	   centre=.5, 
-								   	   bottom=my+metaY,
-								   	   TOP=1-elemHeight,
-								   	   BOTTOM=0,
+								   	   bottom=my+metaY+frameY,
+								   	   TOP=1-elemHeight-frameY,
+								   	   BOTTOM=frameY,
 								   	   as.numeric(elpos[2])))
-				if (any(is.na(elem.position))) stop("Wrong position argument for attributes")
-				elem.max.width <- (if (has.legend && tolower(elpos[2])==tolower(gt$legend.position[2])) 1 - 3*mx - legendWidth else 1 - 2*mx) - metaX
+				if (any(is.na(elem.position))) stop("Wrong position argument for attributes", call. = FALSE)
+				elem.max.width <- (if (has.legend && tolower(elpos[2])==tolower(gt$legend.position[2])) 1 - 3*mx - legendWidth else 1 - 2*mx) - metaX - 2 * frameX
 			}
 			elem.just <- switch(elpos[1],
 								right="right",
@@ -278,7 +287,7 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY) {
 			
 			el$x <- elem.position[1] - if (elem.just=="left") 0 else el$width2
 			
-			lapply(1:nrow(el), function(i) {
+			structure(lapply(1:nrow(el), function(i) {
 				e <- el[i,]
 				vpi <- viewport(x=e$x, 
 								y=e$y,
@@ -296,13 +305,15 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY) {
 				grt <- gTree(children=gList(grb), vp=vpi)
 				upViewport()
 				grt
-			})
+			}), snap=rep(elemSnapToRight, nrow(el)))
 		})
+		elemSnapToRight <- unlist(lapply(elemGrobs, attr, "snap"))
 		elemGrobs <- do.call("c", elemGrobs)
 		
 		
 		treeElem <- gTree(children=do.call("gList", elemGrobs))
 	} else {
+	  elemSnapToRight <- FALSE
 		treeElem <- NULL
 	}
 	
@@ -344,9 +355,27 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY) {
 
 		if (gt$legend.inside.box) legWidth <- legWidth / (1-mx)
 		
+		legWidthInch <- convertWidth(unit(legWidth, "npc"), "inch", valueOnly=TRUE)
+		
 		grobLegBG <- rectGrob(x=0, width=legWidth, just=c("left", "center"), gp=gpar(lwd=gt$scale, col=gt$legend.frame, fill=legend.frame.fill))
 		
-		upViewport(2)
+		upViewport(2 + gt$legend.inside.box)
+		
+		if (legSnapToRight) {
+		  
+			legWidthNpc <- convertWidth(unit(legWidthInch, "inch"), "npc", valueOnly = TRUE)
+			shiftX <- (legendWidth-legWidthNpc)
+			vpLegend$x <- unit(legend.position[1] + shiftX, "npc")
+			# vpLegend$width <- unit(legWidthNpc, "npc") #not working, since legend items are drawn with npc instead of inch
+			
+			if (any(elemSnapToRight)) {
+			  for (i in which(elemSnapToRight)) {
+			    treeElem$children[[i]]$vp$x <- treeElem$children[[i]]$vp$x + unit(shiftX, "npc")
+			  }
+			}
+			
+		}
+		
 		gTree(children=gList(grobLegBG, gTree(children=do.call("gList", grobList), vp=vpLeg)), vp=vpLegend, name="legend")
 	} else {
 		NULL
@@ -740,13 +769,13 @@ plot_scale <- function(gt, just, xrange, crop_factor) {
 	} else {
 		ticks2 <- gt$scale.breaks
 	}
-	ticksWidths <- convertWidth(stringWidth(paste(ticks2, " ")), "npc", TRUE)
+	ticks2Labels <- format(ticks2, trim=TRUE)
+	ticksWidths <- convertWidth(stringWidth(paste(ticks2Labels, " ")), "npc", TRUE)
 
-	labels <- c(ticks2, gt$unit)
+	labels <- c(ticks2Labels, gt$unit)
 	
 	n <- length(ticks2)
-	ticks <- ticks2*gt$unit.size
-	ticks3 <- ticks / xrange
+	ticks3 <- ticks2*gt$unit.size / xrange
 	
 	widths <- ticks3[2] - ticks3[1]
 	size <- min(gt$scale.size, widths/max(ticksWidths))
@@ -773,7 +802,7 @@ plot_scale <- function(gt, just, xrange, crop_factor) {
 	
 	gTree(children=gList(
 		grobBG,
-		rectGrob(x=x, y=1.5*lineHeight, width = widths, height=lineHeight*.5, just=c("left", "bottom"), gp=gpar(col=dark, fill=c(light, dark))),
+		rectGrob(x=x, y=1.5*lineHeight, width = widths, height=lineHeight*.5, just=c("left", "bottom"), gp=gpar(col=dark, fill=c(light, dark), lwd=gt$scale.lwd)),
 		textGrob(label=labels, x = xtext, y = lineHeight, just=c("center", "center"), gp=gpar(col=gt$attr.color, cex=size, fontface=gt$fontface, fontfamily=gt$fontfamily))), name="scale_bar")
 	
 	
@@ -791,17 +820,21 @@ plot_cred <- function(gt, just, id) {
 	
 	size <- min((1-2*mx) / convertWidth(stringWidth(gt$credits.text[id]), "npc", valueOnly=TRUE), gt$credits.size[id])
 	
-	width <- (convertWidth(stringWidth(gt$credits.text[id]), "npc", valueOnly=TRUE)+0*mx) * size
-	height <- lineHeight * (nlines) * size
+	width <- (convertWidth(stringWidth(gt$credits.text[id]), "npc", valueOnly=TRUE)+1*mx) * size
+	#height <- lineHeight * (nlines) * size
 
-	x <- if (just=="left") mx*size else 1-width-mx*size
-
+	x <- if (just=="left") 0 else 1-width #-mx*size
+	tx <- if (just=="left") mx*.5*size else 1-width+mx*.5*size
+	
 	if (gt$credits.align[id]=="center") {
 		x <- x + width/2
+		tx <- tx + width/2
 	} else if (gt$credits.align[id]=="right") {
 		x <- x + width
+		tx <- tx + width
 	}
 	
+
 	grobBG <- if (gt$design.mode) rectGrob(gp=gpar(fill="orange")) else NULL
 	
 	col <- do.call("process_color", c(list(gt$credits.col[id], alpha=gt$credits.alpha[id]), gt$pc))
@@ -812,7 +845,7 @@ plot_cred <- function(gt, just, id) {
 		rectGrob(x=x, width=width, just="left", gp=gpar(col=NA, fill=bg.col))
 	} else {
 		NULL
-	}, textGrob(label=gt$credits.text[id], x = x, y =.5, just=c(gt$credits.align[id], "center"), gp=gpar(cex=size, col=col, fontface=gt$credits.fontface[id], fontfamily=gt$credits.fontfamily[id]))), name="credits")
+	}, textGrob(label=gt$credits.text[id], x = tx, y =.5, just=c(gt$credits.align[id], "center"), gp=gpar(cex=size, col=col, fontface=gt$credits.fontface[id], fontfamily=gt$credits.fontfamily[id]))), name="credits")
 }
 
 
@@ -851,7 +884,7 @@ plot_compass <- function(gt, just) {
 		fill <- c(dark, light)
 	} else if (gt$compass.type=="radar") {
 		cr <- c(.45, .42, .2, .17, .1)
-		LWD <- round(convertWidth(unit(.01, "npc"), "points", valueOnly=TRUE))
+		LWD <- round(convertWidth(unit(.01, "npc"), "points", valueOnly=TRUE)) * gt$compass.lwd
 		
 		cd <- seq(1/8, 15/8, by=.25) * pi
 		cd2 <- seq(1/4, 7/4, by=.5) * pi
@@ -871,7 +904,7 @@ plot_compass <- function(gt, just) {
 
 	} else if (gt$compass.type=="rose") {
 		cr <- c(.45, .42, .2, .17, .1)
-		LWD <- convertWidth(unit(.01, "npc"), "points", valueOnly=TRUE)
+		LWD <- convertWidth(unit(.01, "npc"), "points", valueOnly=TRUE) * gt$compass.lwd
 		cd <- seq(1/8, 15/8, by=.25) * pi
 		cd2 <- seq(1/4, 7/4, by=.5) * pi
 		cd3 <- seq(0, 1.75, by=.25) * pi
@@ -956,7 +989,7 @@ plot_compass <- function(gt, just) {
 	}
 
 	grobComp <- if (gt$compass.type %in% c("arrow", "4star", "8star")) {
-		polygonGrob(x=x[[1]], y=y[[1]], id=id, gp=gpar(fill=fill))
+		polygonGrob(x=x[[1]], y=y[[1]], id=id, gp=gpar(fill=fill, lwd=gt$compass.lwd))
 	} else if (gt$compass.type=="radar") {
 		gTree(children = gList(
 			circleGrob(x=x[[1]], y=y[[1]], r = cr[1], gp=gpar(lwd=2*LWD, col=dark, fill=light)),

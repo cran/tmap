@@ -1,4 +1,4 @@
-process_fill <- function(data, g, gb, gt, gby, z) {
+process_fill <- function(data, g, gb, gt, gby, z, allow.small.mult) {
 	
 	npol <- nrow(data)
 	by <- data$GROUP_BY
@@ -6,10 +6,15 @@ process_fill <- function(data, g, gb, gt, gby, z) {
 	shpcols <- names(data)[1:(ncol(data)-2)]
 
 	x <- g$col
+	if (!allow.small.mult) x <- x[1]
 
 	if (is.na(x)[1]) x <- gt$aes.colors["fill"]
+	if (is.null(g$colorNA)) g$colorNA <- "#00000000"
 	if (is.na(g$colorNA)[1]) g$colorNA <- gt$aes.colors["na"]
-	
+	if (g$colorNA=="#00000000") g$showNA <- FALSE
+
+	if (!is.na(g$alpha) && !is.numeric(g$alpha)) stop("alpha argument in tm_polygons/tm_fill is not a numeric", call. = FALSE)
+		
 	# if by is specified, use first value only
 	if (nlevels(by)>1) x <- x[1]
 	nx <- length(x)
@@ -35,9 +40,10 @@ process_fill <- function(data, g, gb, gt, gby, z) {
 		for (i in 1:nx) data[[paste("COLOR", i, sep="_")]] <- mapcols
 		x <- paste("COLOR", 1:nx, sep="_")
 	} else {
-		if (!all(x %in% shpcols)) stop("Fill argument neither colors nor valid variable name(s)")
+		if (!all(x %in% shpcols)) stop("Fill argument neither colors nor valid variable name(s)", call. = FALSE)
 	}
 	dt <- process_data(data[, x, drop=FALSE], by=by, free.scales=gby$free.scales.fill, is.colors=is.colors)
+	if (nlevels(by)>1) if (is.na(g$showNA)) g$showNA <- attr(dt, "anyNA")
 	## output: matrix=colors, list=free.scales, vector=!freescales
 	
 	nx <- max(nx, nlevels(by))
@@ -77,7 +83,7 @@ process_fill <- function(data, g, gb, gt, gby, z) {
 	areas_prop <- areas/sum(areas, na.rm=TRUE)
 	
 	tiny <- areas_prop < g$thres.poly
-	if (all(tiny)) warning("all relative area sizes are below thres.poly")
+	if (all(tiny)) warning("all relative area sizes are below thres.poly", call. = FALSE)
 	
 	
 	sel <- if (is.list(dt)) rep(list(!tiny), nx) else !tiny
@@ -102,13 +108,14 @@ process_fill <- function(data, g, gb, gt, gby, z) {
 	} else if (g$legend.hist && !is.na(g$legend.hist.title)) {
 		fill.legend.hist.title <- g$legend.hist.title
 	} else fill.legend.hist.title <- ""
-	
+
+	if (!g$legend.show) fill.legend.title <- NA
 	
 	list(fill=col,
 		 fill.legend.labels=col.legend.labels,
 		 fill.legend.palette=col.legend.palette,
 		 fill.legend.misc=list(lwd=gb$lwd, border.col=gb$col),
-		 fill.legend.hist.misc=list(values=values, breaks=breaks),
+		 fill.legend.hist.misc=list(values=values, breaks=breaks, densities=g$convert2density),
 		 xfill=x,
 		 fill.legend.show=g$legend.show,
 		 fill.legend.title=fill.legend.title,

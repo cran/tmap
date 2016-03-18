@@ -1,50 +1,4 @@
-process_raster_vector <- function(x, g, gt) {
-	textNA <- ifelse(any(is.na(x)) && !is.na(g$colorNA), g$textNA, NA)
-	
-	if (is.factor(x)) {
-		palette <- if (is.null(g$palette)) {
-			gt$aes.palette[[ifelse(is.ordered(x), "seq", "cat")]] 
-		} else if (g$palette[1] %in% c("seq", "div", "cat")) {
-			gt$aes.palette[[g$palette[1]]]
-		} else g$palette
-		colsLeg <- cat2pal(x,
-						   palette = palette,
-						   contrast = g$contrast,
-						   colorNA = g$colorNA,
-						   legend.labels=g$labels,
-						   legend.NA.text = textNA,
-						   max_levels=g$max.categories,
-						   process.colors=c(list(alpha=g$alpha), gt$pc))
-		raster.breaks <- NA
-	} else {
-		is.diverging <-  use_diverging_palette(x, g$breaks)
-		palette <- if (is.null(g$palette)) {
-			gt$aes.palette[[ifelse(is.diverging, "div", "seq")]] 
-		} else if (g$palette[1] %in% c("seq", "div", "cat")) {
-			gt$aes.palette[[g$palette[1]]]
-		} else g$palette
-		colsLeg <- num2pal(x, g$n, style=g$style, breaks=g$breaks, 
-						   palette = palette,
-						   auto.palette.mapping = g$auto.palette.mapping,
-						   contrast = g$contrast, legend.labels=g$labels,
-						   colorNA=g$colorNA, 
-						   legend.NA.text = textNA,
-						   process.colors=c(list(alpha=g$alpha), gt$pc),
-						   legend.format=g$legend.format)
-		raster.breaks <- colsLeg$breaks
-	}
-	rast <- colsLeg$cols
-	raster.legend.labels <- colsLeg$legend.labels
-	raster.legend.palette <- colsLeg$legend.palette
-	
-	return(list(raster=rast, 
-				raster.legend.labels=raster.legend.labels,
-				raster.legend.palette=raster.legend.palette,
-				raster.breaks=raster.breaks))
-}
-
-
-process_raster <- function(data, g, gt, gby, z) {
+process_raster <- function(data, g, gt, gby, z, allow.small.mult) {
 	npol <- nrow(data)
 	by <- data$GROUP_BY
 	shpcols <- names(data)[1:(ncol(data)-1)]
@@ -56,6 +10,7 @@ process_raster <- function(data, g, gt, gby, z) {
 	# update gt$pc's saturation
 	gt$pc$saturation <- gt$pc$saturation * g$saturation
 	
+	if (!is.na(g$alpha) && !is.numeric(g$alpha)) stop("alpha argument in tm_raster is not a numeric", call. = FALSE)
 	if ("PIXEL__COLOR" %in% names(data)) {
 		x <- "PIXEL__COLOR"
 		data$PIXEL__COLOR <- do.call("process_color", c(list(col=data$PIXEL__COLOR, alpha=g$alpha), gt$pc))
@@ -67,6 +22,7 @@ process_raster <- function(data, g, gt, gby, z) {
 		nx <- 1
 	} else {
 		x <- g$col
+		if (!allow.small.mult) x <- x[1]
 		
 		# by default, use the first data variable
 		if (is.na(x[1])) x <- names(data)[1]
@@ -83,14 +39,19 @@ process_raster <- function(data, g, gt, gby, z) {
 			for (i in 1:nx) data[[paste("COLOR", i, sep="_")]] <- x[i]
 			x <- paste("COLOR", 1:nx, sep="_")
 		} else {
-			if (!all(x %in% shpcols)) stop("Raster argument neither colors nor valid variable name(s)")
+			if (!all(x %in% shpcols)) stop("Raster argument neither colors nor valid variable name(s)", call. = FALSE)
 		}
 	}
 
+	if (is.null(g$colorNA)) g$colorNA <- "#00000000"
 	if (is.na(g$colorNA)[1]) g$colorNA <- gt$aes.colors["na"]
+	if (g$colorNA=="#00000000") g$showNA <- FALSE
+	
 	
 	dt <- process_data(data[, x, drop=FALSE], by=by, free.scales=gby$free.scales.raster, is.colors=is.colors)
 	## output: matrix=colors, list=free.scales, vector=!freescales
+	
+	if (nlevels(by)>1) if (is.na(g$showNA)) g$showNA <- attr(dt, "anyNA")
 	
 	
 	nx <- max(nx, nlevels(by))
@@ -101,7 +62,9 @@ process_raster <- function(data, g, gt, gby, z) {
 			dt <- matrix(do.call("process_color", c(list(col=dt, alpha=g$alpha), gt$pc)), 
 						 ncol=ncol(dt))
 		}
-		return(list(raster=dt, xraster=rep(NA, nx), raster.legend.title=rep(NA, nx)))
+		is.OpenStreetMap <- attr(data, "is.OpenStreetMap")
+		if (is.null(is.OpenStreetMap)) is.OpenStreetMap <- FALSE
+		return(list(raster=dt, xraster=rep(NA, nx), raster.legend.title=rep(NA, nx), raster.misc=list(is.OpenStreetMap=is.OpenStreetMap)))
 	}
 	
 	dcr <- process_dtcol(dt, sel=TRUE, g, gt, nx, npol)
@@ -113,27 +76,7 @@ process_raster <- function(data, g, gt, gby, z) {
 	values <- dcr$values
 	
 	
-	
-	
-# 	if (is.list(dt)) {
-# 		# multiple variables are defined
-# 		gs <- split_g(g, n=nx)
-# 		isNum <- sapply(dt, is.numeric)
-# 		res <- mapply(process_raster_vector, dt, gs, MoreArgs = list(gt), SIMPLIFY = FALSE)
-# 		rast <- sapply(res, function(r)r$raster)
-# 		raster.legend.labels <- lapply(res, function(r)r$raster.legend.labels)
-# 		raster.legend.palette <- lapply(res, function(r)r$raster.legend.palette)
-# 		raster.breaks <- lapply(res, function(r)r$raster.breaks)
-# 		raster.values <- dt
-# 	} else {
-# 		res <- process_raster_vector(dt, g, gt)
-# 		rast <- matrix(res$raster, nrow=npol)
-# 		raster.legend.labels <- res$raster.legend.labels
-# 		raster.legend.palette <- res$raster.legend.palette
-# 		raster.breaks <- res$raster.breaks
-# 		raster.values <- split(dt, rep(1:nx, each=npol))
-# 	}
-	
+
 	
 	raster.legend.title <- if (is.na(g$title)[1]) x else g$title
 	raster.legend.z <- if (is.na(g$legend.z)) z else g$legend.z
@@ -147,12 +90,15 @@ process_raster <- function(data, g, gt, gby, z) {
 		raster.legend.hist.title <- g$legend.hist.title
 	} else raster.legend.hist.title <- ""
 	
+	if (!g$legend.show) raster.legend.title <- NA
+	
 	
 	list(raster=col,
 		 raster.legend.labels=col.legend.labels,
 		 raster.legend.palette=col.legend.palette,
 		 raster.legend.misc=list(),
 		 raster.legend.hist.misc=list(values=values, breaks=breaks),
+		 raster.misc=list(is.OpenStreetMap=FALSE),
 		 xraster=x,
 		 raster.legend.show=g$legend.show,
 		 raster.legend.title=raster.legend.title,
