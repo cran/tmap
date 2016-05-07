@@ -24,7 +24,7 @@
 #' @importFrom spdep poly2nb
 #' @importFrom grDevices xy.coords colors
 #' @importFrom graphics par
-#' @importFrom rgdal getPROJ4VersionInfo
+#' @importFrom rgdal getPROJ4VersionInfo SGDF2PCT
 #' @importFrom utils capture.output data download.file head setTxtProgressBar tail txtProgressBar
 #' @importMethodsFrom raster as.vector
 #' @importFrom geosphere distGeo
@@ -52,7 +52,7 @@ knit_print.tmap <- function(x, ..., options=NULL) {
 #' @param show should the leaflet map be shown? \code{FALSE} by default
 #' @param ... arguments passed on to \code{\link{print.tmap}}
 #' @return \code{\link[leaflet:leaflet]{leaflet}} object
-#' @example ../examples/tmap_leaflet.r
+#' @example ../examples/tmap_leaflet.R
 #' @seealso \code{\link{tmap_mode}}, \code{\link{tm_view}}, \code{\link{print.tmap}}
 #' @export
 tmap_leaflet <- function(x, mode="view", show = FALSE, ...) {
@@ -88,6 +88,7 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	#              - calls legend_prepare and plot_legend to create grob tree of legend
 	#              - creates grob tree for whole plot
 	scale.extra <- NULL
+	title.snap.to.legend <- NULL
 	
 	interactive <- (mode == "view")
 	
@@ -135,6 +136,9 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	master_proj <- get_proj4(x[[shape.id[masterID]]]$projection)
 	if (is.null(master_proj)) master_proj <- get_projection(x[[shape.id[masterID]]]$shp)
 	if (interactive) master_proj <- get_proj4("longlat")
+	
+	## find master bounding box (unprocessed)
+	bbx_raw <- bb(x[[shape.id[masterID]]]$shp)
 
 	## get raster and group by variable name (needed for eventual reprojection of raster shapes)
 	raster_facets_vars <- lapply(1:nshps, function(i) {
@@ -142,12 +146,16 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 		to <- ifelse(i==nshps, length(x), shape.id[i+1]-1)
 		fid <- which(names(x)[from:to]=="tm_facets")
 		rid <- which(names(x)[from:to]=="tm_raster")
+		
+		# if (length(rid)) {
+		# 	if (is.na(x[[from-1+rid[1]]]$col[1])) return(NA)
+		# }
 		c(if (length(fid)) x[[from-1+fid[1]]]$by else NULL,
 		  if (length(rid)) x[[from-1+rid[1]]]$col else NULL)
 	})
 	
 	## split data.frames from shape/raster objects, and determine shape types
-	shps_dts <- mapply(preprocess_shapes, x[shape.id], raster_facets_vars, MoreArgs = list(apply_map_coloring=apply_map_coloring, master_proj=master_proj, interactive=interactive), SIMPLIFY = FALSE)
+	shps_dts <- mapply(preprocess_shapes, x[shape.id], raster_facets_vars, MoreArgs = list(apply_map_coloring=apply_map_coloring, master_proj=master_proj, master_bbx=bbx_raw, interactive=interactive), SIMPLIFY = FALSE)
 	
 	shps <- lapply(shps_dts, "[[", 1)
 	datasets <- lapply(shps_dts, "[[", 2)
@@ -218,6 +226,7 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	shps_lengths <- sapply(shps, length)
 
 	external_legend <- gmeta$legend.outside
+	external_attr <- gmeta$attr.outside
 	fpi <- preprocess_facet_layout(gmeta, external_legend, dh, dw)
 	
 	tasp <- dw/dh
@@ -232,29 +241,54 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 
 	gmeta <- do.call("process_facet_layout", c(list(gmeta, external_legend, sasp, dh, dw), fpi))
 	gasp <- gmeta$gasp
-
+	
 	if (external_legend) {
 		gp_leg <- gps[[1]]
 		gp_leg$tm_layout <- within(gp_leg$tm_layout, {
 			legend.only <- TRUE
 			legend.width <- .9
 			legend.height <- .9
-			title.size <- title.size / scale.extra
+			
+			if (title.snap.to.legend) {
+				title.size <- title.size / scale.extra
+			} else {
+				title <- ""
+			}
 			legend.title.size <- legend.title.size / scale.extra
 			legend.text.size <- legend.text.size / scale.extra
 			legend.hist.size <- legend.hist.size / scale.extra
+			grid.show <- FALSE
+			scale.show <- FALSE
+			compass.show <- FALSE
+			credits.show <- FALSE
+		})
+		gps <- lapply(gps, function(gp) {
+			gp$tm_layout$legend.show <- FALSE
+			if (gp$tm_layout$title.snap.to.legend) gp$tm_layout$title <- ""
+			gp
 		})
 	} else {
 		gp_leg <- NULL
 	}
 
-	if (external_legend) {
+	
+	if (external_attr) {
+		gp_attr <- gps[[1]]
+		gp_attr$tm_layout <- within(gp_attr$tm_layout, {
+			legend.only <- TRUE
+			legend.show <- FALSE
+			title <- ""
+		})	
 		gps <- lapply(gps, function(gp) {
-			gp$tm_layout$legend.show <- FALSE
-			gp$tm_layout$title <- ""
+			gp$tm_layout$scale.show <- FALSE
+			gp$tm_layout$compass.show <- FALSE
+			gp$tm_layout$credits.show <- FALSE
 			gp
 		})
+	} else {
+		gp_attr <- NULL
 	}
+	
 
 	legend_pos <- attr(shps, "legend_pos")
 	diff_shapes <- attr(shps, "diff_shapes")
@@ -391,7 +425,7 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	} else {
 		if (show) {
 			if (nx > 1) sasp <- dasp
-			gridplot(gmeta, "plot_all", nx, gps, shps, dasp, sasp, inner.margins.new, legend_pos, gp_leg)
+			gridplot(gmeta, "plot_all", nx, gps, shps, dasp, sasp, inner.margins.new, legend_pos, gp_leg, gp_attr)
 			## if vp is specified, go 1 viewport up, else go to root viewport
 			upViewport(n=as.integer(!is.null(vp)))
 			invisible(list(shps=shps, gps=gps2))

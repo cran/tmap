@@ -36,6 +36,7 @@
 #' @param remove.overlap logical that determines whether the overlapping labels are removed
 #' @param along.lines logical that determines whether labels are rotated along the spatial lines. Only applicabel if a spatial lines shape is used.
 #' @param overwrite.lines logical that determines whether the part of the lines below the text labels is removed. Only applicabel if a spatial lines shape is used.
+#' @param just justification of the text relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left alignment and 1 right alignment.
 #' @param xmod horizontal position modification of the text (relatively): 0 means no modification, and 1 corresponds to the height of one line of text. Either a single number for all polygons, or a numeric variable in the shape data specifying a number for each polygon. Together with \code{ymod}, it determines position modification of the text labels. In most coordinate systems (projections), the origin is located at the bottom left, so negative \code{xmod} move the text to the left, and negative \code{ymod} values to the bottom.
 #' @param ymod vertical position modification. See xmod.
 #' @param title.size title of the legend element regarding the text sizes
@@ -82,7 +83,7 @@ tm_text <-  function(text, size=1, col=NA, root=3,
 					 textNA = "Missing",
 					 showNA = NA,
 					 fontface=NA, 
-					 fontfamily=NA, alpha=NA, case=NA, shadow=FALSE, bg.color=NA, bg.alpha=NA, size.lowerbound=.4, print.tiny=FALSE, scale=1, auto.placement=FALSE, remove.overlap=FALSE, along.lines=FALSE, overwrite.lines=FALSE, xmod=0, ymod=0,
+					 fontfamily=NA, alpha=NA, case=NA, shadow=FALSE, bg.color=NA, bg.alpha=NA, size.lowerbound=.4, print.tiny=FALSE, scale=1, auto.placement=FALSE, remove.overlap=FALSE, along.lines=FALSE, overwrite.lines=FALSE, just=c("center","center"), xmod=0, ymod=0,
 					 title.size = NA,
 					 title.col = NA,
 					 legend.size.show=TRUE,
@@ -135,7 +136,7 @@ tm_iso <- function(col=NA, text="level", size=.5,
 #' Small multiples can be drawn in two ways: either by specifying the \code{by} argument in \code{\link{tm_facets}}, or by defining multiple variables in the aesthetic arguments. The aesthetic arguments of \code{tm_lines} are \code{col} and \code{lwd}. In the latter case, the arguments, except for the ones starting with \code{legend.}, can be specified for small multiples as follows. If the argument normally only takes a single value, such as \code{n}, then a vector of those values can be specified, one for each small multiple. If the argument normally can take a vector, such as \code{palette}, then a list of those vectors (or values) can be specified, one for each small multiple.
 #' 
 #' @param col color of the lines. Either a color value or a data variable name. If multiple values are specified, small multiples are drawn (see details).
-#' @param lwd line width. If multiple values are specified, small multiples are drawn (see details).
+#' @param lwd line width. Either a numeric value or a data variable. In the latter case, the class of the highest values (see \code{style}) will get the line width defined by \code{scale}. If multiple values are specified, small multiples are drawn (see details).
 #' @param lty line type.
 #' @param alpha transparency number between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of the \code{col} is used (normally 1).
 #' @param scale line width multiplier number. 
@@ -215,7 +216,7 @@ tm_lines <- function(col=NA, lwd=1, lty="solid", alpha=NA,
 
 #' Draw polygons
 #' 
-#' Creates a \code{\link{tmap-element}} that draws the polygons. \code{tm_fill} fills the polygons. Either a fixed color is used, or a color palette is mapped to a data variable. By default, a divering color palette is used for numeric variables and a qualitative palette for categorical variables. \code{tm_borders} draws the borders of the polygons. \code{tm_polygons} fills the polygons and draws the polygon borders.
+#' Creates a \code{\link{tmap-element}} that draws the polygons. \code{tm_fill} fills the polygons. Either a fixed color is used, or a color palette is mapped to a data variable. \code{tm_borders} draws the borders of the polygons. \code{tm_polygons} fills the polygons and draws the polygon borders.
 #' 
 #' Small multiples can be drawn in two ways: either by specifying the \code{by} argument in \code{\link{tm_facets}}, or by defining multiple variables in the aesthetic arguments. The aesthetic argument of \code{tm_fill} (and \code{tm_polygons}) is \code{col}. In the latter case, the arguments, except for \code{thres.poly}, and the ones starting with \code{legend.}, can be specified for small multiples as follows. If the argument normally only takes a single value, such as \code{n}, then a vector of those values can be specified, one for each small multiple. If the argument normally can take a vector, such as \code{palette}, then a list of those vectors (or values) can be specified, one for each small multiple.
 #' 
@@ -330,11 +331,12 @@ tm_polygons <- function(col=NA,
 
 #' Draw a raster
 #' 
-#' Creates a \code{\link{tmap-element}} that draws a raster. Either a fixed color is used, or a color palette is mapped to a data variable. By default, a divering color palette is used for numeric variables and a qualitative palette for categorical variables.
+#' Creates a \code{\link{tmap-element}} that draws a raster. For coloring, there are three options: 1) a fixed color is used, 2) a color palette is mapped to a data variable, 3) RGB values are used. 
 #' 
 #' Small multiples can be drawn in two ways: either by specifying the \code{by} argument in \code{\link{tm_facets}}, or by defining multiple variables in the aesthetic arguments. The aesthetic argument of \code{tm_raster} is \code{col}. In the latter case, the arguments, except for \code{thres.poly}, and the ones starting with \code{legend.}, can be specified for small multiples as follows. If the argument normally only takes a single value, such as \code{n}, then a vector of those values can be specified, one for each small multiple. If the argument normally can take a vector, such as \code{palette}, then a list of those vectors (or values) can be specified, one for each small multiple.
 #' 
-#' @param col either a single color value or the name of a data variable that is contained in \code{shp}. In the latter case, either the data variable contains color values, or values (numeric or categorical) that will be depicted by a color palette (see \code{palette}. If multiple values are specified, small multiples are drawn (see details). By default, it is the name of the first data variable.
+#' @param col three options: a single color value, the name of a data variable that is contained in \code{shp}, or the name of a variable in \code{shp} that contain color values. In the second case the values (numeric or categorical) that will be depicted by a color palette (see \code{palette}. If omitted, and if \code{shp} contains three numeric layers that range between 0 and 255, these are interpreted as RGB values, else, the first data variable is selected.
+#' If multiple values are specified, small multiples are drawn (see details). By default, it is the name of the first data variable.
 #' @param alpha transparency number between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of the \code{col} is used (normally 1).
 #' @param palette palette name. See \code{RColorBrewer::display.brewer.all()} for options. Use a \code{"-"} as prefix to reverse the palette. The default palette is taken from \code{\link{tm_layout}}'s argument \code{aes.palette}.
 #' @param n preferred number of classes (in case \code{col} is a numeric variable)
@@ -366,7 +368,7 @@ tm_polygons <- function(col=NA,
 #' @param legend.z index value that determines the position of the legend element with respect to other legend elements. The legend elements are stacked according to their z values. The legend element with the lowest z value is placed on top.
 #' @param legend.hist.z index value that determines the position of the histogram legend element 
 #' @export
-#' @example ../examples/tm_raster.r
+#' @example ../examples/tm_raster.R
 #' @seealso \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
 #' @return \code{\link{tmap-element}}	
 tm_raster <- function(col=NA,
@@ -395,6 +397,16 @@ tm_raster <- function(col=NA,
 	class(g) <- "tmap"
 	g
 }
+
+# 
+# tm_rgb <- function(saturation) {
+# 	g <- list(tm_raster=as.list(environment()))
+# 	g$tm_raster$col <- "_RGB_"
+# 	class(g) <- "tmap"
+# 	g
+# }
+
+
 
 #' Draw bubbles or dots
 #' 

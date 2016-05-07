@@ -1,3 +1,12 @@
+version 1.4-1
+- add just argument as anchor for text labels, legend and attributes position
+- map attributes (such as scale bar) can be placed outside the frame
+- added tm_xlab and tm_ylab
+- RGB raster support, see tm_raster
+- static text (i.e titles, credits, legend titles, labels) support expressions
+- updated Europe shape: projection and boundig box are now consistent with Eurostat publications
+- added crop_shape, a convenient wrapper around raster::crop
+
 version 1.4
 - [!] interactive mapping added. Now, tmap has two modes: "plot" (graphics device) and "view" (interactive viewer, which is a leaflet widget)
 - [!] facets (small multiples) improved: group by two variables possible, panel layout added, missing data can be shown separately

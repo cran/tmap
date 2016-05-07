@@ -14,11 +14,12 @@ tm_text(text, size = 1, col = NA, root = 3, size.lim = NA,
   shadow = FALSE, bg.color = NA, bg.alpha = NA, size.lowerbound = 0.4,
   print.tiny = FALSE, scale = 1, auto.placement = FALSE,
   remove.overlap = FALSE, along.lines = FALSE, overwrite.lines = FALSE,
-  xmod = 0, ymod = 0, title.size = NA, title.col = NA,
-  legend.size.show = TRUE, legend.col.show = TRUE, legend.format = list(),
-  legend.size.is.portrait = FALSE, legend.col.is.portrait = TRUE,
-  legend.hist = FALSE, legend.hist.title = NA, legend.size.z = NA,
-  legend.col.z = NA, legend.hist.z = NA, id = NA)
+  just = c("center", "center"), xmod = 0, ymod = 0, title.size = NA,
+  title.col = NA, legend.size.show = TRUE, legend.col.show = TRUE,
+  legend.format = list(), legend.size.is.portrait = FALSE,
+  legend.col.is.portrait = TRUE, legend.hist = FALSE,
+  legend.hist.title = NA, legend.size.z = NA, legend.col.z = NA,
+  legend.hist.z = NA, id = NA)
 }
 \arguments{
 \item{text}{name of the variable in the shape object that contains the text labels}
@@ -89,6 +90,8 @@ tm_text(text, size = 1, col = NA, root = 3, size.lim = NA,
 
 \item{overwrite.lines}{logical that determines whether the part of the lines below the text labels is removed. Only applicabel if a spatial lines shape is used.}
 
+\item{just}{justification of the text relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left alignment and 1 right alignment.}
+
 \item{xmod}{horizontal position modification of the text (relatively): 0 means no modification, and 1 corresponds to the height of one line of text. Either a single number for all polygons, or a numeric variable in the shape data specifying a number for each polygon. Together with \code{ymod}, it determines position modification of the text labels. In most coordinate systems (projections), the origin is located at the bottom left, so negative \code{xmod} move the text to the left, and negative \code{ymod} values to the bottom.}
 
 \item{ymod}{vertical position modification. See xmod.}
@@ -156,10 +159,11 @@ tm_shape(Europe) +
 tm_shape(Europe) +
 	tm_polygons() +
 tm_shape(metro) +
-	tm_bubbles("pop2010", size.lim = c(0, 15e6), legend.size.is.portrait = TRUE, 
+	tm_bubbles("pop2010", size.lim = c(0, 15e6),
 			   title.size = "European metropolitan areas") +
 tm_shape(metro[metro$pop2010>=2e6, ]) +
-	tm_text("name", auto.placement = TRUE)
+	tm_text("name", auto.placement = TRUE) +
+	tm_format_Europe()
 
 tm_shape(World) +
 	tm_text("name", size="pop_est", col="continent", palette="Dark2", 

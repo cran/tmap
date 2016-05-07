@@ -52,6 +52,7 @@ Attributes:
 \code{\link{tm_scale_bar}}\tab To create a scale bar \cr
 \code{\link{tm_compass}}\tab To create a map compass \cr
 \code{\link{tm_credits}}\tab To create a text for credits \cr
+\code{\link{tm_xlab} and \link{tm_ylab}}\tab To create axis labels \cr
 --------------------------- \tab --------------------------------------------------------------------------------------------------- \cr
 }
 
@@ -86,6 +87,7 @@ Change options:
 \code{\link{set_projection}}\tab To set the map projection \cr
 \code{\link{split}}\tab To split a shape object \cr
 \code{\link{sbind}}\tab To bind shape objects \cr
+\code{\link{crop_shape}}\tab To crop shape objects \cr
 \code{\link{map_coloring}}\tab To color polygons with different colors for adjacent polygons \cr
 --------------------------- \tab --------------------------------------------------------------------------------------------------- \cr
 }

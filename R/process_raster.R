@@ -62,9 +62,9 @@ process_raster <- function(data, g, gt, gby, z, allow.small.mult) {
 			dt <- matrix(do.call("process_color", c(list(col=dt, alpha=g$alpha), gt$pc)), 
 						 ncol=ncol(dt))
 		}
-		is.OpenStreetMap <- attr(data, "is.OpenStreetMap")
-		if (is.null(is.OpenStreetMap)) is.OpenStreetMap <- FALSE
-		return(list(raster=dt, xraster=rep(NA, nx), raster.legend.title=rep(NA, nx), raster.misc=list(is.OpenStreetMap=is.OpenStreetMap)))
+		is.OSM <- attr(data, "is.OSM")
+		if (is.null(is.OSM)) is.OSM <- FALSE
+		return(list(raster=dt, xraster=rep(NA, nx), raster.legend.title=rep(NA, nx), raster.misc=list(is.OSM=is.OSM)))
 	}
 	
 	dcr <- process_dtcol(dt, sel=TRUE, g, gt, nx, npol)
@@ -78,11 +78,11 @@ process_raster <- function(data, g, gt, gby, z, allow.small.mult) {
 	
 
 	
-	raster.legend.title <- if (is.na(g$title)[1]) x else g$title
+	raster.legend.title <- if (is.ena(g$title)[1]) x else g$title
 	raster.legend.z <- if (is.na(g$legend.z)) z else g$legend.z
 	raster.legend.hist.z <- if (is.na(g$legend.hist.z)) z+.5 else g$legend.hist.z
 	
-	if (g$legend.hist && is.na(g$legend.hist.title) && raster.legend.z>raster.legend.hist.z) {
+	if (g$legend.hist && is.ena(g$legend.hist.title) && raster.legend.z>raster.legend.hist.z) {
 		# histogram is drawn between title and legend enumeration
 		raster.legend.hist.title <- raster.legend.title
 		raster.legend.title <- ""
@@ -98,7 +98,7 @@ process_raster <- function(data, g, gt, gby, z, allow.small.mult) {
 		 raster.legend.palette=col.legend.palette,
 		 raster.legend.misc=list(),
 		 raster.legend.hist.misc=list(values=values, breaks=breaks),
-		 raster.misc=list(is.OpenStreetMap=FALSE),
+		 raster.misc=list(is.OSM=FALSE),
 		 xraster=x,
 		 raster.legend.show=g$legend.show,
 		 raster.legend.title=raster.legend.title,

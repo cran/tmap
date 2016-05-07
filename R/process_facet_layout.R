@@ -23,6 +23,32 @@ preprocess_facet_layout <- function(gmeta, external_legend, dh, dw) {
 	legW <- convertWidth(unit(legmarx, "npc"), "inch", valueOnly=TRUE)
 	legH <- convertHeight(unit(legmary, "npc"), "inch", valueOnly=TRUE)
 	
+	if (gmeta$xlab.show) {
+		xlabHin <- convertHeight(unit(gmeta$xlab.size, "lines")*1.25, "inch", valueOnly=TRUE)
+	} else {
+		xlabHin <- 0
+	}
+	
+	if (gmeta$ylab.show) {
+		ylabWin <- convertHeight(unit(gmeta$ylab.size, "lines")*1.25, "inch", valueOnly=TRUE)
+	} else {
+		ylabWin <- 0
+	}
+	
+	if (gmeta$attr.outside) {
+		anpc <- gmeta$attr.outside.size
+		ext_attr_pos <- gmeta$attr.outside.position
+		
+		if (ext_attr_pos == "top") {
+			attrmar <- c(0, 0, anpc, 0)
+		} else {
+			attrmar <- c(anpc, 0, 0, 0)
+		}
+	} else {
+		attrmar <- rep(0, 4)
+	}
+	attrmary <- sum(attrmar[c(1,3)])
+	attrH <- convertHeight(unit(attrmary, "npc"), "inch", valueOnly=TRUE)
 	
 	pS <-  convertHeight(unit(gmeta$panel.label.size, "lines"), "inch", valueOnly=TRUE) * gmeta$panel.label.height
 	
@@ -54,11 +80,11 @@ preprocess_facet_layout <- function(gmeta, external_legend, dh, dw) {
 
 	
 	
-	return(list(legH=legH, legW=legW, pSH=pSH, pSW=pSW, legmar=legmar, legmarx=legmarx, legmary=legmary, between.margin.in=between.margin.in, dsh=dsh, dsw=dsw))
+	return(list(legH=legH, legW=legW, attrH=attrH, pSH=pSH, pSW=pSW, legmar=legmar, legmarx=legmarx, legmary=legmary, attrmar=attrmar, attrmary=attrmary, xlabHin=xlabHin, ylabWin=ylabWin, between.margin.in=between.margin.in, dsh=dsh, dsw=dsw))
 }
 
 
-process_facet_layout <- function(gmeta, external_legend, sasp, dh, dw, legH, legW, pSH, pSW, legmar, legmarx, legmary, between.margin.in, dsh, dsw) {
+process_facet_layout <- function(gmeta, external_legend, sasp, dh, dw, legH, legW, attrH, pSH, pSW, legmar, legmarx, legmary, attrmar, attrmary, xlabHin, ylabWin, between.margin.in, dsh, dsw) {
 	panel.mode <- outer.margins <- NULL
 	
 
@@ -75,14 +101,14 @@ process_facet_layout <- function(gmeta, external_legend, sasp, dh, dw, legH, leg
 	}
 	
 	if (gmeta$panel.mode=="none") {
-		gH <- fH + (gmeta$nrow - 1) * between.margin.in + legH
-		gW <- fW + (gmeta$ncol - 1) * between.margin.in + legW
+		gH <- fH + (gmeta$nrow - 1) * between.margin.in + legH + attrH + xlabHin
+		gW <- fW + (gmeta$ncol - 1) * between.margin.in + legW + ylabWin
 	} else if (gmeta$panel.mode=="one") {
-		gH <- fH + gmeta$nrow * pSH + (gmeta$nrow - 1) * between.margin.in + legH
-		gW <- fW + (gmeta$ncol - 1) * between.margin.in + legW
+		gH <- fH + gmeta$nrow * pSH + (gmeta$nrow - 1) * between.margin.in + legH + attrH + xlabHin
+		gW <- fW + (gmeta$ncol - 1) * between.margin.in + legW + ylabWin
 	} else {
-		gH <- fH + pSH + between.margin.in * gmeta$nrow + legH
-		gW <- fW + pSW + between.margin.in * gmeta$ncol + legW
+		gH <- fH + pSH + between.margin.in * gmeta$nrow + legH + attrH + xlabHin
+		gW <- fW + pSW + between.margin.in * gmeta$ncol + legW + ylabWin
 	}
 	
 	gasp <- gW/gH
@@ -104,53 +130,72 @@ process_facet_layout <- function(gmeta, external_legend, sasp, dh, dw, legH, leg
 		between.margin.x <- convertWidth(unit(between.margin.in, "inch"), "npc", valueOnly=TRUE)
 		panelh <- convertHeight(unit(pSH, "inch"), "npc", valueOnly=TRUE)
 		panelw <- convertWidth(unit(pSW, "inch"), "npc", valueOnly=TRUE)
+
+		ylabWnpc <- convertWidth(unit(ylabWin, "inch"), "npc", valueOnly=TRUE)
+		xlabHnpc <- convertHeight(unit(xlabHin, "inch"), "npc", valueOnly=TRUE)
+		
 		
 		if (panel.mode=="none") {
-			colrange <- (1:ncol)*2 + 2
-			rowrange <- (1:nrow)*2 + 2
-			facetw <- ((1-spc-outerx)-xs-legmarx-between.margin.x*(ncol-1))/ncol
-			faceth <- ((1-spc-outery)-ys-legmary-between.margin.y*(nrow-1))/nrow
-			colws <- c(outer.margins[2], xs/2, legmar[2], rep(c(facetw, between.margin.x), ncol-1), facetw, legmar[4], xs/2, outer.margins[4])
-			rowhs <- c(outer.margins[3], ys/2, legmar[3], rep(c(faceth, between.margin.y), nrow-1), faceth, legmar[1], ys/2, outer.margins[1])
-			
+			colrange <- (1:ncol)*2 + 3
+			rowrange <- (1:nrow)*2 + 3
+			facetw <- ((1-spc-outerx)-xs-legmarx-ylabWnpc-between.margin.x*(ncol-1))/ncol
+			faceth <- ((1-spc-outery)-ys-legmary-attrmary-xlabHnpc-between.margin.y*(nrow-1))/nrow
+			colws <- c(outer.margins[2], xs/2, legmar[2], ylabWnpc, rep(c(facetw, between.margin.x), ncol-1), facetw, legmar[4], xs/2, outer.margins[4])
+			rowhs <- c(outer.margins[3], ys/2, legmar[3], attrmar[3], rep(c(faceth, between.margin.y), nrow-1), faceth, xlabHnpc, attrmar[1], legmar[1], ys/2, outer.margins[1])
+
 		} else if (panel.mode=="one") {
-			colrange <- (1:ncol)*2 + 2
-			rowrange <- (1:nrow)*3 + 2
+			colrange <- (1:ncol)*2 + 3
+			rowrange <- (1:nrow)*3 + 3
 			
-			facetw <- ((1-spc-outerx)-xs-legmarx-between.margin.x*(ncol-1))/ncol
-			faceth <- ((1-spc-outery)-ys-legmary-between.margin.y*(nrow-1))/nrow - panelh
+			facetw <- ((1-spc-outerx)-xs-legmarx-ylabWnpc-between.margin.x*(ncol-1))/ncol
+			faceth <- ((1-spc-outery)-ys-legmary-attrmary-xlabHnpc-between.margin.y*(nrow-1))/nrow - panelh
 			
-			colws <- c(outer.margins[2], xs/2, legmar[2], rep(c(facetw, between.margin.x), ncol-1), facetw, legmar[4], xs/2, outer.margins[4])
-			rowhs <- c(outer.margins[3], ys/2, legmar[3], rep(c(panelh, faceth, between.margin.y), nrow-1), panelh, faceth, legmar[1], ys/2, outer.margins[1])
+			colws <- c(outer.margins[2], xs/2, legmar[2], ylabWnpc, rep(c(facetw, between.margin.x), ncol-1), facetw, legmar[4], xs/2, outer.margins[4])
+			rowhs <- c(outer.margins[3], ys/2, legmar[3], attrmar[3], rep(c(panelh, faceth, between.margin.y), nrow-1), panelh, faceth, xlabHnpc, attrmar[1], legmar[1], ys/2, outer.margins[1])
 			
 			
 		} else {
-			colrange <- (1:ncol)*2 + 4
-			rowrange <- (1:nrow)*2 + 4
+			colrange <- (1:ncol)*2 + 5
+			rowrange <- (1:nrow)*2 + 5
 			
-			colpanelrow <- 4
+			colpanelrow <- 5
 			rowpanelcol <- 4
 			
-			facetw <- ((1-spc-outerx)-xs-legmarx-between.margin.x*ncol-panelw)/ncol
-			faceth <- ((1-spc-outery)-ys-legmary-between.margin.y*nrow-panelh)/nrow
+			facetw <- ((1-spc-outerx)-xs-legmarx-ylabWnpc-between.margin.x*ncol-panelw)/ncol
+			faceth <- ((1-spc-outery)-ys-legmary-attrmary-xlabHnpc-between.margin.y*nrow-panelh)/nrow
 			
-			colws <- c(outer.margins[2], xs/2, legmar[2], panelw, rep(c(between.margin.x, facetw), ncol), legmar[4], xs/2, outer.margins[4])
-			rowhs <- c(outer.margins[3], ys/2, legmar[3], panelh, rep(c(between.margin.y, faceth), nrow), legmar[1], ys/2, outer.margins[1])
+			colws <- c(outer.margins[2], xs/2, legmar[2], ylabWnpc, panelw, rep(c(between.margin.x, facetw), ncol), legmar[4], xs/2, outer.margins[4])
+			rowhs <- c(outer.margins[3], ys/2, legmar[3], attrmar[3], panelh, rep(c(between.margin.y, faceth), nrow), xlabHnpc, attrmar[1],legmar[1], ys/2, outer.margins[1])
 			
 		}
 		if (gmeta$legend.outside.position[1] == "left") {
 			legx <- 3
-			legy <- 4:(length(rowhs)-3)
+			legy <- 5:(length(rowhs)-5)
 		} else if (gmeta$legend.outside.position[1] == "right") {
 			legx <- length(colws)-2
-			legy <- 4:(length(rowhs)-3)
+			legy <- 5:(length(rowhs)-5)
 		} else if (gmeta$legend.outside.position[1] == "top") {
 			legy <- 3
-			legx <- 4:(length(colws)-3)
+			legx <- 5:(length(colws)-3)
 		} else if (gmeta$legend.outside.position[1] == "bottom") {
 			legy <- length(rowhs)-2
-			legx <- 4:(length(colws)-3)
+			legx <- 5:(length(colws)-3)
 		}
+		
+		if (gmeta$attr.outside.position[1] == "top") {
+			attry <- 4
+			attrx <- 5:(length(colws)-3)
+		} else {
+			attry <- length(rowhs)-3
+			attrx <- 5:(length(colws)-3)
+		}
+		
+		xlaby <- length(rowhs)-4
+		xlabx <- 5:(length(colws)-3)
+		
+		ylaby <- 5:(length(rowhs)-5)
+		ylabx <- 4
+		
 	})
 	gmeta$gasp <- gasp
 	gmeta

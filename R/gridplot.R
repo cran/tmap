@@ -1,4 +1,4 @@
-gridplot <- function(gmeta, fun, nx, gps, shps, dasp, sasp, inner.margins.new, legend_pos, gp_leg) {
+gridplot <- function(gmeta, fun, nx, gps, shps, dasp, sasp, inner.margins.new, legend_pos, gp_leg, gp_attr) {
 	mfrow <- gmeta$nrow
 	mfcol <- gmeta$ncol
 
@@ -74,7 +74,7 @@ gridplot <- function(gmeta, fun, nx, gps, shps, dasp, sasp, inner.margins.new, l
 		rep(gmeta$colrange, times=mfrow, length.out=ni), SIMPLIFY=FALSE)
 		
 		## draw outside grid labels
-		treeGridLabels <- if (external_grid_labels) {
+		treeGridLabels <- if (external_grid_labels && gmeta$grid.show) {
 			mapply(function(i, rw, cl) {
 				if (multi_shapes) {
 					proj <- bbxproj[[i]]$proj
@@ -106,17 +106,17 @@ gridplot <- function(gmeta, fun, nx, gps, shps, dasp, sasp, inner.margins.new, l
 		if (panel.mode=="both") {
 			rowPanels <- lapply((1:mfrow), function(i) {
 				cellplot(gmeta$rowrange[i], gmeta$colpanelrow, e=gList(rectGrob(gp=gpar(fill=gmeta$panel.label.bg.color, lwd=gmeta$frame.lwd)),
-									   textGrob(gmeta$panel.names[[1]][i], rot=gmeta$panel.label.rot[1], gp=gpar(col=gmeta$panel.label.color, cex=gmeta$panel.label.size))))
+									   textGrob(gmeta$panel.names[[1]][i], rot=gmeta$panel.label.rot[1], gp=gpar(col=gmeta$panel.label.color, cex=gmeta$panel.label.size, fontface=gmeta$fontface, fontfamily=gmeta$fontfamily))))
 			})
 			
 			colPanels <- lapply((1:mfcol), function(i) {
 				cellplot(gmeta$colpanelrow, gmeta$colrange[i], e=gList(rectGrob(gp=gpar(fill=gmeta$panel.label.bg.color, lwd=gmeta$frame.lwd)),
-									   textGrob(gmeta$panel.names[[2]][i], rot=gmeta$panel.label.rot[2], gp=gpar(col=gmeta$panel.label.color, cex=gmeta$panel.label.size))))
+									   textGrob(gmeta$panel.names[[2]][i], rot=gmeta$panel.label.rot[2], gp=gpar(col=gmeta$panel.label.color, cex=gmeta$panel.label.size, fontface=gmeta$fontface, fontfamily=gmeta$fontfamily))))
 			})
 		}  else if (panel.mode=="one") {
 			colPanels <- mapply(function(i, rw, cl) {
 				cellplot(rw, cl, e=gList(rectGrob(gp=gpar(fill=gmeta$panel.label.bg.color, lwd=gmeta$frame.lwd)),
-										 textGrob(gmeta$panel.names[i], rot=gmeta$panel.label.rot[2], gp=gpar(col=gmeta$panel.label.color, cex=gmeta$panel.label.size))))
+										 textGrob(gmeta$panel.names[i], rot=gmeta$panel.label.rot[2], gp=gpar(col=gmeta$panel.label.color, cex=gmeta$panel.label.size, fontface=gmeta$fontface, fontfamily=gmeta$fontfamily))))
 			}, istart:iend, 
 			rep(gmeta$rowrange-1, each=mfcol, length.out=ni), 
 			rep(gmeta$colrange, times=mfrow, length.out=ni), SIMPLIFY=FALSE)
@@ -133,7 +133,29 @@ gridplot <- function(gmeta, fun, nx, gps, shps, dasp, sasp, inner.margins.new, l
 			legPanel <- NULL
 		}
 		
-		tree <- gTree(children=do.call("gList", c(list(grobBG, grobBG2, grobFacetBG), treeGridLabels, treeMults, rowPanels, colPanels, legPanel)), vp=vpGrid)
+		## draw attributes legend
+		if (!is.null(gp_attr)) {
+			attrPanel <- gList(cellplot(gmeta$attry, gmeta$attrx, e=do.call(fun, args=list(1, gp_attr, shps, dasp, sasp, inner.margins.new, legend_pos, nx>1)), name = "outside_attr"))
+		} else {
+			attrPanel <- NULL
+		}
+
+		if (gmeta$xlab.show) {
+			xlabPanel <- gList(cellplot(gmeta$xlaby, gmeta$xlabx, e=textGrob(gmeta$xlab.text, rot=gmeta$xlab.rotation, 
+																			 gp=gpar(cex=gmeta$xlab.size, fontface=gmeta$fontface, fontfamily=gmeta$fontfamily)), name = "xlab"))
+		} else {
+			xlabPanel <- NULL
+		}
+		
+		if (gmeta$ylab.show) {
+			ylabPanel <- gList(cellplot(gmeta$ylaby, gmeta$ylabx, e=textGrob(gmeta$ylab.text, rot=gmeta$ylab.rotation, 
+																			 gp=gpar(cex=gmeta$ylab.size, fontface=gmeta$fontface, fontfamily=gmeta$fontfamily)), name = "ylab"))
+		} else {
+			ylabPanel <- NULL
+		}
+		
+		
+		tree <- gTree(children=do.call("gList", c(list(grobBG, grobBG2, grobFacetBG), treeGridLabels, treeMults, rowPanels, colPanels, legPanel, attrPanel, xlabPanel, ylabPanel)), vp=vpGrid)
 		grid.draw(tree)
 	})
 	upViewport()

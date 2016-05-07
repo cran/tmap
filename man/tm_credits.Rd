@@ -39,7 +39,7 @@ data(NLD_muni, NLD_prov)
 
 tm_shape(NLD_muni) +
     tm_fill(col="population", convert2density=TRUE, 
-        style="kmeans", title="Population (per km2)") +
+        style="kmeans", title = expression("Population (per " * km^2 * ")")) +
     tm_borders("grey25", alpha=.5) + 
     tm_shape(NLD_prov) +
     tm_borders("grey40", lwd=2) +
@@ -48,5 +48,8 @@ tm_credits("(c) Statistics Netherlands (CBS) and\\nKadaster Nederland", position
 
 # restore current mode
 tmap_mode(current.mode)
+}
+\seealso{
+\code{\link{tm_xlab}}
 }
 
