@@ -52,23 +52,32 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY) {
 	titleWidth <- title.width * title.size
 	titleHeight <- lineHeight * (nlines*1.2) * title.size
 	
-	#############################################################################################
+	stackV <- gt$legend.stack=="vertical"
+	########################################################################################
 	## legend
-	#############################################################################################
+	########################################################################################
 	if (has.legend) {
-
+		nx <- length(x)
+		
 		zs <- sapply(x, function(y) y$legend.z)
 		x <- x[order(zs)]
 		
-		x <- lapply(x, function(y) {
-			name <- y$legend.type
-			#id_title <- paste("title", name, sep=".")
-			#id_spacer <- paste("spacer", name, sep=".")
-			list_spacer <- list(legend.type="spacer", legend.is.portrait=FALSE)
-			list_title <- if(!nonempty_text(y$legend.title)) NULL else list(legend.type="title", title=y$legend.title, legend.is.portrait=FALSE)
-			list(list_spacer, list_title, y)
-		})
-		x <- do.call("c", x)[-1]
+		if (stackV) {
+			x <- lapply(x, function(y) {
+				name <- y$legend.type
+				list_spacer <- list(legend.type="spacer", legend.is.portrait=FALSE)
+				list_title <- if(!nonempty_text(y$legend.title)) NULL else list(legend.type="title", title=y$legend.title, legend.is.portrait=FALSE)
+				list(list_spacer, list_title, y)
+			})
+			x <- do.call("c", x)[-1]
+		} else {
+			x <- lapply(x, function(y) {
+				name <- y$legend.type
+				list_title <- if(!nonempty_text(y$legend.title)) NULL else list(legend.type="title", title=y$legend.title, legend.is.portrait=FALSE)
+				list(list_title, y)
+			})
+			x <- do.call("c", x)
+		}
 		
 		
 		legend.title.npc <- convertHeight(unit(1, "lines"), "npc", valueOnly=TRUE) * gt$legend.title.size
@@ -76,33 +85,44 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY) {
 		
 		# add element for main title
 		if (snap && gt$title!="") {
-			x <- c(TITLE=list(list(legend.type="TITLE", title=gt$title, legend.is.portrait=FALSE)), x)
+			if (stackV) {
+				x <- c(TITLE=list(list(legend.type="TITLE", title=gt$title, legend.is.portrait=FALSE)), x)
+			} else {
+				xtitle <- list(legend.type="TITLE", title=gt$title, legend.is.portrait=FALSE)
+			}
+		} else {
+			xtitle <- NULL
 		}
 
 		# remove empty legend elements
 		x.not.null <- !sapply(x, is.null)
-		k <- sum(x.not.null)
-		x <- x[x.not.null]
+		if (stackV) {
+			k <- sum(x.not.null)
+			x <- x[x.not.null]
+		} else k <- length(x)
 
 		# shrink heights (remove white space)
 		margin <- 0.25 * gt$legend.text.size
 		
+		s2 <- 4/3
+		
 		heights <- sapply(x, function(p){
+			if (is.null(p)) return(0)
 			type <- p$legend.type
 			port <- p$legend.is.portrait
 			if (type=="TITLE") {
 				titleHeight
-			} else if (port && type %in% c("fill", "bubble.col", "line.col", "line.lwd", "raster", "text.col")) {
+			} else if (port && type %in% c("fill", "symbol.col", "symbol.shape", "line.col", "line.lwd", "raster", "text.col")) {
 				length(p$legend.labels) * lineHeight * gt$legend.text.size + 2*margin*lineHeight
-			} else if (port && type == "bubble.size") {
-				sum(pmax(convertHeight(unit(p$legend.sizes, "inch"), "npc", valueOnly=TRUE) * 2 * 1.35, lineHeight * gt$legend.text.size)) + 2*margin*lineHeight
-			} else if (!port && type == "bubble.size") {
-				max(convertHeight(unit(p$legend.sizes, "inch"), "npc", valueOnly=TRUE) * 2, 1.5*lineHeight*gt$legend.text.size) + 2*margin*lineHeight*gt$legend.text.size + 1.25*lineHeight*gt$legend.text.size
+			} else if (port && type == "symbol.size") {
+				sum(pmax(convertHeight(unit(p$legend.sizes, "inch"), "npc", valueOnly=TRUE) /s2 * 1.35, lineHeight * gt$legend.text.size)) + 2*margin*lineHeight
+			} else if (!port && type == "symbol.size") {
+				max(convertHeight(unit(p$legend.sizes, "inch"), "npc", valueOnly=TRUE)/s2, 1.5*lineHeight*gt$legend.text.size) + 2*margin*lineHeight*gt$legend.text.size + 1.25*lineHeight*gt$legend.text.size
 			} else if (port && type == "text.size") {
 				sum(pmax(convertHeight(unit(p$legend.sizes, "lines"), "npc", valueOnly=TRUE) * 1.25, lineHeight * gt$legend.text.size)) + 2*margin*lineHeight
 			} else if (!port && type == "text.size") {
 				max(convertHeight(unit(p$legend.sizes, "lines"), "npc", valueOnly=TRUE), 1.5*lineHeight*gt$legend.text.size) + 2*margin*lineHeight*gt$legend.text.size + 1.25*lineHeight*gt$legend.text.size
-			} else if (!port && type %in% c("fill", "bubble.col", "line.col", "line.lwd", "raster")) {
+			} else if (!port && type %in% c("fill", "symbol.col", "symbol.shape", "line.col", "line.lwd", "raster")) {
 				2*margin*lineHeight*gt$legend.text.size + 2.75 * lineHeight*gt$legend.text.size
 			} else if (type == "spacer") {
 				legend.title.npc * .25
@@ -115,14 +135,65 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY) {
 		})
 		
 		legendWidth <- gt$legend.width
+		
+		autoWidth <- (legendWidth > 0)
+		if (!autoWidth) legendWidth <- -legendWidth
+		
 		histWidth <- min(gt$legend.hist.width / legendWidth, 1)
 		
+		legendHeight <- gt$legend.height
+		
+		autoHeight <- (legendHeight > 0)
+		if (!autoHeight) legendHeight <- -legendHeight
+		
+		
 		# normalize legendHeight
-		if (is.character(gt$title.position) && tolower(gt$title.position[1])==tolower(gt$legend.position[1]) && !snap) {
-			legendHeight <- min(sum(heights), 1-metaY-titleHeight, gt$legend.height)
+		if (stackV) {
+			if (autoHeight) {
+				if (is.character(gt$title.position) && tolower(gt$title.position[1])==tolower(gt$legend.position[1]) && !snap) {
+					legendHeight <- min(sum(heights), 1-metaY-titleHeight, legendHeight)
+				} else {
+					legendHeight <- min(sum(heights), 1-metaY, legendHeight)
+				}
+			}
+			
+			# normalise heights
+			heights <- heights / legendHeight
+
 		} else {
-			legendHeight <- min(sum(heights), 1-metaY, gt$legend.height)
+			legItemTitleHeight <- max(heights[seq(1,k, by=2)])
+			legItemHeight <- max(heights[seq(2,k, by=2)])
+			legTitleHeight <- ifelse(!is.null(xtitle), titleHeight, 0)
+			legTotHeight <- legItemTitleHeight + legItemHeight + legTitleHeight
+			
+			if (autoHeight) {
+				if (is.character(gt$title.position) && tolower(gt$title.position[1])==tolower(gt$legend.position[1]) && !snap) {
+					legendHeight <- min(legTotHeight, 1-metaY-titleHeight, gt$legend.height)
+				} else {
+					legendHeight <- min(legTotHeight, 1-metaY, gt$legend.height)
+				}
+			}
+			nh <- legendHeight/legTotHeight
+			
+			if (autoWidth) {
+				legendWidth <- min(legendWidth, 1 - 2 * mx)
+			}
+
+			
+			# calculate height ratios
+			rel_heights <- heights / (nh*c(legItemTitleHeight, legItemHeight))
+			
+			# normalise heights
+			heights[seq(1,k, by=2)] <- pmin(heights[seq(1,k, by=2)], nh*legItemTitleHeight)
+			heights[seq(2,k, by=2)] <- pmin(heights[seq(2,k, by=2)], nh*legItemHeight)
+			heightLegTitle <- nh*legTitleHeight
 		}
+		
+
+		
+		
+		
+		
 		if (is.character(gt$legend.position)) {
 			legend.position <- c(switch(gt$legend.position[1], 
 										left=frameX+mx+metaX, 
@@ -146,7 +217,7 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY) {
 			legWidthCorr <- 0
 		}
 		if (any(is.na(legend.position))) stop("Wrong position argument for legend", call. = FALSE)
-		
+		#stackV && 
 		legSnapToRight <- ifelse(!is_num_string(gt$legend.position[1]),
 								 ifelse(gt$legend.position[1]%in%c("center", "centre"),
 								 	   .5, gt$legend.position[1]%in%c("right", "RIGHT")),
@@ -158,9 +229,9 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY) {
 	}
 	
 
-	#############################################################################################
+	#########################################################################################
 	## title
-	#############################################################################################
+	#########################################################################################
 	
 	if (is.character(gt$title.position) || snap) {
 		title.position <- if (snap) NULL else {
@@ -197,10 +268,10 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY) {
 		
 	}
 
-	#############################################################################################
+	#########################################################################################
 	## attributes
-	#############################################################################################
-	if (gt$credits.show || gt$scale.show || gt$compass.show) {
+	#########################################################################################
+	if (gt$credits.show || gt$logo.show || gt$scale.show || gt$compass.show) {
 		elems <- do.call("rbind", list(
 			if (gt$credits.show) data.frame(type="credits",
 				 height=unname(emapply(function(txt, sz) {
@@ -211,13 +282,31 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY) {
 				 width=1,
 				 position1=sapply(gt$credits.position, "[", 1, USE.NAMES=FALSE),
 				 position2=sapply(gt$credits.position, "[", 2, USE.NAMES=FALSE), 
+				 just1=sapply(gt$credits.just, "[", 1, USE.NAMES=FALSE),
+				 just2=sapply(gt$credits.just, "[", 2, USE.NAMES=FALSE),
 				 sortid=gt$credits.id,
 				 stringsAsFactors = FALSE) else NULL,
+			if (gt$logo.show) data.frame(type="logo",
+				height=mapply(function(lh, m) {
+					(max(unlist(lh)) + m*2) * lineHeight
+				}, gt$logo.height, gt$logo.margin, SIMPLIFY = TRUE, USE.NAMES = FALSE),#  sapply(gt$logo.height, function(lh) (lh+1) * lineHeight),
+				width=mapply(function(lw, m) {
+					(sum(unlist(lw) + m) + m) * lineWidth
+				}, gt$logo.width, gt$logo.margin, SIMPLIFY = TRUE, USE.NAMES = FALSE),#  sapply(gt$logo.height, function(lh) (lh+1) * lineHeight),
+				#width=sapply(gt$logo.width, function(lw) (lw+1) * lineWidth),
+				position1=sapply(gt$logo.position, "[", 1, USE.NAMES=FALSE),
+				position2=sapply(gt$logo.position, "[", 2, USE.NAMES=FALSE),
+				just1=sapply(gt$logo.just, "[", 1, USE.NAMES=FALSE),
+				just2=sapply(gt$logo.just, "[", 2, USE.NAMES=FALSE),
+				sortid=gt$logo.id,
+				stringsAsFactors = FALSE) else NULL,
 			if (gt$scale.show) data.frame(type="scale_bar",
 				height=3*lineHeight * gt$scale.size,
 				width=1,
 				position1=gt$scale.position[1],
 				position2=gt$scale.position[2], 
+				just1=gt$scale.just[1],
+				just2=gt$scale.just[2], 
 				sortid=gt$scale.id,
 				stringsAsFactors = FALSE) else NULL,
 			if (gt$compass.show) data.frame(type="compass",
@@ -225,6 +314,8 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY) {
 				width=(gt$compass.nlines * gt$compass.fontsize)*lineWidth,
 				position1=gt$compass.position[1],
 				position2=gt$compass.position[2], 
+				just1=gt$compass.just[1],
+				just2=gt$compass.just[2], 
 				sortid=gt$compass.id,
 				stringsAsFactors = FALSE) else NULL))
 
@@ -232,8 +323,15 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY) {
 		elems$cred.id <- NA
 		elems$cred.id[elems$type=="credits"] <- order(order(elems$sortid[elems$type=="credits"]))
 		
+		elems$logo.id <- NA
+		elems$logo.id[elems$type=="logo"] <- order(order(elems$sortid[elems$type=="logo"]))
+		
+		
 		elems$position1[is.na(elems$position1)] <- gt$attr.position[1]
 		elems$position2[is.na(elems$position2)] <- gt$attr.position[2]
+		
+		elems$just1[is.na(elems$just1)] <- gt$attr.just[1]
+		elems$just2[is.na(elems$just2)] <- gt$attr.just[2]
 		
 		elems$isChar1 <- (elems$position1 %in% c("left", "center", "centre", "right", "LEFT", "RIGHT"))
 		elems$isChar2 <- (elems$position2 %in% c("top", "center", "centre", "bottom", "TOP", "BOTTOM"))
@@ -247,6 +345,7 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY) {
 		elemGrobs <- lapply(elemsList, function(el) {
 			elemHeight <- sum(el$height)
 			elpos <- c(el$position1[1], el$position2[1])
+			eljust <- c(el$just1[1], el$just2[1])
 			elemleg <- all(tolower(elpos)==tolower(gt$legend.position)) && has.legend
 			elemtitle <- all(tolower(elpos)==tolower(gt$title.position)) && gt$title!="" && !snap
 			if (elemleg) {
@@ -328,9 +427,9 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY) {
 								RIGHT="right",
 								left="left",
 								LEFT="left",
-								gt$attr.just[1]),
+								eljust[1]),
 							ifelse(elpos[2] %in% c("top", "TOP", "bottom", "BOTTOM"), "bottom",
-							ifelse(elpos[2] %in% c("center", "centre"), "center", gt$attr.just[2])))
+							ifelse(elpos[2] %in% c("center", "centre"), "center", eljust[2])))
 			
 			if (elemleg && elem.just[1]=="center") elem.just[1] <- "right"
 			
@@ -364,6 +463,8 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY) {
 				
 				if (e$type=="credits") {
 					grb <- plot_cred(gt, just=elem.just[1], id=e$cred.id)
+				} else if (e$type=="logo") {
+					grb <- plot_logo(gt, just=elem.just[1], id=e$logo.id)
 				} else if (e$type=="scale_bar") {
 					grb <- plot_scale(gt, just=elem.just[1], xrange=(bb[1,2] - bb[1,1])*e$width2, crop_factor=gt$scale.width/e$width2)
 				} else {
@@ -404,32 +505,99 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY) {
 		
 		legend.frame.fill <- if (gt$design.mode) "#888888BB" else legend.bg.color
 		
+		if (stackV) {
+			vpLeg <- viewport(layout=grid.layout(k, 2, heights=heights, widths=c(histWidth, 1-histWidth)), name="legend_grid")
+		} else {
+			#legTitleHeight
+			if (!is.null(xtitle)) {
+				vpLeg <- viewport(layout=grid.layout(3, nx, heights=nh*c(legTitleHeight, legItemTitleHeight, legItemHeight), widths=legendWidth/nx), name="legend_grid")
+			} else {
+				vpLeg <- viewport(layout=grid.layout(2, nx, heights=nh*c(legItemTitleHeight, legItemHeight), widths=legendWidth/nx), name="legend_grid")
+			}
+			
+		}
 		
-		# normalise heights
-		heights <- heights / legendHeight
-		vpLeg <- viewport(layout=grid.layout(k, 2, heights=heights, widths=c(histWidth, 1-histWidth)), name="legend_grid")
-	
-		
+
 		if (gt$legend.inside.box) {
 			vpLegFrame <- viewport(width=1-mx, height=1-my, name="legend_frame")
 			vpLeg <- vpStack(vpLegFrame, vpLeg)
 		} 
 		
 		pushViewport(vpLeg)
-		grobListRes <- mapply("legend_subplot", x, id=1:k, MoreArgs = list(gt=gt, histWidth=histWidth), SIMPLIFY = FALSE)
+		
+		if (stackV) {
+			grobListRes <- mapply("legend_subplot", x, id=1:k, MoreArgs = list(gt=gt, histWidth=histWidth), SIMPLIFY = FALSE)
+		} else {
+			#x_null <- sapply(x, is.null)
+			#grobListRes <- mapply("legend_subplot2", x[!x_null], id=(1:k)[!x_null], rel_height=rel_heights[!x_null], MoreArgs = list(gt=gt, histWidth=histWidth), SIMPLIFY = FALSE)
+			
+			grobListRes <- mapply("legend_subplot2", x, id=(1:k), rel_height=rel_heights, MoreArgs = list(gt=gt, histWidth=histWidth, titleRow=as.numeric(!is.null(xtitle))), SIMPLIFY = FALSE)
+			if (!is.null(xtitle)) {
+				grobListRes <- c(grobListRes, list(legend_subplot2(xtitle, id=-nx, rel_height=1, gt=gt, histWidth=histWidth, titleRow=0)))
+			}
+			
+		}
 	
 		grobList <- lapply(grobListRes, "[[", 1)
-		legWidth <- max(sapply(grobListRes, "[[", 2))
 
-		if (gt$legend.inside.box) legWidth <- legWidth / (1-mx)
-		
-		legWidthInch <- convertWidth(unit(legWidth, "npc"), "inch", valueOnly=TRUE)
-		
-		grobLegBG <- rectGrob(x=0, width=legWidth, just=c("left", "center"), gp=gpar(lwd=gt$scale, col=gt$legend.frame, fill=legend.frame.fill))
-		
+		if (stackV) {
+			if (autoWidth) {
+				legWidth <- max(sapply(grobListRes, "[[", 2))
+				if (gt$legend.inside.box) legWidth <- legWidth / (1-mx)
+			} else {
+				legWidth <- 1#legendWidth
+				#if (gt$legend.inside.box) legWidth <- legWidth / (1-mx)
+				#legWidthInch <- convertWidth(unit(legWidth+mx, "npc"), "inch", valueOnly=TRUE)
+			}
+			legWidthInch <- convertWidth(unit(legWidth, "npc"), "inch", valueOnly=TRUE)
+			
+			grobLegBG <- rectGrob(x=0, width=legWidth, just=c("left", "center"), gp=gpar(lwd=gt$scale, col=gt$legend.frame, fill=legend.frame.fill))
+			
+		} else {
+			lW <- sapply(grobListRes, "[[", 2)
+			legItemTitleWidths <- sapply(grobListRes, "[[", 2)[seq(1,k, by=2)]
+			legItemsWidths <- sapply(grobListRes, "[[", 2)[seq(2,k, by=2)]
+			legWidths <- pmax(legItemTitleWidths, legItemsWidths) + mx
+
+			
+			if (!autoWidth) legWidths <- legWidths / sum(legWidths) * nx
+			
+			#if (gt$legend.inside.box) legWidths <- legWidths / (1-mx)
+
+			legWidths2 <- legendWidth/nx * legWidths
+			
+			legWidthsInch <- convertWidth(unit(legWidths/nx, "npc"), "inch", valueOnly=TRUE)
+			legWidthInch <- sum(legWidthsInch)
+			
+
+			# re-adjust legend
+			vpLegend <- viewport(y=legend.position[2], x=legend.position[1],
+								 height=legendHeight, width=sum(legendWidth/nx*legWidths),
+								 just=gt$legend.just, name="legend")
+			if (!is.null(xtitle)) {
+				vpLeg <- viewport(layout=grid.layout(3, nx, heights=nh*c(legTitleHeight, legItemTitleHeight, legItemHeight), widths=legWidths), name="legend_grid")
+			} else {
+				vpLeg <- viewport(layout=grid.layout(2, nx, heights=nh*c(legItemTitleHeight, legItemHeight), widths=legWidths), name="legend_grid")
+			}
+
+			if (gt$legend.inside.box) {
+				vpLegFrame <- viewport(width=1-mx, height=1-my, name="legend_frame")
+				vpLeg <- vpStack(vpLegFrame, vpLeg)
+			} 
+			
+
+			# vpLeg$layout$widths <- unit(legWidths, "npc") #unit(legendWidth/nx*legWidths, "npc")
+			for (i in seq(1, k, by=2)) {
+				idi <- i/2 + .5
+				if (!is.null(grobList[[i]])) grobList[[i]] <- grob_mod(grobList[[i]], x.b=1/legWidths[idi])
+				if (!is.null(grobList[[i+1]])) grobList[[i+1]] <- grob_mod(grobList[[i+1]], x.b=1/legWidths[idi])
+			}
+				
+			grobLegBG <- rectGrob(x=0, width=1, just=c("left", "center"), gp=gpar(lwd=gt$scale, col=gt$legend.frame, fill=legend.frame.fill))
+		}
+
 		upViewport(2 + gt$legend.inside.box)
-		if (legSnapToRight) {
-		  
+		if (legSnapToRight && autoWidth) { #  
 			legWidthNpc <- convertWidth(unit(legWidthInch, "inch"), "npc", valueOnly = TRUE)
 			shiftX <- (legendWidth-legWidthNpc) * legSnapToRight
 			vpLegend$x <- unit(legend.position[1] + shiftX, "npc")
@@ -441,7 +609,6 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY) {
 			    treeElem$children[[i]]$vp$x <- treeElem$children[[i]]$vp$x + unit(shiftX, "npc")
 			  }
 			}
-			
 		}
 		
 		gTree(children=gList(grobLegBG, gTree(children=do.call("gList", grobList), vp=vpLeg)), vp=vpLegend, name="legend")

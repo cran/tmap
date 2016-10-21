@@ -1,4 +1,4 @@
-process_fill <- function(data, g, gb, gt, gby, z, allow.small.mult) {
+process_fill <- function(data, g, gb, gt, gby, z, interactive) {
 	
 	npol <- nrow(data)
 	by <- data$GROUP_BY
@@ -6,7 +6,10 @@ process_fill <- function(data, g, gb, gt, gby, z, allow.small.mult) {
 	shpcols <- names(data)[1:(ncol(data)-2)]
 
 	x <- g$col
-	if (!allow.small.mult) x <- x[1]
+	if (interactive) {
+		if (length(x)>1) warning("Facets are not supported in view mode yet. Only polygon fill aesthetic value \"", x[1], "\" will be shown.", call.=FALSE)
+		x <- x[1]	
+	} 
 
 	if (is.na(x)[1]) x <- gt$aes.colors["fill"]
 	if (is.null(g$colorNA)) g$colorNA <- "#00000000"
@@ -21,7 +24,7 @@ process_fill <- function(data, g, gb, gt, gby, z, allow.small.mult) {
 	
 	# check for direct color input
 	is.colors <- all(valid_colors(x))
-	if (attr(data, "dasymetric") && !("col" %in% g$call) && "level" %in% shpcols) {
+	if (attr(data, "kernel_density") && !("col" %in% g$call) && "level" %in% shpcols) {
 		is.colors <- FALSE
 		x <- "level"
 	} else if (is.colors) {
@@ -49,25 +52,19 @@ process_fill <- function(data, g, gb, gt, gby, z, allow.small.mult) {
 	nx <- max(nx, nlevels(by))
 	
 	# update legend format from tm_layout
-	if (length(g$legend.format)==nx && all(sapply(g$legend.format, is.list))) {
-		g$legend.format <- lapply(g$legend.format, function(lf) {
-			to_be_assigned <- setdiff(names(gt$legend.format), names(lf))
-			lf[to_be_assigned] <- gt$legend.format[to_be_assigned]
-			lf
-		})
-	} else {
-		to_be_assigned <- setdiff(names(gt$legend.format), names(g$legend.format))
-		g$legend.format[to_be_assigned] <- gt$legend.format[to_be_assigned]
-	}
+	g$legend.format <- process_legend_format(g$legend.format, gt$legend.format, nx)
 
-	
 	# return if data is matrix of color values
 	if (is.matrix(dt)) {
 		if (!is.colors) {
 			dt <- matrix(do.call("process_color", c(list(col=dt, alpha=g$alpha), gt$pc)),
 						 ncol=ncol(dt))
 		}
-		return(list(fill=dt, xfill=rep(NA, nx), fill.lenged.title=rep(NA, nx)))	
+		return(list(fill=dt, 
+					xfill=rep(NA, nx), 
+					fill.lenged.title=rep(NA, nx),
+					fill.id=g$id,
+					fill.popup.vars=g$popup.vars))	
 	} 
 
 	# process areas
@@ -124,5 +121,6 @@ process_fill <- function(data, g, gb, gt, gby, z, allow.small.mult) {
 		 fill.legend.hist.title=fill.legend.hist.title,
 		 fill.legend.z=fill.legend.z,
 		 fill.legend.hist.z=fill.legend.hist.z,
-		 fill.id=g$id)
+		 fill.id=g$id,
+		 fill.popup.vars=g$popup.vars)
 }

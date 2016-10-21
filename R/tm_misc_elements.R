@@ -10,17 +10,18 @@
 #' @param drop.empty.facets logical. If the \code{by} argument is specified, should empty facets be dropped? Empty facets occur when the \code{by}-variable contains unused levels. When \code{TRUE} and two \code{by}-variables are specified, empty rows and colums are dropped.
 #' @param showNA If the \code{by} argument is specified, should missing values of the \code{by}-variable be shown in a facet? If two \code{by}-variables are specified, should missing values be shown in an additional row and column? If \code{NA}, missing values only are shown if they exist. Similar to the \code{useNA} argument of \code{\link[base:table]{table}}, where \code{TRUE}, \code{FALSE}, and \code{NA} correspond to \code{"always"}, \code{"no"}, and \code{"ifany"} respectively.
 #' @param textNA text used for facets of missing values.
-#' @param free.scales logical. Should all scales of the plotted data variables be free, i.e. independent of each other? Possible data variables are color from \code{\link{tm_fill}}, color and size from \code{\link{tm_bubbles}} and line color from \code{\link{tm_lines}}.
+#' @param free.scales logical. Should all scales of the plotted data variables be free, i.e. independent of each other? Possible data variables are color from \code{\link{tm_fill}}, color and size from \code{\link{tm_symbols}} and line color from \code{\link{tm_lines}}.
 #' @param free.scales.fill logical. Should the color scale for the choropleth be free?
-#' @param free.scales.bubble.size logical. Should the bubble size scale for the bubble map be free?
-#' @param free.scales.bubble.col logical. Should the color scale for the bubble map be free?
+#' @param free.scales.symbol.size logical. Should the symbol size scale for the symbol map be free?
+#' @param free.scales.symbol.col logical. Should the color scale for the symbol map be free?
+#' @param free.scales.symbol.shape logical. Should the symbol shape scale for the symbol map be free?
 #' @param free.scales.text.size logical. Should the text size scale be free?
 #' @param free.scales.text.col logical. Should the text color scale be free?
 #' @param free.scales.line.col Should the line color scale be free?
 #' @param free.scales.line.lwd Should the line width scale be free?
 #' @param free.scales.raster Should the color scale for raster layers be free?
 #' @param inside.original.bbox If \code{free.coords}, should the bounding box of each small multiple be inside the original bounding box?
-#' @param scale.factor Number that determines how the elements (e.g. font sizes, bubble sizes, line widths) of the small multiples are scaled in relation to the scaling factor of the shapes. The elements are scaled to the \code{scale.factor}th root of the scaling factor of the shapes. So, for \code{scale.factor=1}, they are scaled proportional to the scaling of the shapes. Since elements, especially text, are often too small to read, a higher value is recommended. By default, \code{scale.factor=2}.
+#' @param scale.factor Number that determines how the elements (e.g. font sizes, symbol sizes, line widths) of the small multiples are scaled in relation to the scaling factor of the shapes. The elements are scaled to the \code{scale.factor}th root of the scaling factor of the shapes. So, for \code{scale.factor=1}, they are scaled proportional to the scaling of the shapes. Since elements, especially text, are often too small to read, a higher value is recommended. By default, \code{scale.factor=2}.
 #' @param drop.shapes deprecated: renamed to \code{drop.units}
 #' @export
 #' @example ../examples/tm_facets.R
@@ -34,8 +35,9 @@ tm_facets <- function(by=NULL, ncol=NULL, nrow=NULL,
 					  textNA="Missing",
 					  free.scales=is.null(by),
 					  free.scales.fill=free.scales,
-					  free.scales.bubble.size=free.scales,
-					  free.scales.bubble.col=free.scales,
+					  free.scales.symbol.size=free.scales,
+					  free.scales.symbol.col=free.scales,
+					  free.scales.symbol.shape=free.scales,
 					  free.scales.text.size=free.scales,
 					  free.scales.text.col=free.scales,
 					  free.scales.line.col=free.scales,
@@ -46,7 +48,7 @@ tm_facets <- function(by=NULL, ncol=NULL, nrow=NULL,
 					  drop.shapes=drop.units) {
 	calls <- names(match.call(expand.dots = TRUE)[-1])
 	if ("drop.shapes" %in% calls) warning("The argument drop.shapes has been renamed to drop.units, and is therefore deprecated", call.=FALSE)
-	if ("free.scales" %in% calls) calls <- union(calls, c("free.scales.fill", "free.scales.bubble.size", "free.scales.bubble.col", "free.scales.line.col", "free.scales.line.lwd"))
+	if ("free.scales" %in% calls) calls <- union(calls, c("free.scales.fill", "free.scales.symbol.size", "free.scales.symbol.col", "free.scales.symbol.shape", "free.scales.line.col", "free.scales.line.lwd"))
 	g <- list(tm_facets=c(as.list(environment()), list(call=calls)))
 	class(g) <- "tmap"
 	#attr(g, "call") <- names(match.call(expand.dots = TRUE)[-1])
@@ -102,6 +104,7 @@ tm_grid <- function(x=NA,
 #' @param fontface font face of the text. By default, determined by the fontface argument of \code{\link{tm_layout}}.
 #' @param fontfamily font family of the text. By default, determined by the fontfamily argument of \code{\link{tm_layout}}.
 #' @param position position of the text. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the center of the text. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
+#' @param just Justification of the attribute relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{position} is specified by numeric coordinates. The default value is controlled by the argument \code{"attr.just"} of \code{\link{tm_layout}}.
 #' @export
 #' @seealso \code{\link{tm_xlab}}
 #' @example ../examples/tm_credits.R
@@ -113,9 +116,35 @@ tm_credits <- function(text,
 					   bg.color=NA,
 					   bg.alpha=NA,
 					   fontface=NA, fontfamily=NA,
-					   position=NA) {
+					   position=NA,
+					   just=NA) {
 	g <- list(tm_credits=as.list(environment()))
 	names(g$tm_credits) <- paste("credits", names(g$tm_credits), sep=".")
+	class(g) <- "tmap"
+	attr(g, "call") <- names(match.call(expand.dots = TRUE)[-1])
+	g
+}
+
+#' Logo
+#'
+#' Creates a map logo. Multiple logos can be specified which are shown next to each other. Logos placed on top of each other can be specified with stacking \code{tm_logo} elements.
+#' 
+#' @param file either a filename or url of a png image. If multiple files/urls are provided with a character vector, the logos are placed near each other. To specify logos for small multiples use a list of character values/vectors. In order to stack logos vertically, multiple \code{tm_logo} elements can be stacked.
+#' @param height height of the logo in number of text line heights. The width is scaled based the height and the aspect ratio of the logo. If multiple logos are specified by a vector or list, the heights can be specified accordingly.
+#' @param halign if logos in one row have different heights, \code{halign} specifies the vertical alignment. Possible values are \code{"top"}, \code{"center"} and \code{"bottom"}.
+#' @param margin margin around the logo in number of text line heights.
+#' @param position position of the logo. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the center of the text. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
+#' @param just Justification of the attribute relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{position} is specified by numeric coordinates. The default value is controlled by the argument \code{"attr.just"} of \code{\link{tm_layout}}.
+#' @example ../examples/tm_logo.R
+#' @export
+tm_logo <- function(file,
+					height=3,
+					halign="center",
+					margin=0.2,
+					position=NA,
+					just=NA) {
+	g <- list(tm_logo=as.list(environment()))
+	names(g$tm_logo) <- paste("logo", names(g$tm_logo), sep=".")
 	class(g) <- "tmap"
 	attr(g, "call") <- names(match.call(expand.dots = TRUE)[-1])
 	g
@@ -133,7 +162,8 @@ tm_credits <- function(text,
 #' @param color.dark color of the dark parts of the scale bar, typically (and by default) black.
 #' @param color.light color of the light parts of the scale bar, typically (and by default) white.
 #' @param lwd line width of the scale bar
-#' @param position position of the text. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left bottom corner of the scale bar. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
+#' @param position position of the scale bar Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left bottom corner of the scale bar. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
+#' @param just Justification of the attribute relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{position} is specified by numeric coordinates. The default value is controlled by the argument \code{"attr.just"} of \code{\link{tm_layout}}.
 #' @export
 #' @example ../examples/tm_scale_bar.R
 tm_scale_bar <- function(breaks=NULL,
@@ -143,7 +173,8 @@ tm_scale_bar <- function(breaks=NULL,
 						 color.dark="black", 
 						 color.light="white",
 						 lwd=1,
-						 position=NA) {
+						 position=NA,
+						 just=NA) {
 	g <- list(tm_scale_bar=as.list(environment()))
 	names(g$tm_scale_bar) <- paste("scale", names(g$tm_scale_bar), sep=".")
 	class(g) <- "tmap"
@@ -165,7 +196,8 @@ tm_scale_bar <- function(breaks=NULL,
 #' @param color.dark color of the dark parts of the compass, typically (and by default) black.
 #' @param color.light color of the light parts of the compass, typically (and by default) white.
 #' @param lwd line width of the compass
-#' @param position position of the text. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left bottom corner of the compass. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
+#' @param position position of the compass. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left bottom corner of the compass. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
+#' @param just Justification of the attribute relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{position} is specified by numeric coordinates. The default value is controlled by the argument \code{"attr.just"} of \code{\link{tm_layout}}.
 #' @export
 #' @example ../examples/tm_compass.R
 tm_compass <- function(north=0, 
@@ -178,7 +210,8 @@ tm_compass <- function(north=0,
 					   color.dark=NA, 
 					   color.light=NA,
 					   lwd=1,
-					   position=NA) {
+					   position=NA,
+					   just=NA) {
 	g <- list(tm_compass=as.list(environment()))
 	names(g$tm_compass) <- paste("compass", names(g$tm_compass), sep=".")
 	class(g) <- "tmap"
@@ -233,5 +266,44 @@ tm_ylab <- function(text,
 "+.tmap" <- function(e1, e2) {
 	g <- c(e1,e2)
 	class(g) <- "tmap"
+	assign(".last_map_new", match.call(), envir = .TMAP_CACHE)
 	g
 }
+
+
+#' Retrieve the last map to be modified or created
+#' 
+#' Retrieve the last map to be modified or created. Works in the same way as \code{ggplot2}'s \code{\link[ggplot2:last_plot]{last_plot}}, although there is a difference: \code{last_map} returns the last call instead of the stacked \code{\link{tmap-element}s}.
+#' 
+#' @return call
+#' @export
+#' @seealso \code{\link{save_tmap}}
+last_map <- function() {
+	x <- get(".last_map", envir = .TMAP_CACHE)
+	if (is.null(x)) warning("A map has not been created yet")
+	eval(x)
+}
+
+save_last_map <- function() {
+	lt <- get(".last_map", envir = .TMAP_CACHE)
+	ltnew <- get(".last_map_new", envir = .TMAP_CACHE)
+	if (!is.null(ltnew)) lt <- replace_last_tmap_by_correct_call(ltnew, lt)
+	assign(".last_map", lt, envir = .TMAP_CACHE)
+	assign(".last_map_new", NULL, envir = .TMAP_CACHE)
+}
+
+
+replace_last_tmap_by_correct_call <- function(mc, lt) {
+	if (is.symbol(mc)) {
+		mc
+	} else if (as.character(mc[1])=="last_map") {
+		lt
+	} else {
+		if (as.character(mc[1]) %in% c("+.tmap", "+")) {
+			if (!is.null(mc[[2]])) mc[2] <- list(replace_last_tmap_by_correct_call(mc[[2]], lt))
+			if (!is.null(mc[[3]])) mc[3] <- list(replace_last_tmap_by_correct_call(mc[[3]], lt))
+		}
+		mc
+	}
+}
+

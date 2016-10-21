@@ -312,41 +312,104 @@ get_gridline_labels <- function(lco, xax=NA, yax=NA) {
 }
 
 
-plot_bubbles <- function(co.npc, g, gt, lineInch, i, k) {
-	bubbleH <- convertHeight(unit(lineInch, "inch"), "npc", valueOnly=TRUE) * gt$scale
-	bubbleW <- convertWidth(unit(lineInch, "inch"), "npc", valueOnly=TRUE) * gt$scale
-	
+plot_symbols <- function(co.npc, g, gt, lineInch, i, k) {
+	symbolH <- convertHeight(unit(lineInch, "inch"), "npc", valueOnly=TRUE) * gt$scale
+	symbolW <- convertWidth(unit(lineInch, "inch"), "npc", valueOnly=TRUE) * gt$scale
+	shapeLib <- get(".shapeLib", envir = .TMAP_CACHE)
+	justLib <- get(".justLib", envir = .TMAP_CACHE)
+
 	with(g, {
-		co.npc[, 1] <- co.npc[, 1] + bubble.xmod * bubbleW
-		co.npc[, 2] <- co.npc[, 2] + bubble.ymod * bubbleH
 		npol <- nrow(co.npc)
-		if (length(bubble.size)!=npol) {
-			if (length(bubble.size)!=1) warning("less bubble size values than objects", call. = FALSE)
-			bubble.size <- rep(bubble.size, length.out=npol)
+		if (length(symbol.size)!=npol) {
+			if (length(symbol.size)!=1) warning("less symbol size values than objects", call. = FALSE)
+			symbol.size <- rep(symbol.size, length.out=npol)
 		}
+
+		size.npc.w <- convertWidth(unit(symbol.size, "inch"), "npc", valueOnly = TRUE)
+		size.npc.h <- convertHeight(unit(symbol.size, "inch"), "npc", valueOnly = TRUE)
+
+		# determine justification per symbol
+		just <- g$symbol.misc$just
+		justs <- lapply(symbol.shape, function(ss) {
+			if (!is.na(ss) && ss>999) {
+				js <- justLib[[ss-999]]
+				if (is.na(js[1])) just else js
+			} else just
+		})
+		justs.x <- sapply(justs, "[[", 1)
+		justs.y <- sapply(justs, "[[", 2)
+		justx <- size.npc.w * (justs.x-.5)
+		justy <- size.npc.h * (justs.y-.5)
 		
-		bubble.size <- bubble.size * lineInch / 2
+		# adjust the coordinates
+		co.npc[, 1] <- co.npc[, 1] + symbol.xmod * symbolW + justx * lineInch * 2 / 3
+		co.npc[, 2] <- co.npc[, 2] + symbol.ymod * symbolH + justy * lineInch * 2 / 3
 		
-		cols <- rep(bubble.col, length.out=npol)
-		if (length(bubble.size)!=1) {
-			decreasing <- order(-bubble.size)
-			co.npc2 <- co.npc[decreasing,]
-			bubble.size2 <- bubble.size[decreasing]
-			cols2 <- if (length(cols)==1) cols else cols[decreasing]
+		sel <- !is.na(symbol.size) & !is.na(symbol.col) & !is.na(symbol.shape)
+		
+		# return NULL is no symbols are selected (see tm_facets example)
+		if (!any(sel)) return(NULL)
+		
+		if (!all(sel)) {
+			co.npc <- co.npc[sel, , drop=FALSE]
+			symbol.size <- symbol.size[sel]
+			symbol.col <- symbol.col[sel]
+			symbol.shape <- symbol.shape[sel]
+		}
+		symbol.size <- symbol.size * lineInch
+		
+		if (length(symbol.size)!=1) {
+			decreasing <- order(-symbol.size)
+			co.npc2 <- co.npc[decreasing,,drop=FALSE]
+			symbol.size2 <- symbol.size[decreasing]
+			symbol.shape2 <- symbol.shape[decreasing]
+			symbol.col2 <- symbol.col[decreasing]
 		} else {
 			co.npc2 <- co.npc
-			bubble.size2 <- bubble.size
-			cols2 <- cols
+			symbol.size2 <- symbol.size
+			symbol.shape2 <- symbol.shape
+			symbol.col2 <- symbol.col
+		}
+
+		bordercol <- symbol.border.col
+		idName <- paste("tm_symbols", i, k, sep="_")
+		
+		if (any(!is.na(symbol.shape2) & symbol.shape2>999)) {
+			gpars <- get_symbol_gpar(x=symbol.shape2,
+									 fill=symbol.col2,
+									 col=bordercol,
+									 lwd=symbol.border.lwd,
+									 separate=TRUE)
+			grobs <- lapply(1:npol, function(i) {
+				if (!is.na(symbol.shape2[i]) && symbol.shape2[i]>999) {
+					grbs <- if (is.na(bordercol)) {
+						gList(shapeLib[[symbol.shape2[i]-999]])	
+					} else {
+						gList(shapeLib[[symbol.shape2[i]-999]], rectGrob(gp=gpar(fill=NA, col=bordercol, lwd=symbol.border.lwd)))	
+					}
+					gTree(children=grbs, vp=viewport(x=unit(co.npc2[i,1], "npc"), 
+														  y=unit(co.npc2[i,2], "npc"),
+														  width=unit(symbol.size2[i]*2/3, "inch"),
+														  height=unit(symbol.size2[i]*2/3, "inch")))
+				} else {
+					pointsGrob(x=unit(co.npc2[i,1], "npc"), y=unit(co.npc2[i,2], "npc"),
+							   size=unit(symbol.size2[i], "inch"),
+							   pch=symbol.shape2[i],
+							   gp=gpars[[i]])
+				}
+			})
+			x <- gTree(children=do.call(gList, grobs), name=idName)
+		} else {
+			pointsGrob(x=unit(co.npc2[,1], "npc"), y=unit(co.npc2[,2], "npc"),
+					   size=unit(symbol.size2, "inch"),
+					   pch=symbol.shape2,
+					   gp=get_symbol_gpar(x=symbol.shape2,
+					   				   fill=symbol.col2,
+					   				   col=bordercol,
+					   				   lwd=symbol.border.lwd), 
+					   name=idName)
 		}
 		
-		
-		bordercol <- bubble.border.col
-		idName <- paste("tm_bubbles", i, k, sep="_")
-		
-		
-		circleGrob(x=unit(co.npc2[,1], "npc"), y=unit(co.npc2[,2], "npc"),
-				   r=unit(bubble.size2, "inch"),
-				   gp=gpar(col=bordercol, lwd=bubble.border.lwd, fill=cols2), name=idName)
 	})
 }
 

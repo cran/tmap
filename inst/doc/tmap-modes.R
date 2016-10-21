@@ -31,3 +31,7 @@ mapWorld
 ## ---- include=FALSE------------------------------------------------------
 tmap_mode("plot")
 
+## ----eval=F, echo=T, warning=F, message=F--------------------------------
+#  ttm()
+#  last_map()
+

@@ -5,12 +5,12 @@
 #' Predefined styles:
 #' \tabular{ll}{
 #' \code{tm_style_white}\tab White background, commonly used colors (default) \cr
-#' \code{tm_style_grey}/\code{_grey}\tab Grey background, useful to highlight sequential palettes (e.g. in choropleths) \cr
+#' \code{tm_style_gray}/\code{_grey}\tab Grey background, useful to highlight sequential palettes (e.g. in choropleths) \cr
 #' \code{tm_style_natural}\tab Emulation of natural view: blue waters and green land \cr
 #' \code{tm_style_bw}\tab Greyscale, obviously useful for greyscale printing \cr
 #' \code{tm_style_classic}\tab Classic styled maps (recommended) \cr
 #' \code{tm_style_cobalt}\tab Inspired by latex beamer style cobalt \cr
-#' \code{tm_style_albatross}\tab Inspired by latex beamer style cobalt \cr
+#' \code{tm_style_albatross}\tab Inspired by latex beamer style albatross \cr
 #' \code{tm_style_beaver}\tab Inspired by latex beamer style beaver \cr
 #' --------------------------- \tab --------------------------------------------------------------------------------------------------- \cr
 #' }
@@ -29,10 +29,10 @@
 #' @name tm_layout
 #' @rdname tm_layout
 #' @param title Global title of the map. For small multiples, multiple titles can be specified. Titles for the legend items are specified at the layer functions (e.g. \code{\link{tm_fill}}). 
-#' @param scale numeric value that serves as the global scale parameter. All font sizes, bubble sizes, border widths, and line widths are controled by this value. Each of these elements can be scaled independantly with the \code{scale}, \code{lwd}, or \code{size} arguments provided by the \code{\link{tmap-element}s}.
+#' @param scale numeric value that serves as the global scale parameter. All font sizes, symbol sizes, border widths, and line widths are controled by this value. Each of these elements can be scaled independantly with the \code{scale}, \code{lwd}, or \code{size} arguments provided by the \code{\link{tmap-element}s}.
 #' @param title.size Relative size of the title
 #' @param bg.color Background color. By default it is \code{"white"}. A recommended alternative for choropleths is light grey (e.g., \code{"grey85"}).
-#' @param aes.color Default color values for the aesthetics layers. Should be a named vector with the names chosen from: \code{fill}, \code{borders}, \code{bubbles}, \code{dots}, \code{lines}, \code{text}, \code{na}. Use \code{"#00000000"} for transparency.
+#' @param aes.color Default color values for the aesthetics layers. Should be a named vector with the names chosen from: \code{fill}, \code{borders}, \code{symbols}, \code{dots}, \code{lines}, \code{text}, \code{na}. Use \code{"#00000000"} for transparency.
 #' @param aes.palette Default color palettes for the aesthetics. It takes a list of three items: \code{seq} for sequential palettes, \code{div} for diverging palettes, and \code{cat} for categorical palettes. By default, Color Brewer palettes (see (see \code{RColorBrewer::display.brewer.all})) are used. It is also possible provide a vector of colors for any of these items.
 #' @param attr.color Default color value for map attributes
 #' @param sepia.intensity Number between 0 and 1 that defines the amount of sepia effect, which gives the map a brown/yellowish flavour. By default this effect is disabled (\code{sepia.intensity=0}). All colored used in the map are adjusted with this effect.
@@ -59,16 +59,18 @@
 #' @param legend.outside.position Character that determines the outside position of the legend. Only applicable when \code{legend.outside=TRUE}. One of: \code{"right"}, \code{"left"}, \code{"top"}, or \code{"bottom"}.
 #' @param legend.outside.size Numeric value that determines the relative size of the legend, when \code{legend.outside=TRUE}. If the first value of \code{legend.outside.position} is \code{"top"} or \code{"bottom"}, then it is the width of the legend, else it is the height of the legend.
 #' @param legend.position Position of the legend. Vector of two values, specifing the x and y coordinates. Either this vector contains \code{"left"}, \code{"LEFT"}, \code{"center"}, \code{"right"}, or \code{"RIGHT"} for the first value and \code{"top"}, \code{"TOP"}, \code{"center"}, \code{"bottom"}, or \code{"BOTTOM"} for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y coordinates of the left bottom corner of the legend. The uppercase values correspond to the position without margins (so tighter to the frame). By default, it is automatically placed in the corner with most space based on the (first) shape object. If \code{legend.outside=TRUE}, this argument specifies the legend position within the outside panel.
-#' @param legend.just Justification of the legend relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if legend.position is specified by numeric coordinates.
-#' @param legend.width maximum width of the legend
-#' @param legend.height maximum height of the legend.
+#' @param legend.stack Value that determines how the legend items are stacked: \code{"vertical"} or \code{"horizontal"}.
+#' @param legend.just Justification of the legend relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{legend.position} is specified by numeric coordinates.
+#' @param legend.width width of the legend. If it is a negative number, it will be the exact legend width. If it is a positive number (by default), it will be the maximum legend width; the actual legend width will be decreased automatically based on the legend content and font sizes.
+#' @param legend.height height of the legend. If it is a negative number, it will be the exact legend height. If it is a positive number (by default), it will be the maximum legend height; the actual legend height will be decreased automatically based on the legend content and font sizes.
 #' @param legend.hist.height height of the histogram. This hight is initial. If the total legend is downscaled to \code{legend.height}, the histogram is downscaled as well.
 #' @param legend.hist.width width of the histogram. By default, it is equal to the \code{legend.width}.
 #' @param legend.title.size Relative font size for the legend title
 #' @param legend.text.size Relative font size for the legend text elements
 #' @param legend.hist.size Relative font size for the choropleth histogram
-#' @param legend.format list of formatting options for the legend numbers. Only applicable if \code{labels} is undefined. Parameters are:
+#' @param legend.format list of formatting options for the legend numbers. Only applicable for layer functions (such as \code{\link{tm_fill}}) where if \code{labels} is undefined. Parameters are:
 #' \describe{
+#' \item{fun}{Function to specify the labels. It should take a numeric vector, and should return a character vector of the same size. By default it is not specified. If specified, the list items \code{scientific}, \code{format}, and \code{digits} (see below) are not used.}
 #' \item{scientific}{Should the labels be formatted scientically? If so, square brackets are used, and the \code{format} of the numbers is \code{"g"}. Otherwise, \code{format="f"}, and \code{text.separator}, \code{text.less.than}, and \code{text.or.more} are used. Also, the numbers are automatically  rounded to millions or billions if applicable.}
 #' \item{format}{By default, \code{"f"}, i.e. the standard notation \code{xxx.xxx}, is used. If \code{scientific=TRUE} then \code{"g"}, which means that numbers are formatted scientically, i.e. \code{n.dddE+nn} if needed to save space.}
 #' \item{digits}{Number of digits after the decimal point if \code{format="f"}, and the number of significant digits otherwise.}
@@ -82,7 +84,7 @@
 #' @param legend.bg.alpha Transparency number between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of the \code{legend.bg.color} is used (normally 1).
 #' @param legend.hist.bg.color Background color of the histogram
 #' @param legend.hist.bg.alpha Transparency number between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of the \code{legend.hist.bg.color} is used (normally 1).
-#' @param title.snap.to.legend Logical that determines whether the title is part of the legend. By default false, unless \code{legend.outside} is \code{TRUE}
+#' @param title.snap.to.legend Logical that determines whether the title is part of the legend. By default \code{FALSE}
 #' @param title.position Position of the title. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y coordinates of the tile. The uppercase values correspond to the position without margins (so tighter to the frame). 
 #' By default the title is placed on top of the legend (determined by \code{legend.position}).
 #' @param title.color color of the title
@@ -100,7 +102,7 @@
 #' @param attr.outside.position Character that determines the outside position of the legend, either \code{top} or \code{bottom}. Only applicable when \code{attr.outside=TRUE}.
 #' @param attr.outside.size Numeric value that determines the relative height of the attribute viewport, when \code{attr.outside=TRUE}.
 #' @param attr.position Position of the map attributes, which are \code{\link{tm_credits}}, \code{\link{tm_scale_bar}} and \code{\link{tm_compass}}. Vector of two values, specifing the x and y coordinates. The first value is \code{"left"}, \code{"LEFT"}, \code{"center"}, \code{"right"}, or \code{"RIGHT"}, and the second value \code{"top"}, \code{"TOP"}, \code{"center"}, \code{"bottom"}, or \code{"BOTTOM"}. The uppercase values correspond to the position without margins (so tighter to the frame). Positions can also be set separately in the map attribute fuctions. If \code{attr.outside=TRUE}, this argument specifies the position of the attributes within the outside panel.
-#' @param attr.just Justification of the attributes relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if legend.position is specified by numeric coordinates.
+#' @param attr.just Justification of the attributes relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{attr.position} is specified by numeric coordinates. It can also be specified per attribute function.
 #' @param design.mode Logical that enables the design mode. If \code{TRUE}, inner and outer margins, legend position, aspect ratio are explicitely shown. Also, feedback text in the console is given.
 #' @param basemaps vector of one or more names of baselayer maps used in the interactive view mode. See \code{\link{tm_view}}.
 #' @param bg.overlay color of the background overlay rectangle used in the interactive view mode. See \code{\link{tm_view}}.
@@ -113,7 +115,7 @@ tm_layout <- function(title=NA,
 					  scale=1,
 					  title.size=1.3,
 					  bg.color= "white",
-					  aes.color=c(fill="grey85", borders="grey40", bubbles="blueviolet", dots="black", lines="red", text="black", na="grey75"),
+					  aes.color=c(fill="grey85", borders="grey40", symbols="grey60", dots="black", lines="red", text="black", na="grey75"),
 					  aes.palette=list(seq="YlOrBr", div="RdYlGn", cat="Set3"),
 					  attr.color="black",
   					  sepia.intensity=0, 
@@ -140,6 +142,7 @@ tm_layout <- function(title=NA,
 					  legend.outside.position="right",
 					  legend.outside.size=0.3,
 					  legend.position = NULL,
+					  legend.stack = c("vertical", "horizontal"),
 					  legend.just = c("left", "bottom"),
 					  legend.width = 0.4,
 					  legend.height = 0.9,
@@ -148,7 +151,7 @@ tm_layout <- function(title=NA,
 					  legend.title.size=1.1,
 					  legend.text.size=0.7,
 					  legend.hist.size=0.7,
-					  legend.format=list(scientific = FALSE, digits= NA, 
+					  legend.format=list(fun=NULL, scientific = FALSE, digits= NA, 
 					  				   text.separator = "to", text.less.than = "Less than",
 					  				   text.or.more = "or more"),
 					  legend.frame = FALSE,
@@ -157,7 +160,7 @@ tm_layout <- function(title=NA,
 					  legend.bg.alpha = 1,
 					  legend.hist.bg.color = NA,
 					  legend.hist.bg.alpha = 1,
-					  title.snap.to.legend = NA,
+					  title.snap.to.legend = FALSE,
 					  title.position = c("left", "top"),
 					  title.color=attr.color,
 					  title.bg.color=NA,
@@ -178,6 +181,7 @@ tm_layout <- function(title=NA,
 					  basemaps = c("CartoDB.Positron", "OpenStreetMap", "Esri.WorldTopoMap"),
 					  bg.overlay=NULL,
 					  bg.overlay.alpha=0) {
+	legend.stack <- match.arg(legend.stack)
 	g <- list(tm_layout=c(as.list(environment()), list(call=names(match.call(expand.dots = TRUE)[-1]))))
 	class(g) <- "tm"
 	g
@@ -306,7 +310,7 @@ tm_style_white <- function(...) {
 #' @rdname tm_layout
 #' @export
 tm_style_gray <- function(bg.color="grey85", 
-						   aes.color=c(fill="grey70", borders="grey20", bubbles="blueviolet", dots="black", lines="red", text="black", na="grey60"),
+						   aes.color=c(fill="grey70", borders="grey20", symbols="grey50", dots="black", lines="red", text="black", na="grey60"),
 						   ...) {
 	args <- c(as.list(environment()), list(...))
 	g <- do.call("tm_layout", args)
@@ -317,14 +321,14 @@ tm_style_gray <- function(bg.color="grey85",
 #' @rdname tm_layout
 #' @export
 tm_style_natural <- function(bg.color="lightskyblue1",
-							 aes.color=c(fill="darkolivegreen3", borders="black", bubbles="tomato2", dots="firebrick", lines="steelblue", text="black", na="white"),
+							 aes.color=c(fill="darkolivegreen3", borders="black", symbols="tomato2", dots="firebrick", lines="steelblue", text="black", na="white"),
 							 aes.palette=list(seq="YlGn", div="RdYlGn", cat="Set3"),
 							 attr.color="black", 
 							 space.color="white",
 							 legend.frame=TRUE,
 							 legend.bg.color="grey90",
 							 earth.boundary=TRUE,
-							 basemaps="MapQuestOpen.OSM",
+							 basemaps="Thunderforest.Landscape",
 							 ...) {
 
 	args <- c(as.list(environment()), list(...))
@@ -340,7 +344,7 @@ tm_style_grey <- tm_style_gray
 #' @rdname tm_layout
 #' @export
 tm_style_cobalt <- function(bg.color="#002240",
-							aes.color=c(fill="#0088FF", borders="#002240", bubbles="#FF9D00", dots="#FF9D00", lines="#FFEE80", text="white", na="grey60"),
+							aes.color=c(fill="#0088FF", borders="#002240", symbols="#FF9D00", dots="#FF9D00", lines="#FFEE80", text="white", na="grey60"),
 							aes.palette=list(seq="YlGn", div="RdYlGn", cat="Set3"),
 							attr.color="white", 
 							bg.overlay.alpha=.3,
@@ -357,7 +361,7 @@ tm_style_cobalt <- function(bg.color="#002240",
 #' @rdname tm_layout
 #' @export
 tm_style_col_blind <- function(bg.color="white",
-							aes.color=c(fill="grey85", borders="black", bubbles="#D55E00", dots="#0072B2", lines="#009E73", text="black", na="white"),
+							aes.color=c(fill="grey85", borders="black", symbols="#D55E00", dots="#0072B2", lines="#009E73", text="black", na="white"),
 							aes.palette=list(seq="Blues", div="RdBu", cat=c("#D55E00", "#56B4E9", "#E69F00", "#009E73", "#F0E442", "#0072B2","#CC79A7")),
 							attr.color="black", ...) {
 
@@ -371,7 +375,7 @@ tm_style_col_blind <- function(bg.color="white",
 #' @rdname tm_layout
 #' @export
 tm_style_albatross <- function(bg.color="#00007F",
-								aes.color=c(fill="#4C4C88", borders="#00004C", bubbles="#BFBFFF", dots="#BFBFFF", lines="#BFBFFF", text="#FFE700", na="grey60"),
+								aes.color=c(fill="#4C4C88", borders="#00004C", symbols="#BFBFFF", dots="#BFBFFF", lines="#BFBFFF", text="#FFE700", na="grey60"),
 								aes.palette=list(seq="YlOrRd", div="RdYlGn", cat="Set3"),
 								attr.color="#BFBFFF",
 								bg.overlay.alpha=.3,
@@ -388,7 +392,7 @@ tm_style_albatross <- function(bg.color="#00007F",
 #' @rdname tm_layout
 #' @export
 tm_style_beaver <- function(bg.color="#FFFFFF",
-							 aes.color=c(fill="#FFE200", borders="#000000", bubbles="#A30000", dots="#A30000", lines="#A30000", text="#000000", na="#E0E0E0"),
+							 aes.color=c(fill="#FFE200", borders="#000000", symbols="#A30000", dots="#A30000", lines="#A30000", text="#000000", na="#E0E0E0"),
 							 aes.palette=list(seq="YlOrBr", div="RdYlGn", cat="Dark2"),
 							 attr.color="black", ...) {
 	# W="#FFFFFF" Y="#FFE200" Rd="#A30000" Bl="#000000" LiGr="#F0F0F0" Gr="E0E0E0"

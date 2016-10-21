@@ -35,6 +35,46 @@ legend_subplot <- function(x, id, gt, histWidth) {
 	}), legWidth=legWidth)
 }
 
+
+legend_subplot2 <- function(x, id, rel_height, gt, histWidth, titleRow) {
+	if (is.null(x)) return(list(NULL, 0))
+	legend.type <- x$legend.type
+	
+	if (id<0) {
+		row <- 1
+		col <- 1:(-id)
+	} else {
+		row <- (if ((id %% 2)==1) 1 else 2) + titleRow
+		col <- ((id-1) %/% 2) + 1
+	}
+	
+	list(cellplot(row, col, e={
+		pushViewport(viewport(height=rel_height, y=1-.5*rel_height))
+		lineHeight <- convertHeight(unit(1, "lines"), unitTo="npc", valueOnly=TRUE)
+		res <- if (legend.type=="hist") {
+			legend_hist(x, gt$legend.hist.size, lineHeight, scale=gt$scale, m=.25, attr.color=gt$attr.color, legend.hist.bg.color = gt$legend.hist.bg.color)
+		} else if (legend.type=="TITLE") {
+			legend_title(x, gt, is.main.title=TRUE, lineHeight, m=.1)
+		} else if (legend.type=="title") {
+			legend_title(x, gt, is.main.title=FALSE, lineHeight, m=.1)
+		} else if (legend.type=="spacer") {
+			list(NULL, 0)
+		} else if (x$legend.is.portrait) {
+			legend_portr(x, gt, lineHeight, m=.25)
+		} else {
+			legend_landsc(x, gt, lineHeight, m=.25)
+		}
+		v <- current.viewport()
+		upViewport(1)
+		legGrob <- gTree(children=gList(res[[1]]), vp=v)
+		legWidth <- res[[2]]
+		if (legend.type=="hist") legWidth <- histWidth
+		if (gt$design.mode) {
+			gTree(children=gList(rectGrob(gp=gpar(fill="#CCCCCCCC")), legGrob))	
+		} else legGrob
+	}), legWidth=legWidth)
+}
+
 legend_title <- function(x, gt, is.main.title, lineHeight, m) {
 	size <- ifelse(is.main.title, gt$title.size, gt$legend.title.size)
 	title <- x$title
@@ -51,25 +91,29 @@ legend_title <- function(x, gt, is.main.title, lineHeight, m) {
 
 
 legend_portr <- function(x, gt, lineHeight, m) {
+	
 	legend.text.size <- gt$legend.text.size
 	with(x, {
 		is.cont <- (nchar(legend.palette[1])>20)
 		
 		my <- lineHeight * legend.text.size * m
 		mx <- convertWidth(convertHeight(unit(my, "npc"), "inch"), "npc", TRUE)
-		s <- 1.25 ## for bubbles only
+		s <- 1.25 ## for text only
+		s2 <- 4/3 ## for symbols only
 		r <- 1-2*my
 		
 		
-		if (legend.type=="bubble.size") {
+		
+		if (legend.type=="symbol.size") {
 			nitems <- length(legend.labels)
-			hs <- convertHeight(unit(legend.sizes, "inch"), "npc", valueOnly=TRUE) * 2
+			hs <- convertHeight(unit(legend.sizes, "inch"), "npc", valueOnly=TRUE) / s2
 			lhs <- pmax(hs*s, legend.text.size * lineHeight)
 			if (sum(lhs)>r+1e-6) {
 				clipID <- which(cumsum(lhs) > r)[1]
 				hs <- hs[1:(clipID-1)]
 				lhs <- lhs[1:(clipID-1)]
 				legend.labels <- legend.labels[1:(clipID-1)]
+				nitems <- length(legend.labels)
 			}
 		} else if (legend.type=="text.size") {
 			nitems <- length(legend.labels)
@@ -81,20 +125,21 @@ legend_portr <- function(x, gt, lineHeight, m) {
 				lhs <- lhs[1:(clipID-1)]
 				legend.labels <- legend.labels[1:(clipID-1)]
 				legend.text <- legend.text[1:(clipID-1)]
+				nitems <- length(legend.labels)
 			}
 		} else {
 			nitems <- length(legend.labels)
 			lhs <- hs <- rep(r / nitems, nitems)
 		}
 		
-		if (legend.type=="bubble.col" && !is.cont) {
-			bmax <- convertHeight(unit(bubble.max.size, "inch"), "npc", valueOnly=TRUE) * 2
-			hs <- pmin(hs/s, bmax)
+		if (legend.type %in% c("symbol.col", "symbol.shape") && !is.cont) {
+			bmax <- convertHeight(unit(legend.sizes, "inch"), "npc", valueOnly=TRUE) / s2
+			hs <- pmin(hs/s*symbol.normal.size, bmax)
 		}
 		
 		
 		if (legend.type=="text.col" && !is.cont) {
-			cex <- pmin(convertHeight(unit(hs/s, "npc"), "lines", valueOnly = TRUE), text.max.size)
+			cex <- pmin(convertHeight(unit(hs/s, "npc"), "lines", valueOnly = TRUE), legend.sizes)
 			ws <- text_width_npc(legend.text, space = FALSE) * cex
 		} else if  (legend.type=="text.size") {
 			cex <- legend.sizes #pmin(convertHeight(unit(hs/s, "npc"), "lines", valueOnly = TRUE))
@@ -107,7 +152,7 @@ legend_portr <- function(x, gt, lineHeight, m) {
 		ys <- 1 - my - cumsum(lhs) + lhs/2
 		size <- pmin(lhs / lineHeight, legend.text.size)
 		
-		hsi <- convertHeight(unit(hs, "npc"), "inch", valueOnly=TRUE)
+		hsi <- convertHeight(unit(hs, "npc"), "inch", valueOnly=TRUE) * s2
 		
 		wstext <- text_width_npc(legend.labels)
 		newsize <- pmin(size, (1-wsmax-4*mx) / wstext)
@@ -149,13 +194,48 @@ legend_portr <- function(x, gt, lineHeight, m) {
 					 width= ws, 
 					 height= hs,
 					 gp=gpar(fill=fill, col=col, lwd=lwd))
-		} else if (legend.type %in% c("bubble.size", "bubble.col")) {
+		} else if (legend.type %in% c("symbol.size", "symbol.col", "symbol.shape")) {
 			cols <- legend.palette
-			circleGrob(x=mx+wsmax/2, 
-					   y=ys, r=unit(hsi/2, "inch"),
-					   gp=gpar(fill=cols,
-					   		col=bubble.border.col,
-					   		lwd=bubble.border.lwd))
+			shapes <- legend.shapes
+			shapes <- rep(shapes, length.out=nitems)
+			if (any(!is.na(shapes) & shapes>999)) {
+				shapeLib <- get(".shapeLib", envir = .TMAP_CACHE)
+				
+				gpars <- get_symbol_gpar(x=shapes,
+										 fill=cols,
+										 col=symbol.border.col,
+										 lwd=symbol.border.lwd,
+										 separate=TRUE)
+				grobs <- lapply(1:nitems, function(i) {
+					if (!is.na(shapes[i]) & shapes[i]>999) {
+						grbs <- if (is.na(symbol.border.col)) {
+							gList(shapeLib[[shapes[i]-999]])
+						} else {
+							gList(shapeLib[[shapes[i]-999]], rectGrob(gp=gpar(fill=NA, col=symbol.border.col, lwd=symbol.border.lwd)))	
+						}
+						gTree(children=grbs, vp=viewport(x=unit(mx+wsmax/2, "npc"), 
+														 y=ys[i]+symbol_legend_y_correction(shapes[i]),
+														 width=unit(hsi[i]*2/3, "inch"),
+														 height=unit(hsi[i]*2/3, "inch")))
+					} else {
+						pointsGrob(x=unit(mx+wsmax/2, "npc"), 
+								   y=ys[i]+symbol_legend_y_correction(shapes[i]),
+								   size=unit(hsi[i], "inch"),
+								   pch=shapes[i],
+								   gp=gpars[[i]])
+					}
+				})
+				gTree(children=do.call(gList, grobs))				
+			} else {
+				pointsGrob(x=rep(mx+wsmax/2, nitems),
+						   y=ys+symbol_legend_y_correction(shapes),
+						   size=unit(hsi, "inch"),
+						   pch=shapes,
+						   gp=get_symbol_gpar(x=shapes,
+						   				   fill=cols,
+						   				   col=symbol.border.col,
+						   				   lwd=symbol.border.lwd))
+			}
 		} else if (legend.type %in% c("text.size", "text.col")) {
 			cols <- legend.palette
 			textGrob(legend.text,
@@ -188,6 +268,7 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 	with(x, {
 		is.cont <- (nchar(legend.palette[1])>20)
 		#grid.rect()
+		s2 <- 4/3
 		
 		if (lineHeight*legend.text.size * 3.25 > 1) {
 			legend.text.size <- 1/(lineHeight * 3.25)
@@ -200,8 +281,8 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 		
 		nitems <- length(legend.labels)
 		# delete too high 
-		if (legend.type=="bubble.size") {
-			hs <- convertHeight(unit(legend.sizes, "inch"), "npc", valueOnly=TRUE) * 2
+		if (legend.type=="symbol.size") {
+			hs <- convertHeight(unit(legend.sizes, "inch"), "npc", valueOnly=TRUE) / s2
 			# 			nofit <- which(hs>(ry-1.25*lineHeight*legend.text.size))
 			# 			
 			# 			if (length(nofit)) {
@@ -252,12 +333,13 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 		
 		wsmax <- rx/nitems
 		
-		if (legend.type=="bubble.size") {
-			bubblews <- convertWidth(unit(legend.sizes, "inch"), "npc", valueOnly=TRUE) * 2
-			ws <- pmax(ws, bubblews*1.1)
+		if (legend.type=="symbol.size") {
+			symbolws <- convertWidth(unit(legend.sizes, "inch"), "npc", valueOnly=TRUE) / s2
+			ws <- pmax(ws, symbolws*1.1)
 			
 			# delete too wide 
 			if (sum(ws)>rx) {
+				cat(legend.sizes, "\n")
 				clipID2 <- which(cumsum(ws)>rx)[1]
 				nitems <- clipID2 - 1
 				legend.labels <- legend.labels[1:nitems]
@@ -265,6 +347,7 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 				legend.sizes <- legend.sizes[1:nitems]
 				hs <- hs[1:nitems]
 				ws <- ws[1:nitems]
+				warning("The legend is too narrow to place all symbol sizes.", call.=FALSE)
 			}
 		} else if (legend.type=="text.size") {
 			#textws <- convertWidth(unit(legend.sizes, "lines"), "npc", valueOnly=TRUE)
@@ -284,8 +367,8 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 		
 		xs <- mx + cumsum(ws) - ws/2
 		
-		if (legend.type=="bubble.col") {
-			bmax <- convertHeight(unit(bubble.max.size, "inch"), "npc", valueOnly=TRUE) * 2
+		if (legend.type %in% c("symbol.col", "symbol.shape")) {
+			bmax <- convertHeight(unit(symbol.max.size, "inch"), "npc", valueOnly=TRUE) / s2
 			hs <- pmin(hs, bmax)
 		} else if (legend.type=="text.col") {
 			bmax <- convertHeight(unit(text.max.size, "lines"), "npc", valueOnly=TRUE)
@@ -293,9 +376,8 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 		}
 		
 		hsmax <- max(hs)
-		hsi <- convertHeight(unit(hs, "npc"), "inch", valueOnly=TRUE)
-		
-		
+		hsi <- convertHeight(unit(hs, "npc"), "inch", valueOnly=TRUE) * s2
+
 		grobLegendItem <- if (is.cont) {
 			fill <- legend.palette
 			xtraWidth <- ws[1]/2
@@ -332,14 +414,56 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 					 width= ws, 
 					 height= hs,
 					 gp=gpar(fill=fill, col=border.col, lwd=lwd))
-		} else if (legend.type %in% c("bubble.size", "bubble.col")) {
+		} else if (legend.type %in% c("symbol.size", "symbol.col", "symbol.shape")) {
 			cols <- legend.palette
-			bubbleR <- unit(hsi/2, "inch")
-			xtraWidth <- convertWidth(max(bubbleR), "npc", valueOnly=TRUE)
-			circleGrob(x=xs, y=1-my-hsmax/2, r=bubbleR,
-					   gp=gpar(fill=cols,
-					   		col=bubble.border.col,
-					   		lwd=bubble.border.lwd))
+			
+			shapes <- legend.shapes
+			shapes <- rep(shapes, length.out=nitems)
+			
+			symbolR <- unit(hsi, "inch")
+			xtraWidth <- convertWidth(max(symbolR), "npc", valueOnly=TRUE)/2/s2
+			
+			if (any(!is.na(shapes) & shapes>999)) {
+				shapeLib <- get(".shapeLib", envir = .TMAP_CACHE)
+				
+				gpars <- get_symbol_gpar(x=shapes,
+										 fill=cols,
+										 col=symbol.border.col,
+										 lwd=symbol.border.lwd,
+										 separate=TRUE)
+				grobs <- lapply(1:nitems, function(i) {
+					if (!is.na(shapes[i]) && shapes[i]>999) {
+						grbs <- if (is.na(symbol.border.col)) {
+							gList(shapeLib[[shapes[i]-999]])
+						} else {
+							gList(shapeLib[[shapes[i]-999]], rectGrob(gp=gpar(fill=NA, col=symbol.border.col, lwd=symbol.border.lwd)))	
+						}
+						
+						gTree(children=grbs, vp=viewport(x=xs[i], 
+																					 y=1-my-hsmax/2+symbol_legend_y_correction(shapes[i]),
+																					 width=unit(symbolR[i], "inch")*(2/3),
+																					 height=unit(symbolR[i], "inch")*(2/3)))
+					} else {
+						pointsGrob(x=xs[i], 
+								   y=1-my-hsmax/2+symbol_legend_y_correction(shapes[i]),
+								   size=unit(symbolR[i], "inch"),
+								   pch=shapes[i],
+								   gp=gpars[[i]])
+					}
+				})
+				gTree(children=do.call(gList, grobs))				
+			} else {
+				pointsGrob(x=xs, y=1-my-hsmax/2+symbol_legend_y_correction(shapes), size=symbolR,
+						   pch=shapes,
+						   gp=get_symbol_gpar(x=shapes,
+						   					fill=cols,
+						   					col=symbol.border.col,
+						   					lwd=symbol.border.lwd))
+			}
+			# circleGrob(x=xs, y=1-my-hsmax/2, r=symbolR,
+			# 		   gp=gpar(fill=cols,
+			# 		   		col=symbol.border.col,
+			# 		   		lwd=symbol.border.lwd))
 		} else if (legend.type %in% c("text.size", "text.col")) {
 			
 			cols <- legend.palette
@@ -393,9 +517,6 @@ plot_scale <- function(gt, just, xrange, crop_factor) {
 	size <- min(gt$scale.size, widths/max(ticksWidths))
 	x <- ticks3[1:(n-1)] + .5*ticksWidths[1]*size
 	
-	# 	cat(size, "s\n")
-	# 	cat(gt$scale.size, "gts\n")
-	
 	lineHeight <- convertHeight(unit(1, "lines"), "npc", valueOnly=TRUE) * size
 	#my <- lineHeight / 2
 	#mx <- convertWidth(convertHeight(unit(my, "npc"), "inch"), "npc", TRUE)
@@ -426,6 +547,61 @@ plot_scale <- function(gt, just, xrange, crop_factor) {
 	
 }
 
+plot_logo <- function(gt, just, id) {
+	lineHeight <- convertHeight(unit(1, "lines"), "npc", valueOnly=TRUE)
+	
+	
+	grobBG <- if (gt$design.mode) rectGrob(gp=gpar(fill="orange")) else NULL
+	
+	files <- gt$logo.file[[id]]
+	heights <- gt$logo.height[[id]]
+	widths <- gt$logo.width[[id]]
+	margin <- gt$logo.margin[id]
+	halign <- gt$logo.halign[id]
+	
+	n <- length(files)
+	xs <- c(0, cumsum(widths))[-(n+1)] + (1:n)*margin +  (widths / 2)
+
+	# translate to number from 0 (bottom) to 1 (top)
+	halign_num <- ifelse(is_num_string(halign), as.numeric(halign), ifelse(halign=="top", 1, ifelse(halign=="bottom", 0, 0.5)))
+	
+	# rescale to -1 to 1
+	halign_num <- (halign_num-.5) * 2
+	
+	h <- convertHeight(unit(1, "npc"), "lines", valueOnly=TRUE)
+	
+	ys <- h/2 + (max(heights) - heights)/2 * halign_num
+	
+		
+	heights_npc <- convertHeight(unit(heights, "lines"), "npc", valueOnly=TRUE)
+	widths_npc <- convertWidth(unit(widths, "lines"), "npc", valueOnly=TRUE)
+	xs_npc <- convertX(unit(xs, "lines"), "npc", valueOnly=TRUE)
+	ys_npc <- convertY(unit(ys, "lines"), "npc", valueOnly=TRUE)
+	
+	heights_in <- convertHeight(unit(heights, "lines"), "inch", valueOnly=TRUE)
+	widths_in <- convertHeight(unit(widths, "lines"), "inch", valueOnly=TRUE)
+	
+	
+	grobsLogo <- do.call(gList, c(list(grobBG=grobBG), mapply(function(f, h, w, x, y, hin, win) {
+		grobLogo <- pngGrob(f, fix.borders = T, n=2, height.inch=hin, target.dpi=96)
+		
+		rdim <- dim(grobLogo$raster)
+		grobLogo$raster <- matrix(do.call("process_color", c(list(as.vector(grobLogo$raster), alpha=1), gt$pc)), nrow = rdim[1], ncol=rdim[2])
+		# correct width to logo asp
+		win2 <- hin * 1/do.call("/", as.list(rdim))
+		w2 <- convertWidth(unit(win2, "inch"), "npc", valueOnly=TRUE)
+		grobLogo$x <- unit(x, "npc")
+		grobLogo$y <- unit(y, "npc")
+		grobLogo$width <- unit(w2, "npc")
+		grobLogo$height <- unit(h, "npc")
+		grobLogo
+	}, files, heights_npc, widths_npc, xs_npc, ys_npc, heights_in, widths_in, SIMPLIFY = FALSE)))
+	
+	
+	
+	gTree(children=grobsLogo)
+	
+}
 
 plot_cred <- function(gt, just, id) {
 	lineHeight <- convertHeight(unit(1, "lines"), "npc", valueOnly=TRUE)

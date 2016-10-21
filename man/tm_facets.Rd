@@ -7,12 +7,13 @@
 tm_facets(by = NULL, ncol = NULL, nrow = NULL, free.coords = FALSE,
   drop.units = free.coords, drop.empty.facets = TRUE, showNA = NA,
   textNA = "Missing", free.scales = is.null(by),
-  free.scales.fill = free.scales, free.scales.bubble.size = free.scales,
-  free.scales.bubble.col = free.scales, free.scales.text.size = free.scales,
-  free.scales.text.col = free.scales, free.scales.line.col = free.scales,
-  free.scales.line.lwd = free.scales, free.scales.raster = free.scales,
-  inside.original.bbox = FALSE, scale.factor = 2,
-  drop.shapes = drop.units)
+  free.scales.fill = free.scales, free.scales.symbol.size = free.scales,
+  free.scales.symbol.col = free.scales,
+  free.scales.symbol.shape = free.scales,
+  free.scales.text.size = free.scales, free.scales.text.col = free.scales,
+  free.scales.line.col = free.scales, free.scales.line.lwd = free.scales,
+  free.scales.raster = free.scales, inside.original.bbox = FALSE,
+  scale.factor = 2, drop.shapes = drop.units)
 }
 \arguments{
 \item{by}{data variable name by which the data is split, or a vector of two variable names to split the data by two variables (where the first is used for the rows and the second for the columns).}
@@ -31,13 +32,15 @@ tm_facets(by = NULL, ncol = NULL, nrow = NULL, free.coords = FALSE,
 
 \item{textNA}{text used for facets of missing values.}
 
-\item{free.scales}{logical. Should all scales of the plotted data variables be free, i.e. independent of each other? Possible data variables are color from \code{\link{tm_fill}}, color and size from \code{\link{tm_bubbles}} and line color from \code{\link{tm_lines}}.}
+\item{free.scales}{logical. Should all scales of the plotted data variables be free, i.e. independent of each other? Possible data variables are color from \code{\link{tm_fill}}, color and size from \code{\link{tm_symbols}} and line color from \code{\link{tm_lines}}.}
 
 \item{free.scales.fill}{logical. Should the color scale for the choropleth be free?}
 
-\item{free.scales.bubble.size}{logical. Should the bubble size scale for the bubble map be free?}
+\item{free.scales.symbol.size}{logical. Should the symbol size scale for the symbol map be free?}
 
-\item{free.scales.bubble.col}{logical. Should the color scale for the bubble map be free?}
+\item{free.scales.symbol.col}{logical. Should the color scale for the symbol map be free?}
+
+\item{free.scales.symbol.shape}{logical. Should the symbol shape scale for the symbol map be free?}
 
 \item{free.scales.text.size}{logical. Should the text size scale be free?}
 
@@ -51,7 +54,7 @@ tm_facets(by = NULL, ncol = NULL, nrow = NULL, free.coords = FALSE,
 
 \item{inside.original.bbox}{If \code{free.coords}, should the bounding box of each small multiple be inside the original bounding box?}
 
-\item{scale.factor}{Number that determines how the elements (e.g. font sizes, bubble sizes, line widths) of the small multiples are scaled in relation to the scaling factor of the shapes. The elements are scaled to the \code{scale.factor}th root of the scaling factor of the shapes. So, for \code{scale.factor=1}, they are scaled proportional to the scaling of the shapes. Since elements, especially text, are often too small to read, a higher value is recommended. By default, \code{scale.factor=2}.}
+\item{scale.factor}{Number that determines how the elements (e.g. font sizes, symbol sizes, line widths) of the small multiples are scaled in relation to the scaling factor of the shapes. The elements are scaled to the \code{scale.factor}th root of the scaling factor of the shapes. So, for \code{scale.factor=1}, they are scaled proportional to the scaling of the shapes. Since elements, especially text, are often too small to read, a higher value is recommended. By default, \code{scale.factor=2}.}
 
 \item{drop.shapes}{deprecated: renamed to \code{drop.units}}
 }
@@ -78,7 +81,7 @@ tm_shape(Europe) +
     	style=c("pretty", "fixed"), breaks=list(NULL, c(65,70,75,80,85)), 
     	palette=list("Oranges", "Purples"),
     	border.col = "black",
-        title=c("Well-Being Index", "Population Density")) +
+        title=c("Well-Being Index", "Life Expectancy")) +
 tm_format_Europe()
 
 \dontrun{
@@ -95,15 +98,14 @@ tm_format_NLD(frame = TRUE, asp=0)
 
 # Facets defined by groupings
 tm_shape(NLD_prov) +
-    tm_borders() +
-    tm_fill("gold2") +
-    tm_facets(by="name") +
-    tm_layout()
+    tm_polygons("gold2") +
+    tm_facets(by="name")
+
+# alternatively: qtm(NLD_prov, fill="gold2", by="name")
 
 tm_shape(NLD_prov) +
     tm_fill("gold2") + tm_borders() +
-    tm_facets(by="name", free.coords = TRUE, drop.units=TRUE) +
-tm_layout()
+    tm_facets(by="name", free.coords = TRUE, drop.units=TRUE)
 
 \dontrun{
 tm_shape(NLD_muni) +
@@ -115,8 +117,8 @@ tm_shape(NLD_prov) +
     tm_facets(by="name", free.coords=TRUE, drop.units=TRUE)
 
 tm_shape(land) +
-tm_raster("black") +
-tm_facets(by="cover_cls")
+    tm_raster("black") +
+    tm_facets(by="cover_cls")
 }
 	
 # Facets defined by groupings defined by two variables

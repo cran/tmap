@@ -1,12 +1,9 @@
-process_raster <- function(data, g, gt, gby, z, allow.small.mult) {
+process_raster <- function(data, g, gt, gby, z, interactive) {
 	npol <- nrow(data)
 	by <- data$GROUP_BY
 	shpcols <- names(data)[1:(ncol(data)-1)]
 
-	# update legend format from tm_layout
-	to_be_assigned <- setdiff(names(gt$legend.format), names(g$legend.format))
-	g$legend.format[to_be_assigned] <- gt$legend.format[to_be_assigned]
-	
+
 	# update gt$pc's saturation
 	gt$pc$saturation <- gt$pc$saturation * g$saturation
 	
@@ -22,7 +19,10 @@ process_raster <- function(data, g, gt, gby, z, allow.small.mult) {
 		nx <- 1
 	} else {
 		x <- g$col
-		if (!allow.small.mult) x <- x[1]
+		if (interactive) {
+			if (length(x)>1) warning("Facets are not supported in view mode yet. Only raster color aesthetic value \"", x[1], "\" will be shown.", call.=FALSE)
+			x <- x[1]
+		} 
 		
 		# by default, use the first data variable
 		if (is.na(x[1])) x <- names(data)[1]
@@ -42,7 +42,8 @@ process_raster <- function(data, g, gt, gby, z, allow.small.mult) {
 			if (!all(x %in% shpcols)) stop("Raster argument neither colors nor valid variable name(s)", call. = FALSE)
 		}
 	}
-
+	interpolate <- ifelse(is.na(g$interpolate), is.colors, g$interpolate)
+	
 	if (is.null(g$colorNA)) g$colorNA <- "#00000000"
 	if (is.na(g$colorNA)[1]) g$colorNA <- gt$aes.colors["na"]
 	if (g$colorNA=="#00000000") g$showNA <- FALSE
@@ -55,6 +56,10 @@ process_raster <- function(data, g, gt, gby, z, allow.small.mult) {
 	
 	
 	nx <- max(nx, nlevels(by))
+	
+	# update legend format from tm_layout
+	g$legend.format <- process_legend_format(g$legend.format, gt$legend.format, nx)
+	
 		
 	# return if data is matrix of color values
 	if (is.matrix(dt)) {
@@ -64,7 +69,7 @@ process_raster <- function(data, g, gt, gby, z, allow.small.mult) {
 		}
 		is.OSM <- attr(data, "is.OSM")
 		if (is.null(is.OSM)) is.OSM <- FALSE
-		return(list(raster=dt, xraster=rep(NA, nx), raster.legend.title=rep(NA, nx), raster.misc=list(is.OSM=is.OSM)))
+		return(list(raster=dt, xraster=rep(NA, nx), raster.legend.title=rep(NA, nx), raster.misc=list(is.OSM=is.OSM, interpolate=interpolate)))
 	}
 	
 	dcr <- process_dtcol(dt, sel=TRUE, g, gt, nx, npol)
@@ -98,7 +103,7 @@ process_raster <- function(data, g, gt, gby, z, allow.small.mult) {
 		 raster.legend.palette=col.legend.palette,
 		 raster.legend.misc=list(),
 		 raster.legend.hist.misc=list(values=values, breaks=breaks),
-		 raster.misc=list(is.OSM=FALSE),
+		 raster.misc=list(is.OSM=FALSE, interpolate=interpolate),
 		 xraster=x,
 		 raster.legend.show=g$legend.show,
 		 raster.legend.title=raster.legend.title,

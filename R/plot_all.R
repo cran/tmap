@@ -1,4 +1,4 @@
-plot_all <- function(i, gp, shps, dasp, sasp, inner.margins.new, legend_pos, use_facets) {
+plot_all <- function(i, gp, gal, shps, dasp, sasp, inner.margins.new, legend_pos, use_facets) {
 	gt <- gp$tm_layout
 	
 	## in case of small multiples, get i'th shape
@@ -88,17 +88,17 @@ plot_all <- function(i, gp, shps, dasp, sasp, inner.margins.new, legend_pos, use
 		#upViewport()
 	} else {
 		## bubble height needed to align with bubbles in legend
-		lineInch <- convertHeight(unit(1, "lines"), "inch", valueOnly=TRUE) * gt$legend.text.size
+		lineInch <- convertHeight(unit(1, "lines"), "inch", valueOnly=TRUE)# * gt$legend.text.size
 		treeMapX <- NULL
 		metaX <- 0
 		metaY <- 0
 	}
 	
 	## prepare legend items
-	leg <- legend_prepare(gp, gt, lineInch)
+	leg <- legend_prepare(gp, gal, gt, lineInch)
 	
 	## legend, title, and other thinks such as compass
-	if (!is.null(leg) || nonempty_text(gt$title) || gt$credits.show || gt$scale.show || gt$compass.show) {
+	if (!is.null(leg) || nonempty_text(gt$title) || gt$credits.show || gt$logo.show || gt$scale.show || gt$compass.show) {
 		if (!is.na(gt$frame)) {
 			pH <- convertHeight(unit(1, "points"), unitTo = "npc", valueOnly = TRUE)*gt$frame.lwd
 			pW <- convertWidth(unit(1, "points"), unitTo = "npc", valueOnly = TRUE)*gt$frame.lwd

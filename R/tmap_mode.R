@@ -1,6 +1,6 @@
 #' Set tmap mode to static plotting or interactive viewing
 #' 
-#' Set tmap mode to static plotting or interactive viewing. The global option \code{tmap.mode} determines the whether thematic maps are plot in the graphics device, or shown as an interactive leaflet map. The function \code{tmap_mode} is a wrapper to set this global option. The convenient function \code{ttm} is a toggle switch between the two modes. Tip: use \code{tmap_mode} in scripts and \code{ttm} in the console.
+#' Set tmap mode to static plotting or interactive viewing. The global option \code{tmap.mode} determines the whether thematic maps are plot in the graphics device, or shown as an interactive leaflet map. The function \code{tmap_mode} is a wrapper to set this global option. The convenient function \code{ttm} is a toggle switch between the two modes. Tip 1: use \code{tmap_mode} in scripts and \code{ttm} in the console. Tip 2: use \code{ttm} in combination with \code{\link{last_map}} to redraw the last map in the other mode.
 #' 
 #' @param mode one of
 #' \describe{
@@ -10,13 +10,13 @@
 #'    	\itemize{
 #'    	\item The map is always projected accoring to the Web Mercator projection. Although this projection is the de facto standard for interactive web-based mapping, it lacks the equal-area property, which is important for many thematic maps, especially choropleths (see examples from \code{\link{tm_shape}}).
 #'    	\item Small multiples are not supported
-#'    	\item The legend cannot be made for aesthetics regarding size, which are bubble size and line width.
+#'    	\item The legend cannot be made for aesthetics regarding size, which are symbol size and line width.
 #'    	\item Text labels are not supported (yet)
 #'    	\item The layout options set with \code{\link{tm_layout}}) regarding map format are not used. However, the styling options still apply.}
 #'    	}}
 #' @return the mode before changing
 #' @example ../examples/tmap_mode.R
-#' @seealso \href{../doc/tmap-modes.html}{\code{vignette("tmap-modes")}}, \code{\link{tm_view}} for viewing options, and \code{\link{tmap_leaflet}} for obtaining a leaflet widget
+#' @seealso \href{../doc/tmap-modes.html}{\code{vignette("tmap-modes")}}, \code{\link{last_map}} to show the last map, \code{\link{tm_view}} for viewing options, and \code{\link{tmap_leaflet}} for obtaining a leaflet widget
 #' @export
 tmap_mode <- function(mode=c("plot", "view")) {
 	current.mode <- getOption("tmap.mode")

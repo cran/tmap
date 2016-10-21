@@ -1,7 +1,8 @@
-process_meta <- function(gt, gf, gg, gc, gsb, gcomp, glab, nx, panel.names, asp_ratio, shp_info, any.legend, interactive) {
+process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, panel.names, asp_ratio, shp_info, any.legend, interactive) {
 	attr.color <- aes.colors <- aes.color <- pc <- grid.alpha <- NULL
 	
 	credit.show <- !is.null(gc)
+	logo.show <- !is.null(gl)
 	scale.show <- !is.null(gsb)
 	compass.show <- !is.null(gcomp)
 	
@@ -54,9 +55,7 @@ process_meta <- function(gt, gf, gg, gc, gsb, gcomp, glab, nx, panel.names, asp_
 			if (is.na(legend.outside)) legend.outside <- (nx > 1) && !any(vapply(gf[freescales], "[", logical(1), 1))
 		}
 		
-		if (is.na(title.snap.to.legend)) title.snap.to.legend <- legend.outside
-		
-		if (is.na(panel.show)) panel.show <- !is.na(panel.names[1])
+		if (is.na(panel.show)) panel.show <- !is.na(panel.names[1]) || !is.ena(panel.labels[1])
 		if (legend.only) {
 			title <- rep("", nx)
 			legend.width <- .9
@@ -77,7 +76,7 @@ process_meta <- function(gt, gf, gg, gc, gsb, gcomp, glab, nx, panel.names, asp_
 					} else if (is.list(panel.labels)) stop("unable to use row and column names unless panel.show in tm_layout is TRUE", call.=FALSE)
 				}
 				
-				if (title.snap.to.legend) title <- title[1]
+				#if (title.snap.to.legend) title <- title[1]
 			} else {
 				if (is.ena(panel.labels[1])) {
 					if (!is.na(panel.names[1])) {
@@ -178,15 +177,17 @@ process_meta <- function(gt, gf, gg, gc, gsb, gcomp, glab, nx, panel.names, asp_
 		earth.boundary.lwd <- earth.boundary.lwd * scale
 		frame.lwd <- frame.lwd * scale
 		
-		if (is.na(attr.outside.size)) attr.outside.size <- if (!credit.show && !scale.show && !compass.show) {
-			0
-		} else if (credit.show && scale.show && compass.show) {
-			.25 * scale
-		} else if ((credit.show && scale.show && !compass.show) || (!credit.show && !scale.show && compass.show)) {
-			.15 * scale
-		} else if (compass.show) {
-			.2 * scale
-		} else .1 * scale
+		if (is.na(attr.outside.size)) attr.outside.size <- (credit.show*.1 + logo.show*.15 + scale.show*.1 + compass.show * .15) * scale
+		
+		# if (is.na(attr.outside.size)) attr.outside.size <- if (!credit.show && !scale.show && !compass.show) {
+		# 	0
+		# } else if (credit.show && scale.show && compass.show) {
+		# 	.25 * scale
+		# } else if ((credit.show && scale.show && !compass.show) || (!credit.show && !scale.show && compass.show)) {
+		# 	.15 * scale
+		# } else if (compass.show) {
+		# 	.2 * scale
+		# } else .1 * scale
 		
 		## overrule margins if interactive
 		if (interactive) {
@@ -223,6 +224,55 @@ process_meta <- function(gt, gf, gg, gc, gsb, gcomp, glab, nx, panel.names, asp_
 	} else {
 		gc <- list(credits.show=list(rep(FALSE, nx)))
 	}
+	
+	if (logo.show) {
+		gl <- within(gl, {
+			# get local file names
+			logo.file <- lapply(gl$logo.file, function(lf){
+				# loop over different tm_logos
+				lapply(lf, function(lf2) {
+					lf3 <- lf2
+					lf3[lf2!=""] <- tmap_icons(lf2[lf2!=""])$iconUrl
+					lf3
+				})
+				# loop over different multiples
+			})
+			
+			
+			# one for each small multiple
+			logo.height <- lapply(logo.height, function(lh) rep(lh, length.out=nx))
+			logo.file <- lapply(logo.file, rep, length.out=nx)
+			
+			
+			# make heights consistent with files
+			logo.height <- mapply(function(lf, lh) {
+				mapply(function(lf2, lh2) {
+					hts <- rep(lh2, length.out=length(lf2))
+					hts[lf2==""] <- 0
+					hts * gt$scale
+				}, lf, lh, SIMPLIFY=FALSE)
+			}, logo.file, logo.height, SIMPLIFY=FALSE)
+			
+			# which ones to show
+			logo.show <- lapply(logo.file, function(lf) sapply(lf, function(lf2) any(nonempty_text(lf2))))
+			
+			# calculate widths per icon
+			logo.width <- mapply(function(lf, lh) {
+				# loop over different tm_logos
+				mapply(function(lf2, lh2) {
+					# loop over different multiples
+					mapply(function(lf3, lh3) {
+						# loop over different icons in a row
+						if (lf3=="") return(0)
+						ti <- tmap_icons(lf3, height = 1e3 * lh3, width = 1e6 * lh3)
+						ti$iconWidth / 1e3
+					}, lf2, lh2, USE.NAMES = FALSE)
+				}, lf, lh, SIMPLIFY=FALSE)
+			}, logo.file, logo.height, SIMPLIFY=FALSE)
+		})
+	} else {
+		gl <- list(logo.show=list(rep(FALSE, nx)))
+	}	
 	
 	if (scale.show) {
 		gsb <- within(gsb, {
@@ -280,5 +330,5 @@ process_meta <- function(gt, gf, gg, gc, gsb, gcomp, glab, nx, panel.names, asp_
 	
 	gt[c("compass.type", "compass.size")] <- NULL
 	
-	c(gt, gf, gg, gc, gsb, gcomp, glab, shp_info)
+	c(gt, gf, gg, gc, gl, gsb, gcomp, glab, shp_info)
 }

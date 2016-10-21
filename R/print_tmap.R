@@ -87,10 +87,15 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	#  plot_all:   - calls plot_map to create grob tree of map itself
 	#              - calls legend_prepare and plot_legend to create grob tree of legend
 	#              - creates grob tree for whole plot
+
 	scale.extra <- NULL
 	title.snap.to.legend <- NULL
 	
 	interactive <- (mode == "view")
+	
+	# reset symbol shape / shape just/anchor lists
+	assign(".shapeLib", list(), envir = .TMAP_CACHE)
+	assign(".justLib", list(), envir = .TMAP_CACHE)
 	
 	# shortcut mode: enabled with qtm() or qtm("My Street 1234, Home Town")
 	if (names(x)[1]=="tm_shortcut") {
@@ -111,6 +116,27 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 			}
 		}
 	}
+	
+	
+	## remove non-supported elements if interactive
+	if (interactive) {
+		if (any(names(x)=="tm_facets")) {
+			facetsby <- x[[which(names(x)=="tm_facets")[1]]]$by
+			if (!is.null(facetsby)) warning("Facets are not supported in view mode yet. The data is not split by \"", facetsby, "\"", call.=FALSE)	
+				
+		} 
+		if (any(names(x)=="tm_grid")) warning("Grid lines not supported in view mode.", call.=FALSE)
+		if (any(names(x)=="tm_scale_bar")) warning("Scale bar not supported in view mode.", call.=FALSE)
+		if (any(names(x)=="tm_credits")) warning("Credits not supported in view mode.", call.=FALSE)
+		if (any(names(x)=="tm_logo")) warning("Logo not supported in view mode.", call.=FALSE)
+		if (any(names(x)=="tm_compass")) warning("Compass not supported in view mode.", call.=FALSE)
+		if (any(names(x)=="tm_xlab")) warning("X-axis label not supported in view mode.", call.=FALSE)
+		if (any(names(x)=="tm_ylab")) warning("Y-axis label not supported in view mode.", call.=FALSE)
+		
+		x[names(x) %in% c("tm_grid", "tm_scale_bar", "tm_credits", "tm_logo", "tm_compass", "tm_xlab", "tm_ylab", "tm_facets")] <- NULL
+	}
+	
+	
 	
 	## identify shape blocks
 	shape.id <- which(names(x)=="tm_shape")
@@ -134,11 +160,13 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	
 	## find master projection
 	master_proj <- get_proj4(x[[shape.id[masterID]]]$projection)
-	if (is.null(master_proj)) master_proj <- get_projection(x[[shape.id[masterID]]]$shp)
+	mshp_raw <- x[[shape.id[masterID]]]$shp
+	if (is.null(master_proj)) master_proj <- get_projection(mshp_raw)
+	orig_proj <- master_proj # needed for adjusting bbox in process_shapes
 	if (interactive) master_proj <- get_proj4("longlat")
 	
 	## find master bounding box (unprocessed)
-	bbx_raw <- bb(x[[shape.id[masterID]]]$shp)
+	bbx_raw <- bb(mshp_raw)
 
 	## get raster and group by variable name (needed for eventual reprojection of raster shapes)
 	raster_facets_vars <- lapply(1:nshps, function(i) {
@@ -160,15 +188,12 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	shps <- lapply(shps_dts, "[[", 1)
 	datasets <- lapply(shps_dts, "[[", 2)
 	types <- lapply(shps_dts, "[[", 3)
-	
-	## remove facets if interactive
-	if (interactive) {
-		x[names(x)=="tm_facets"] <- NULL
-	}
 
 	## determine aspect ratio of master shape
-	bbx <- attr(shps[[masterID]], "bbox")
-	masp <-	calc_asp_ratio(bbx[1,], bbx[2,], longlat=!attr(shps[[masterID]], "projected"))
+	mshp <- shps[[masterID]]
+	
+	bbx <- attr(mshp, "bbox")
+	masp <-	calc_asp_ratio(bbx[1,], bbx[2,], longlat=!attr(mshp, "projected"))
 
 	## remove shapes from and add data to tm_shape objects
 	x[shape.id] <- mapply(function(y, dataset, type){
@@ -212,6 +237,7 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	gmeta <- result$gmeta
 
 	gps <- result$gps
+	gal <- result$gal
 	nx <- result$nx
 	data_by <- result$data_by
 	## process shapes
@@ -229,38 +255,47 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	external_attr <- gmeta$attr.outside
 	fpi <- preprocess_facet_layout(gmeta, external_legend, dh, dw)
 	
+	# aspect ratio of total device
 	tasp <- dw/dh
+	
+	# aspect ratio per facet
 	fasp <- fpi$dsw / fpi$dsh #-  fpi$pSH - fpi$between.margin.in)
 	
-	shps <- process_shapes(shps, x[shape.id], gmeta, data_by, fasp, masterID, allow.crop = !interactive, raster.leaflet=interactive, projection=master_proj)
+	# aspect ratio per facet minus extern legend
+	lasp <- fasp * (1-fpi$legmarx) / (1-fpi$legmary)
 	
-	#dasp <- attr(shps, "dasp")
+	shps <- process_shapes(shps, x[shape.id], gmeta, data_by, lasp, masterID, allow.crop = !interactive, raster.leaflet=interactive, projection=master_proj, interactive=interactive, orig.projection=orig_proj)
+	
 	sasp <- attr(shps, "sasp")
-	
-	
+	bbx <- attr(shps, "bbx")
 
 	gmeta <- do.call("process_facet_layout", c(list(gmeta, external_legend, sasp, dh, dw), fpi))
 	gasp <- gmeta$gasp
 	
 	if (external_legend) {
-		gp_leg <- gps[[1]]
-		gp_leg$tm_layout <- within(gp_leg$tm_layout, {
-			legend.only <- TRUE
-			legend.width <- .9
-			legend.height <- .9
-			
-			if (title.snap.to.legend) {
-				title.size <- title.size / scale.extra
-			} else {
-				title <- ""
-			}
-			legend.title.size <- legend.title.size / scale.extra
-			legend.text.size <- legend.text.size / scale.extra
-			legend.hist.size <- legend.hist.size / scale.extra
-			grid.show <- FALSE
-			scale.show <- FALSE
-			compass.show <- FALSE
-			credits.show <- FALSE
+		leg_ids <- seq(1, nx, by=gmeta$ncol * gmeta$nrow)
+		gp_leg <- lapply(leg_ids, function(li) {
+			gli <- gps[[li]]
+			gli$tm_layout <- within(gli$tm_layout, {
+				legend.only <- TRUE
+				legend.width <- .9
+				legend.height <- .9
+				
+				if (title.snap.to.legend) {
+					title.size <- title.size / scale.extra
+				} else {
+					title <- ""
+				}
+				legend.title.size <- legend.title.size / scale.extra
+				legend.text.size <- legend.text.size / scale.extra
+				legend.hist.size <- legend.hist.size / scale.extra
+				grid.show <- FALSE
+				scale.show <- FALSE
+				compass.show <- FALSE
+				credits.show <- FALSE
+				logo.show <- FALSE
+			})
+			gli
 		})
 		gps <- lapply(gps, function(gp) {
 			gp$tm_layout$legend.show <- FALSE
@@ -271,18 +306,23 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 		gp_leg <- NULL
 	}
 
-	
 	if (external_attr) {
-		gp_attr <- gps[[1]]
-		gp_attr$tm_layout <- within(gp_attr$tm_layout, {
-			legend.only <- TRUE
-			legend.show <- FALSE
-			title <- ""
-		})	
+		attr_ids <- seq(1, nx, by=gmeta$ncol * gmeta$nrow)
+		gp_attr <- lapply(attr_ids, function(ai) {
+			gai <- gps[[ai]]
+			gai$tm_layout <- within(gai$tm_layout, {
+				legend.only <- TRUE
+				legend.show <- FALSE
+				title <- ""
+			})	
+			gai
+		})
+			
 		gps <- lapply(gps, function(gp) {
 			gp$tm_layout$scale.show <- FALSE
 			gp$tm_layout$compass.show <- FALSE
 			gp$tm_layout$credits.show <- FALSE
+			gp$tm_layout$logo.show <- FALSE
 			gp
 		})
 	} else {
@@ -362,48 +402,61 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 		
 	}
 	
-	# apped data to gps
+	# append data to gps
 	gps2 <- lapply(gps, function(gp) {
 		gp[-length(gp)] <- mapply(function(gpl, dt) {
+			dt$SHAPE_AREAS <- NULL
+			
 			if (interactive) {
+				
+				# add density values
 				if (!is.na(gpl$xfill)) {
-					gpl$fill.values <- dt[[gpl$xfill]]
 					if (gpl$fill.legend.hist.misc$densities) {
-						densities <- gpl$fill.legend.hist.misc$values
-						gpl$fill.densities <- densities
-						dt[[paste(gpl$xfill[1], "density", "_")]] <- densities
+						densvar <- paste(gpl$xfill[1], "density", sep="_")
+						dt[[densvar]] <- gpl$fill.legend.hist.misc$values
+						gplxfill <- c(gpl$xfill, densvar)
+					} else {
+						gplxfill <- gpl$xfill
 					}
-					if (!is.na(gpl$idnames$fill)) {
-						gpl$fill.names <- dt[[gpl$idnames$fill]]
-					}
+				} else gplxfill <- NA
+				
+				if (is.null(gpl$fill.popup.vars) || identical(gpl$fill.popup.vars, FALSE)) {
+					gpl$fill.popup.vars <- NA
+				} else if (identical(gpl$fill.popup.vars, TRUE)) {
+					gpl$fill.popup.vars <- names(dt)
+				} else if (is.na(gpl$fill.popup.vars[1])) {
+					gpl$fill.popup.vars <- if (is.na(gplxfill[1])) names(dt) else gplxfill
+				} else {
+					if (!all(gpl$fill.popup.vars %in% names(dt))) stop("Not all popup variables are contained in the data", call.=FALSE)
 				}
-				if (!is.na(gpl$xsize) || !is.na(gpl$xcol)) {
-					if (!is.na(gpl$xsize)) {
-						gpl$bubble.size.values <- dt[[gpl$xsize]]
-					}
-					if (!is.na(gpl$xcol)) {
-						gpl$bubble.col.values <- dt[[gpl$xcol]]
-					}
-					if (!is.na(gpl$idnames$bubble)) {
-						gpl$bubble.names <- dt[[gpl$idnames$bubble]]
-					}
+				
+				if (is.null(gpl$line.popup.vars) || identical(gpl$line.popup.vars, FALSE)) {
+					gpl$line.popup.vars <- NA
+				} else if (identical(gpl$line.popup.vars, TRUE)) {
+					gpl$line.popup.vars <- names(dt)
+				} else if (is.na(gpl$line.popup.vars[1])) {
+					gpl$line.popup.vars <- unique(na.omit(c(gpl$xline, gpl$xlinelwd)))
+					if (length(gpl$line.popup.vars) == 0) gpl$line.popup.vars <- names(dt)
+				} else {
+					if (!all(gpl$line.popup.vars %in% names(dt))) stop("Not all popup variables are contained in the data", call.=FALSE)
 				}
-				if (!is.na(gpl$xline) || !is.na(gpl$xlinelwd)) {
-					if (!is.na(gpl$xline)) {
-						gpl$line.col.values <- dt[[gpl$xline]]
-					}
-					if (!is.na(gpl$xlinelwd)) {
-						gpl$line.lwd.values <- dt[[gpl$xlinelwd]]
-					}
-					if (!is.na(gpl$idnames$line)) {
-						gpl$line.names <- dt[[gpl$idnames$line]]
-					}
+
+				if (is.null(gpl$symbol.popup.vars) || identical(gpl$symbol.popup.vars, FALSE)) {
+					gpl$symbol.popup.vars <- NA
+				} else if (identical(gpl$symbol.popup.vars, TRUE)) {
+					gpl$symbol.popup.vars <- names(dt)
+				} else if (is.na(gpl$symbol.popup.vars[1])) {
+					gpl$symbol.popup.vars <- unique(na.omit(c(gpl$xsize, gpl$xcol, gpl$xshape)))
+					if (length(gpl$symbol.popup.vars) == 0) gpl$symbol.popup.vars <- names(dt)
+				} else {
+					if (!all(gpl$symbol.popup.vars %in% names(dt))) stop("Not all popup variables are contained in the data", call.=FALSE)
 				}
-				if (!is.na(gpl$xraster)) {
-					gpl$raster.values <- dt[[gpl$xraster]]
-				}
-				dt$SHAPE_AREAS <- NULL
+				
+				gpl$fill.names <- gpl$idnames$fill
+				gpl$line.names <- gpl$idnames$line
+				gpl$symbol.names <- gpl$idnames$symbol
 			}
+			
 			gpl$data <- dt
 			gpl
 		}, gp[-length(gp)], datasets, SIMPLIFY = FALSE)
@@ -412,9 +465,9 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	
 	## plot
 	if (interactive) {
-		lf <- view_tmap(gps2, shps)
-		
+		lf <- view_tmap(gps2, shps, bbx)
 		if (show) {
+			save_last_map()
 			if (knit) {
 				return(do.call("knit_print", c(list(x=lf), list(...), list(options=options))))
 				#return(knit_print(lf, ..., options=options))
@@ -425,9 +478,10 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	} else {
 		if (show) {
 			if (nx > 1) sasp <- dasp
-			gridplot(gmeta, "plot_all", nx, gps, shps, dasp, sasp, inner.margins.new, legend_pos, gp_leg, gp_attr)
+			gridplot(gmeta, "plot_all", nx, gps, gal, shps, dasp, sasp, inner.margins.new, legend_pos, gp_leg, gp_attr)
 			## if vp is specified, go 1 viewport up, else go to root viewport
 			upViewport(n=as.integer(!is.null(vp)))
+			save_last_map()
 			invisible(list(shps=shps, gps=gps2))
 		} else {
 			list(shps=shps, gps=gps2)

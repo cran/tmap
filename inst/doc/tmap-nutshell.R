@@ -9,14 +9,12 @@ data(Europe)
 qtm(Europe)
 
 ## ---- fig.height=5-------------------------------------------------------
-qtm(Europe, fill="well_being", text="iso_a3", text.size="AREA", root=5, fill.title="Well-Being Index", 
-	fill.textNA="Non-European countries", 
-	format="Europe", style="gray")
+qtm(Europe, fill="well_being", text="iso_a3", text.size="AREA", format="Europe", style="gray", 
+	text.root=5, fill.title="Well-Being Index", fill.textNA="Non-European countries")
 
 ## ---- eval=FALSE---------------------------------------------------------
 #  tm_shape(Europe) +
-#  	tm_fill("well_being", textNA="Non-European countries", title="Well-Being Index") +
-#  	tm_borders() +
+#  	tm_polygons("well_being", textNA="Non-European countries", title="Well-Being Index") +
 #  	tm_text("iso_a3", size="AREA", root=5) +
 #  tm_format_Europe() +
 #  tm_style_grey()
@@ -42,10 +40,19 @@ tm_style_natural()
 
 ## ---- fig.width=10, fig.height=3-----------------------------------------
 tm_shape(Europe) +
-	tm_polygons(c("pop_est_dens", "gdp_cap_est"), style="kmeans", 
-        title=c("Population density", "GDP per capita")) +
+	tm_polygons(c("HPI", "gdp_cap_est"), 
+		style=c("pretty", "kmeans"),
+		palette=list("RdYlGn", "Purples"),
+		auto.palette.mapping=FALSE,
+        title=c("Happy Planet Index", "GDP per capita")) +
 tm_format_Europe() + 
 tm_style_grey()
+
+## ---- fig.width=10-------------------------------------------------------
+tm_shape(metro) +
+    tm_bubbles(size=c("pop1970", "pop2020"), title.size="Population") +
+    tm_facets(free.scales=FALSE) +
+tm_layout(panel.labels=c("1970", "2020"))
 
 ## ---- fig.width=10-------------------------------------------------------
 tm_shape(Europe) +
@@ -138,11 +145,11 @@ tm_shape(Europe[Europe$name=="Austria", ]) +
 ## ---- fig.height=3-------------------------------------------------------
 data(World)
 
-rivers$constant <- factor("Rivers")
 tm_shape(World) +
 	tm_fill() +
 tm_shape(rivers) +
-	tm_lines(col="constant", palette="dodgerblue3", title.col="World map") +
+	tm_lines(col="dodgerblue3") +
+	tm_add_legend(type="line", col="dodgerblue3", title="World map") +
 tm_format_World()
 
 ## ---- fig.height=5-------------------------------------------------------

@@ -1,4 +1,7 @@
-view_tmap <- function(gps, shps) {
+view_tmap <- function(gps, shps, bbx) {
+	
+	# determine view
+
 	# take first small multiple
 	gp <- gps[[1]]
 	gt <- gp$tm_layout
@@ -61,7 +64,6 @@ view_tmap <- function(gps, shps) {
 	e <- environment()
 	id <- 1
 	alpha <- gt$alpha
-	popup.all.data <- gt$popup.all.data
 
 	group_selection <- mapply(function(shp, gpl, shp_name) {
 		bbx <- attr(shp, "bbox")
@@ -86,7 +88,7 @@ view_tmap <- function(gps, shps) {
 			fopacity <- fres$opacity
 			
 			if (!is.null(gpl$fill)) {
-				popups <- get_popups(gpl, type="fill", popup.all.data=popup.all.data)
+				popups <- get_popups(gpl, type="fill")
 			} else {
 				popups <- NULL
 			}
@@ -109,7 +111,7 @@ view_tmap <- function(gps, shps) {
 			lcol <- lres$col
 			lopacity <- lres$opacity
 
-			popups <- get_popups(gpl, type="line", popup.all.data=popup.all.data)
+			popups <- get_popups(gpl, type="line")
 			dashArray <- lty2dashArray(gpl$line.lty)
 			
 			lf <- lf %>% addPolylines(data=shp, stroke=TRUE, weight=gpl$line.lwd, color=lcol, opacity = lopacity, popup = popups, options = pathOptions(clickable=!is.null(popups)), dashArray=dashArray, group=shp_name, layerId = id)
@@ -128,53 +130,88 @@ view_tmap <- function(gps, shps) {
 			# 									   lineend="butt"), i, k)
 		}
 		
-		plot_tm_bubbles <- function() {
+		plot_tm_symbols <- function() {
 			npol <- nrow(co)
 			
+			co[, 1] <- co[, 1] + gpl$symbol.xmod * bpl
+			co[, 2] <- co[, 2] + gpl$symbol.ymod * bpl
 			
-			co[, 1] <- co[, 1] + gpl$bubble.xmod * bpl
-			co[, 2] <- co[, 2] + gpl$bubble.ymod * bpl
 			
-			
-			bres <- split_alpha_channel(gpl$bubble.border.col, alpha=alpha)
+			bres <- split_alpha_channel(gpl$symbol.border.col, alpha=alpha)
 			bcol <- bres$col
 			bopacity <- bres$opacity
 			
-			fres <- split_alpha_channel(rep(gpl$bubble.col, length.out=npol), alpha=alpha)
+			fres <- split_alpha_channel(rep(gpl$symbol.col, length.out=npol), alpha=alpha)
 			fcol <- fres$col
 			fopacity <- fres$opacity
 			
-			bubble.size <- gpl$bubble.size
+			symbol.size <- gpl$symbol.size
+			symbol.shape <- gpl$symbol.shape
 			
-			popups <- get_popups(gpl, type="bubble", popup.all.data=popup.all.data)
+			if (gpl$symbol.misc$symbol.are.markers) {
+				if (is.na(gpl$symbol.names)) {
+					gpl$data$MARKER__TEXT <- gpl$text 
+					gpl$symbol.names <- "MARKER__TEXT"
+				}
+			}
+			
+			popups <- get_popups(gpl, type="symbol")
 
-			# sort bubbles
-			if (length(bubble.size)!=1) {
-				decreasing <- order(-bubble.size)
+			# sort symbols
+			if (length(symbol.size)!=1) {
+				decreasing <- order(-symbol.size)
 				co2 <- co[decreasing,]
-				bubble.size2 <- bubble.size[decreasing]
+				symbol.size2 <- symbol.size[decreasing]
+				symbol.shape2 <- symbol.shape[decreasing]
+				
 				fcol2 <- if (length(fcol)==1) fcol else fcol[decreasing]
 				popups2 <- popups[decreasing]
 			} else {
 				co2 <- co
-				bubble.size2 <- bubble.size
+				symbol.size2 <- symbol.size
+				symbol.shape2 <- symbol.shape
 				fcol2 <- fcol
 				popups2 <- popups
 			}
 			
 			
-			rad <- bubble.size2 * upl
+			rad <- symbol.size2 * upl
 			
-			fixed <- ifelse(gpl$bubble.misc$bubble.are.dots, gt$dot.size.fixed, gt$bubble.size.fixed)
-			if (fixed) {
-				lf <- lf %>% addCircleMarkers(lng=co2[,1], lat=co2[,2], fill = any(!is.na(fcol2)), fillColor = fcol2, fillOpacity=fopacity, color = bcol, stroke = !is.na(bcol) && bopacity!=0, radius = 20*bubble.size2, weight = 1, popup=popups2, group=shp_name, layerId = id)
+			fixed <- ifelse(gpl$symbol.misc$symbol.are.dots, gt$dot.size.fixed, gt$symbol.size.fixed)
+			are.icons <- gpl$symbol.misc$symbol.are.icons
+			
+			if (are.icons) {
+				#symbol.size2 <- symbol.size2 / 3 # Correct for the fact that markers are larger than circle markers. This is good, but for static plots the icon size was already increased by icon.size=3, so this is to revert it for view mode
+				if (any(symbol.shape2<1000)) {
+					icons <- NULL
+				} else {
+					iconLib <- get(".shapeLib", envir = .TMAP_CACHE)[symbol.shape2-999]
+					icons <- merge_icons(iconLib)
+					#print(summary(symbol.size2))
+					icons$iconWidth <- icons$iconWidth * symbol.size2
+					icons$iconHeight <- icons$iconHeight * symbol.size2
+					if (all(c("iconAnchorX", "iconAnchorY") %in% names(icons))) {
+						icons$iconAnchorX <- icons$iconAnchorX * symbol.size2
+						icons$iconAnchorY <- icons$iconAnchorY * symbol.size2
+					}
+				}
+				lf <- lf %>% addMarkers(lng = co2[,1], lat=co2[,2], popup=popups2, group=shp_name, icon=icons, layerId = id)
 			} else {
-				lf <- lf %>% addCircles(lng=co2[,1], lat=co2[,2], fill = any(!is.na(fcol2)), fillColor = fcol2, fillOpacity=fopacity, color = bcol, stroke = !is.na(bcol) && bopacity!=0, radius=rad, weight =1, popup=popups2, group=shp_name, layerId = id)
+				if (!all(symbol.shape2 %in% c(1, 16, 19, 20, 21))) {
+					warning("Symbol shapes other than circles are not supported in view mode.", call.=FALSE)
+				}
+				
+				if (fixed) {
+					lf <- lf %>% addCircleMarkers(lng=co2[,1], lat=co2[,2], fill = any(!is.na(fcol2)), fillColor = fcol2, fillOpacity=fopacity, color = bcol, stroke = !is.na(bcol) && bopacity!=0, radius = 20*symbol.size2, weight = 1, popup=popups2, group=shp_name, layerId = id)
+				} else {
+					lf <- lf %>% addCircles(lng=co2[,1], lat=co2[,2], fill = any(!is.na(fcol2)), fillColor = fcol2, fillOpacity=fopacity, color = bcol, stroke = !is.na(bcol) && bopacity!=0, radius=rad, weight =1, popup=popups2, group=shp_name, layerId = id)
+				}
 			}
+				
 			
 			
 			if (!is.na(gpl$xcol)) {
-				if (gpl$bubble.col.legend.show) lf <- lf %>% add_legend(gpl, gt, aes="bubble.col", alpha=alpha)
+				if (gpl$symbol.col.legend.show) lf <- lf %>% add_legend(gpl, gt, aes="symbol.col", alpha=alpha)
 			}
 			
 
@@ -184,10 +221,14 @@ view_tmap <- function(gps, shps) {
 			
 		}
 		plot_tm_text <- function() {
+			if (is.null(gpl$symbol.misc) || !gpl$symbol.misc$symbol.are.markers) warning("Text labels not supported in view mode.", call.=FALSE)
  			FALSE
 		}
 		plot_tm_raster <- function() {
-			if (gpl$raster.misc$is.OSM) return(FALSE)	
+			if (gpl$raster.misc$is.OSM) {
+				warning("Raster data contains OpenStreetMapData (read with read_osm), and therefore not shown in view mode.", call.=FALSE)
+				return(FALSE)	
+			}
 			if (is.na(gpl$xraster)) {
 				gpl$raster.legend.palette <- unique(gpl$raster)
 			}
@@ -235,10 +276,10 @@ view_tmap <- function(gps, shps) {
 	
 	lf <- lf %>% addLayersControl(baseGroups=names(basemaps), overlayGroups = groups, options = layersControlOptions(autoZIndex = TRUE), position=control.position)  
 	
-	set_bounds_view(lf, gt)
+	set_bounds_view(lf, gt, bbx)
 }
 
-set_bounds_view <- function(lf, gt) {
+set_bounds_view <- function(lf, gt, bbx) {
 	if (is.logical(gt$set.bounds)) {
 		lims <- unname(unlist(lf$x$limits)[c(3,1,4,2)])
 	} else {
@@ -255,6 +296,9 @@ set_bounds_view <- function(lf, gt) {
 	
 	if (!is.na(gt$set.view[1])) {
 		lf <- lf %>% setView(gt$set.view[1], gt$set.view[2], gt$set.view[3])
+	} else if (!missing(bbx)) {
+		bbx <- unname(bbx)
+		lf <- lf %>% fitBounds(bbx[1], bbx[2], bbx[3], bbx[4]) #setView(view[1], view[2], view[3])
 	}
 	lf
 }
@@ -300,48 +344,42 @@ split_alpha_channel <- function(x, alpha) {
 get_x_name <- function(type) {
 	if (type=="fill") {
 		"xfill"
-	} else if (type=="bubble") {
-		c("xsize", "xcol")
+	} else if (type=="symbol") {
+		c("xsize", "xcol", "xshape")
 	} else if (type=="raster") {
 		"xraster"
 	} else if (type=="line") {
 		c("xline", "xlwd")
+	} else if (type=="text") {
+		c("xtext", "xtsize", "xtcol")
 	}
 }
 
 get_aes_name <- function(type) {
 	if (type=="fill") {
 		"fill"
-	} else if (type=="bubble") {
-		c("bubble.size", "bubble.col")
+	} else if (type=="symbol") {
+		c("symbol.size", "symbol.col", "symbol.shape")
 	} else if (type=="raster") {
 		"raster"
 	} else if (type=="line") {
 		c("line.col", "line.lwd")
+	} else if (type=="text") {
+		c("text", "text.size", "text.color")
 	}
 }
 
-get_popups <- function(gpl, type, popup.all.data) {
+get_popups <- function(gpl, type) {
 	var_names <- paste(type, "names", sep=".")
-	var_x <- get_x_name(type)
-	var_aes <- get_aes_name(type)
+	var_vars <- paste(type, "popup.vars", sep=".")
 	
-	var_values <- paste(var_aes, "values", sep=".")
-
-	if (all(is.na(unlist(gpl[var_x]))) || is.null(gpl[[var_names]])) popup.all.data <- TRUE
-
 	dt <- gpl$data
-	if (popup.all.data) {
-		popups <- format_popups(gpl[[var_names]], names(dt), dt)
+
+	if (is.na(gpl[[var_vars]][1])) {
+		popups <- NULL
 	} else {
-		if (type=="fill" && !is.null(gpl$fill.densities)) {
-			gpl$xfill_dens <- paste(gpl[[paste(var_x)]], "density", sep="_")
-			var_x <- c(var_x, "xfill_dens")
-			var_values <- c(var_values, "fill.densities")
-		}
-		popups <- format_popups(gpl[[var_names]], unlist(gpl[var_x]), gpl[var_values])
+		popups <- format_popups(dt[[gpl[[var_names]]]], gpl[[var_vars]], dt[, gpl[[var_vars]], drop=FALSE])
 	}
-	if (length(popups)==1 && popups[1]=="") popups <- NULL
 	popups
 }
 
@@ -437,4 +475,20 @@ lty2dashArray <- function(lty) {
 				 "none",
 				 numlty),
 		  collapse=",")
+}
+
+get_view <- function(bbx) {
+	lng <- mean(bbx[1,])
+	lat <- mean(bbx[2,])
+	
+	lng_diff <- range(bbx[1,])
+	lat_diff <- range(bbx[2,])
+	max_diff <- max(lng_diff, lat_diff)
+	if (max_diff < 360 / (2^20)) {
+		zoom <- -21
+	} else {
+		zoom <- round(-(log2(max_diff) - (log2(360)))) + 2
+		if (zoom < 1) zoom <- 1
+	}
+	c(lng=lng, lat=lat, zoom=zoom)
 }

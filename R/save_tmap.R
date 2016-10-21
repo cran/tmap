@@ -9,7 +9,7 @@
 #' @param units units for width and height (\code{"in"}, \code{"cm"}, or \code{"mm"}). By default, pixels (\code{"px"}) are used if either width or height is set to a value greater than 50. Else, the units are inches (\code{"in"})
 #' @param dpi dots per inch. Only applicable for raster graphics.
 #' @param outer.margins overrides the outer.margins argument of \code{\link{tm_layout}} (unless set to \code{NA})
-#' @param asp overrides the asp argument of \code{\link{tm_layout}} (unless set to \code{NA})
+#' @param asp if specified, it overrides the asp argument of \code{\link{tm_layout}}. Tip: set to \code{0} if map frame should be placed on the edges of the image.
 #' @param scale overrides the scale argument of \code{\link{tm_layout}} (unless set to \code{NA})
 #' @param insets_tm tmap object of an inset map, or a list of tmap objects of multiple inset maps. The number of tmap objects should be equal to the number of viewports specified with \code{insets_vp}.
 #' @param insets_vp \code{\link[grid:viewport]{viewport}} of an inset map, or a list of \code{\link[grid:viewport]{viewport}}s of multiple inset maps. The number of viewports should be equal to the number of tmap objects specified with \code{insets_tm}.
@@ -18,8 +18,27 @@
 #' @importFrom htmlwidgets saveWidget
 #' @example ../examples/save_tmap.R
 #' @export
-save_tmap <- function(tm, filename=shp_name(tm), width=NA, height=NA, units = NA,
-					  dpi=300, outer.margins=0, asp=0, scale=NA, insets_tm=NULL, insets_vp=NULL, verbose=TRUE, ...) {
+save_tmap <- function(tm=NULL, filename=NULL, width=NA, height=NA, units = NA,
+					  dpi=300, outer.margins=0, asp=NULL, scale=NA, insets_tm=NULL, insets_vp=NULL, verbose=TRUE, ...) {
+	lastcall <- x <- get(".last_map", envir = .TMAP_CACHE)
+	if (missing(tm)) {
+		tm <- suppressWarnings(last_map())
+		if (is.null(tm)) stop("A map has not been created yet")
+	}
+	
+	on.exit({
+		assign(".last_map", lastcall, envir = .TMAP_CACHE)
+	})
+	
+	shp_name <- function(tm) {
+		paste(tm[[1]]$shp_name, ".pdf", sep = "")
+	}
+	
+	if (missing(filename)) {
+		filename <- shp_name(tm)
+	}
+	
+	
 	get_ext <- function(filename) {
 		pieces <- strsplit(filename, "\\.")[[1]]
 		if (length(pieces)==1) return("png")
@@ -101,9 +120,7 @@ save_tmap <- function(tm, filename=shp_name(tm), width=NA, height=NA, units = NA
 													   height = height, res = dpi, units = units_target)
 	tiff <- function(..., width, height) grDevices::tiff(..., 
 														 width = width, height = height, res = dpi, units = units_target)
-	shp_name <- function(tm) {
-		paste(tm[[1]]$shp_name, ".pdf", sep = "")
-	}
+
 
 	
 	if (units_target=="in") {
@@ -121,8 +138,9 @@ save_tmap <- function(tm, filename=shp_name(tm), width=NA, height=NA, units = NA
 	}
 	
 	do.call(ext, args = c(list(file = filename, width = width, height = height), list(...)))
-	on.exit(capture.output(dev.off()))
-	args <- list(outer.margins=outer.margins, asp=asp)
+	on.exit(capture.output(dev.off()), add = TRUE)
+	args <- list(outer.margins=outer.margins)
+	if (!missing(asp)) args$asp <- asp
 	if (!is.na(scale)) args$scale <- scale
 	print(tm + do.call("tm_layout", args))
 	

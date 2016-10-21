@@ -1,4 +1,4 @@
-process_shapes <- function(shps, g, gm, data_by, dasp, masterID, allow.crop, raster.leaflet, projection) {
+process_shapes <- function(shps, g, gm, data_by, dasp, masterID, allow.crop, raster.leaflet, projection, interactive, orig.projection) {
 	
 	pasp <- gm$asp
 	if (identical(pasp, 0)) pasp <- dasp
@@ -22,6 +22,9 @@ process_shapes <- function(shps, g, gm, data_by, dasp, masterID, allow.crop, ras
 		if (is.character(args$x)) {
 			args$projection <- projection
 			args$current.projection <- "longlat"
+		} else if (interactive) {
+			args$projection <- projection
+			args$current.projection <- orig.projection
 		} else {
 			args$projection <- NULL
 			args$current.projection <- NULL
@@ -139,7 +142,7 @@ process_shapes <- function(shps, g, gm, data_by, dasp, masterID, allow.crop, ras
 		shps2 <- mapply(function(x, shp_nm){
 			if (is.null(x)) return(NULL)
 			
-			## try to crop the shape file at the bounding box in order to place bubbles and text labels inside the frame. Use a little wider bounding box to prevent polygons following cropbb(bbx, ext=-1.01)
+			## try to crop the shape file at the bounding box in order to place symbols and text labels inside the frame. Use a little wider bounding box to prevent polygons following cropbb(bbx, ext=-1.01)
 			if (diff_shapes) {
 				lapply(bboxes, function(bb2){
 					if (is.null(bb2)) return(NULL)
@@ -200,6 +203,7 @@ process_shapes <- function(shps, g, gm, data_by, dasp, masterID, allow.crop, ras
 	
 	attr(shps2, "sasp") <- ifelse(is.na(pasp), sasp, pasp)
 	attr(shps2, "dasp") <- dasp
+	attr(shps2, "bbx") <- bbx
 	attr(shps2, "legend_pos") <- legend_pos
 	attr(shps2, "diff_shapes") <- diff_shapes
 	attr(shps2, "inner.margins") <- inner.margins

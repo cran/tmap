@@ -9,7 +9,7 @@ process_tm <- function(x, asp_ratio, shp_info, interactive) {
 	if (length(gridid)>1) gridid <- gridid[length(gridid)]
 	gg <- x[[gridid]]
 	
-	## get credits, scale_bar and compass element
+	## get credits, scale_bar, compass, and logo element
 	sc_compIDs <- match(c("tm_scale_bar", "tm_compass"), names(x))
 	gsb <- x[[sc_compIDs[1]]]
 	gcomp <- x[[sc_compIDs[2]]]
@@ -20,12 +20,26 @@ process_tm <- function(x, asp_ratio, shp_info, interactive) {
 		gc <- NULL
 	} else {
 		gc <- do.call("mapply", c(x[gcIDs], list(nm=names(x[gcIDs][[1]]), FUN=function(..., nm) {
-			if (nm %in% c("credits.text", "credits.position")) {
+			if (nm %in% c("credits.text", "credits.position", "credits.just")) {
 				unname(list(...))
 			} else unname(c(...))
 		}, SIMPLIFY=FALSE)))  
 		#gc$credits.position <- unname(lapply(x[gcIDs], "[[", "credits.position"))
 		gc$credits.id <- gcIDs
+	}
+	glIDs <- which(names(x)=="tm_logo")
+	if (is.na(glIDs[1])) {
+		gl <- NULL
+	} else {
+		if (any(sapply(glIDs, function(i) is.null(x[[i]]$logo.file)))) stop("Logo file missing", call.=FALSE)
+		gl <- do.call("mapply", c(x[glIDs], list(nm=names(x[glIDs][[1]]), FUN=function(..., nm) {
+			if (nm %in% c("logo.file", "logo.position", "logo.just", "logo.height")) {
+				unname(list(...))
+			} else unname(c(...))
+		}, SIMPLIFY=FALSE)))  
+		gl$logo.file <- lapply(gl$logo.file, function(lf) if (!is.list(lf)) list(lf) else lf)
+		gl$logo.height <- lapply(gl$logo.height, function(lh) if (!is.list(lh)) list(lh) else lh)
+		gl$logo.id <- glIDs
 	}
 	
 	# get xlab and ylab element
@@ -89,16 +103,33 @@ process_tm <- function(x, asp_ratio, shp_info, interactive) {
 			if (length(fillBorderID) >= 2) {
 				belowGridLayers <- belowGridLayers[-fillBorderID[-1]]
 			}
-			sum(!(belowGridLayers %in% c("tm_layout", "tm_view", "tm_style", "tm_facets", "tm_credits", "tm_compass", "tm_scale_bar", "tm_xlab", "tm_ylab"))) + 1
+			sum(!(belowGridLayers %in% c("tm_layout", "tm_view", "tm_style", "tm_facets", "tm_credits", "tm_logo", "tm_compass", "tm_scale_bar", "tm_xlab", "tm_ylab"))) + 1
 		}
 	} else {
 		gridGrp <- 0
 	}
 	
+	
+	## find additional legends
+	# legid <- which(names(x)=="tm_add_legend")
+	# cat(legid, "\n")
+	# 
+	# if (length(legid)) {
+	# 	gal <- x[legid]
+	# } else {
+	# 	gal <- NULL
+	# }
+	
 
 	## split x into gmeta and gbody
-	x <- x[!(xnames %in% c("tm_layout", "tm_view", "tm_style", "tm_grid", "tm_facets", "tm_credits", "tm_compass", "tm_scale_bar", "tm_xlab", "tm_ylab"))]
+	x <- x[!(xnames %in% c("tm_layout", "tm_view", "tm_style", "tm_grid", "tm_facets", "tm_credits", "tm_logo", "tm_compass", "tm_scale_bar", "tm_xlab", "tm_ylab"))] #, "tm_add_legend"
 
+	legids <- which(names(x)=="tm_add_legend") 
+	if (length(legids)) {
+		names(x)[legids] <- paste(names(x)[legids], 1L:length(legids), sep="_")
+	}
+	
+	
 	n <- length(x)
 	
 	## split x into clusters
@@ -113,8 +144,14 @@ process_tm <- function(x, asp_ratio, shp_info, interactive) {
 	
 	## convert clusters to layers
 	cnlx <- if (nshps==1) 0 else c(0, cumsum(nlx[1:(nshps-1)]-1))
-	gp <- mapply(FUN=process_layers, gs, cnlx, MoreArgs = list(gt=gt, gf=gf, allow.small.mult=!interactive), SIMPLIFY = FALSE)
+	gp <- mapply(FUN=process_layers, gs, cnlx, MoreArgs = list(gt=gt, gf=gf, interactive=interactive), SIMPLIFY = FALSE)
 	names(gp) <- paste0("tmLayer", 1:length(gp))
+	
+	gal <- do.call(c, lapply(gp, function(g) g$add_legends))
+	gp <- lapply(gp, function(g) {
+		g$add_legends <- NULL
+		g
+	})
 	
 	
 	## add tm_grid to plot order
@@ -175,10 +212,10 @@ process_tm <- function(x, asp_ratio, shp_info, interactive) {
 		max(sapply(x$varnames, length))
 	}))
 
-	any.legend <- any(vapply(gp, function(x)x$any.legend, logical(1)))
+	any.legend <- any(vapply(gp, function(x)x$any.legend, logical(1))) || (length(legids))
 
 	## process meta
-	gmeta <- process_meta(gt, gf, gg, gc, gsb, gcomp, glab, nx, panel.names, asp_ratio, shp_info, any.legend, interactive)
+	gmeta <- process_meta(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, panel.names, asp_ratio, shp_info, any.legend, interactive)
 	panel.mode <- if (!gmeta$panel.show) {
 		"none"
 	} else if (is.list(panel.names)) {
@@ -191,6 +228,13 @@ process_tm <- function(x, asp_ratio, shp_info, interactive) {
 	gps <- split_tm(gp, nx, order_by)
 	scale <- gmeta$scale
 	
+	gal <- lapply(gal, function(x) {
+		if (!is.null(x$size)) x$size <- x$size * scale
+		if (!is.null(x$border.lwd)) x$border.lwd <- x$border.lwd * scale
+		x
+	})
+	
+	
 	gps <- mapply(function(x, i){
 		x <- lapply(x, function(xx) {
 			within(xx, {
@@ -200,15 +244,26 @@ process_tm <- function(x, asp_ratio, shp_info, interactive) {
 					if (!is.na(xfill[1])) fill.legend.misc$lwd <- fill.legend.misc$lwd * scale
 				}
 
-				if (!is.null(bubble.size)) {
+				if (!is.null(symbol.size)) {
 					
-					bubble.size <- bubble.size * scale
-					bubble.border.lwd <- bubble.border.lwd * scale
-					bubble.col.legend.misc$bubble.max.size <- bubble.col.legend.misc$bubble.max.size * scale
-					bubble.col.legend.misc$bubble.border.lwd <- bubble.col.legend.misc$bubble.border.lwd * scale
+					symbol.size <- symbol.size * scale
+					symbol.border.lwd <- symbol.border.lwd * scale
+					#symbol.col.legend.misc$symbol.max.size <- symbol.col.legend.misc$symbol.max.size * scale
+					#symbol.col.legend.misc$symbol.normal.size <- symbol.col.legend.misc$symbol.normal.size * scale
+					symbol.col.legend.misc$symbol.border.lwd <- symbol.col.legend.misc$symbol.border.lwd * scale
+
+					symbol.col.legend.sizes <- symbol.col.legend.sizes * scale
 					
-					bubble.size.legend.misc$legend.sizes <- bubble.size.legend.misc$legend.sizes * scale
-					bubble.size.legend.misc$bubble.border.lwd <- bubble.size.legend.misc$bubble.border.lwd * scale
+					#symbol.shape.legend.misc$symbol.max.size <- symbol.shape.legend.misc$symbol.max.size * scale
+					symbol.shape.legend.misc$symbol.border.lwd <- symbol.shape.legend.misc$symbol.border.lwd * scale
+					
+
+					symbol.shape.legend.sizes <- symbol.shape.legend.sizes * scale
+					
+					symbol.size.legend.sizes <- symbol.size.legend.sizes * scale
+					
+					#symbol.size.legend.misc$legend.sizes <- symbol.size.legend.misc$legend.sizes * scale
+					symbol.size.legend.misc$symbol.border.lwd <- symbol.size.legend.misc$symbol.border.lwd * scale
 				}
 				
 				if (!is.null(line.lwd)) {
@@ -239,14 +294,30 @@ process_tm <- function(x, asp_ratio, shp_info, interactive) {
 		#if (!is.null(gmeta$credits.text)) gmeta$credits.text <- sapply(gmeta$credits.text, "[[", i)
 		gmeta[c("credits.text", "credits.size", "credits.col", "credits.alpha", "credits.align",
 				"credits.bg.color", "credits.bg.alpha", "credits.fontface", "credits.fontfamily",
-				"credits.position", "credits.id")] <- lapply(
+				"credits.position", "credits.just", "credits.id")] <- lapply(
 					gmeta[c("credits.text", "credits.size", "credits.col", "credits.alpha", "credits.align",
 							"credits.bg.color", "credits.bg.alpha", "credits.fontface", "credits.fontfamily",
-							"credits.position", "credits.id")],
+							"credits.position", "credits.just", "credits.id")],
 					function(gm) {
 						gm[gmeta$credits.show]	
 					})
 		gmeta$credits.show <- any(gmeta$credits.show)
+		
+		# process logos per facet
+		gmeta$logo.show <- sapply(gmeta$logo.show, "[[", i)
+		if (!is.null(gmeta$logo.file)) {
+			gmeta$logo.file <- lapply(gmeta$logo.file, function(lf)lf[[i]])
+			gmeta$logo.height <- lapply(gmeta$logo.height, function(lh)lh[[i]])
+			gmeta$logo.width <- lapply(gmeta$logo.width, function(lw)lw[[i]])
+		}
+		#if (!is.null(gmeta$credits.text)) gmeta$credits.text <- sapply(gmeta$credits.text, "[[", i)
+		gmeta[c("logo.file", "logo.position", "logo.just", "logo.height", "logo.width", "logo.halign", "logo.margin", "logo.id")] <- lapply(
+					gmeta[c("logo.file", "logo.position", "logo.just", "logo.height", "logo.width", "logo.halign", "logo.margin", "logo.id")],
+					function(gm) {
+						gm[gmeta$logo.show]	
+					})
+		gmeta$logo.show <- any(gmeta$logo.show)
+		
 		x$tm_layout <- gmeta
 		x$tm_layout$title <- x$tm_layout$title[i]
 		x
@@ -255,5 +326,5 @@ process_tm <- function(x, asp_ratio, shp_info, interactive) {
 	#gmeta$panel.names <- panel.names
 	gmeta$panel.mode <- panel.mode
 
-	list(gmeta=gmeta, gps=gps, nx=nx, data_by=data_by)
+	list(gmeta=gmeta, gps=gps, gal=gal, nx=nx, data_by=data_by)
 }

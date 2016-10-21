@@ -46,7 +46,7 @@ preprocess_shapes <- function(y, apply_map_coloring, master_proj, master_bbx, in
 				# in order to not loose factor levels, subset the data here
 				shpnames <- get_raster_names(shp)
 				if (is.na(raster_facets_vars[1]) || !any(raster_facets_vars %in% names(shp))) {
-					is.RGB <- (nlayers(shp)==3 && minValue(shp)>=0 && maxValue(shp)<= 255)
+					is.RGB <- (nlayers(shp)>=3 && nlayers(shp)<=4 && minValue(shp)>=0 && maxValue(shp)<= 255)
 					if (is.RGB) {
 						pix <- raster_colors(shp)$PIXEL__COLOR
 						shp <- raster(shp, layer=0)
@@ -198,7 +198,7 @@ preprocess_shapes <- function(y, apply_map_coloring, master_proj, master_bbx, in
 			data$SHAPE_AREAS <- approx_areas(shp2, unit=shp.unit, unit.size = shp.unit.size)
 			attr(data, "AREAS_is_projected") <- is_projected(shp2)
 			if (apply_map_coloring) attr(data, "NB") <- if (length(shp)==1) list(0) else poly2nb(shp)
-			attr(data, "dasymetric") <- ("dasymetric" %in% names(attributes(shp)))
+			attr(data, "kernel_density") <- ("kernel_density" %in% names(attributes(shp)))
 			type <- "polygons"
 		} else if (inherits(shp2, "SpatialLinesDataFrame")) {
 			attr(data, "isolines") <- ("isolines" %in% names(attributes(shp)))

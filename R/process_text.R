@@ -1,59 +1,4 @@
-process_text_size_vector <- function(x, text, g, rescale, gt) {
-	if (!is.na(g$size.lim[1])) {
-		x[x<g$size.lim[1]] <- NA
-		x[x>g$size.lim[2]] <- g$size.lim[2]
-	}
-	
-	if (is.null(g$sizes.legend)) {
-		x_legend <- pretty(x, 5)
-		x_legend <- x_legend[x_legend!=0]
-		nxl <- length(x_legend)
-		if (nxl>5) x_legend <- x_legend[-c(nxl-3, nxl-1)]
-	} else {
-		x_legend <- g$sizes.legend
-	}
-	
-	if (is.null(g$sizes.legend.labels)) {
-		size.legend.labels <- do.call("fancy_breaks", c(list(vec=x_legend, intervals=FALSE), g$legend.format))
-	} else {
-		if (length(g$sizes.legend.labels) != length(x_legend)) stop("length of sizes.legend.labels is not equal to the number of texts in the legend", call. = FALSE)
-		size.legend.labels <- g$sizes.legend.labels
-	}
-	
-	root <- ifelse(rescale, g$root, 1)
-	
-	maxX <- ifelse(rescale, max(x, na.rm=TRUE), 1)
-	size <- (x / maxX) ^ (1/root)
-	
-	max.size <- max(size, na.rm=TRUE)
-	legend.sizes <- (x_legend/maxX) ^ (1/root)
-	
-	
-	text_sel <- (size >= g$size.lowerbound)
-	text_empty <- is.na(text) | is.na(size)
-	
-	if (g$print.tiny) {
-		size[!text_sel & !text_empty] <- g$size.lowerbound
-		text_sel <- !text_empty
-	} else {
-		text_sel <- text_sel & !text_empty
-	}
-	
-	size <- size * g$scale
-	max.size <- max.size * g$scale
-	legend.sizes <- legend.sizes * g$scale
-
-	list(size=size,
-		 text_sel=text_sel,
-		 size.legend.labels=size.legend.labels,
-		 legend.sizes=legend.sizes,
-		 max.size=max.size)
-}
-
-
-
-
-process_text <- function(data, g, fill, gt, gby, z, allow.small.mult) {
+process_text <- function(data, g, fill, gt, gby, z, interactive) {
 	root <- NULL; size.lowerbound <- NULL; scale <- NULL; bg.alpha <- NULL; case <- NULL; alpha <- NULL
 	shadow <- NULL
 	gsc <- NULL
@@ -74,18 +19,16 @@ process_text <- function(data, g, fill, gt, gby, z, allow.small.mult) {
 	by <- data$GROUP_BY
 	shpcols <- names(data)[1:(ncol(data)-1)]
 	
-	# update legend format from tm_layout
-	to_be_assigned <- setdiff(names(gt$legend.format), names(g$legend.format))
-	g$legend.format[to_be_assigned] <- gt$legend.format[to_be_assigned]
-	
 	xtsize <- g$size
 	xtcol <- g$col
 	xtext <- g$text
 	
-	if (!allow.small.mult) xtsize <- xtsize[1]
-	if (!allow.small.mult) xtcol <- xtcol[1]
-	if (!allow.small.mult) xtext <- xtext[1]
-	
+	if (interactive) {
+		xtsize <- xtsize[1]
+		xtcol <- xtcol[1]
+		xtext <- xtext[1]
+	}
+
 	if (is.null(g$colorNA)) g$colorNA <- "#00000000"
 	if (is.na(g$colorNA)[1]) g$colorNA <- gt$aes.colors["na"]
 	if (g$colorNA=="#00000000") g$showNA <- FALSE
@@ -132,9 +75,7 @@ process_text <- function(data, g, fill, gt, gby, z, allow.small.mult) {
 			if (is.matrix(fill)) {
 				cols <- apply(fill, MARGIN=2, function(f) {
 					light <- is_light(f)
-					rep(ifelse(light, coldark, collight), length.out=npol)
-				})
-				cols <- apply(cols, MARGIN=2, function(cl) {
+					cl <- rep(ifelse(light, coldark, collight), length.out=npol)
 					do.call("process_color", c(list(col=col2hex(cl), alpha=g$alpha), gt$pc))
 				})
 			} else {
@@ -160,6 +101,9 @@ process_text <- function(data, g, fill, gt, gby, z, allow.small.mult) {
 	
 	nx <- max(nx, nlevels(by))
 	
+	# update legend format from tm_layout
+	g$legend.format <- process_legend_format(g$legend.format, gt$legend.format, nx)
+	
 	dtcol <- process_data(data[, xtcol, drop=FALSE], by=by, free.scales=gby$free.scales.text.col, is.colors=is.colors)	
 	dtsize <- process_data(data[, xtsize, drop=FALSE], by=by, free.scales=gby$free.scales.text.size, is.colors=FALSE)
 	
@@ -180,7 +124,7 @@ process_text <- function(data, g, fill, gt, gby, z, allow.small.mult) {
 		text_sel <- sapply(res, function(r)r$text_sel)
 		size.legend.labels <- lapply(res, function(r)r$size.legend.labels)
 		legend.sizes <- lapply(res, function(r)r$legend.sizes)
-		max.size <- sapply(res, function(r)r$max.size)
+		max.size <- lapply(res, function(r)r$max.size)
 	} else {
 		res <- process_text_size_vector(dtsize, text, g, rescale=varysize, gt)
 		size <- matrix(res$size, nrow=npol)
@@ -344,11 +288,13 @@ process_text <- function(data, g, fill, gt, gby, z, allow.small.mult) {
 		 text.col.legend.labels=col.legend.labels,
 		 text.col.legend.text=col.legend.text,
 		 text.col.legend.palette=col.legend.palette,
-		 text.col.legend.misc=list(text.max.size=max.size),
+		 text.col.legend.sizes = max.size,
+		 text.col.legend.misc=list(),
 		 text.size.legend.labels=size.legend.labels,
 		 text.size.legend.text=size.legend.text,
 		 text.size.legend.palette= col.neutral,
-		 text.size.legend.misc=list(legend.sizes=legend.sizes),
+		 text.size.legend.sizes = legend.sizes,
+		 text.size.legend.misc=list(),
 		 text.col.legend.hist.misc=list(values=values, breaks=breaks),
 		 xtext=xtext,
 		 xtsize=xtsize,
@@ -367,7 +313,6 @@ process_text <- function(data, g, fill, gt, gby, z, allow.small.mult) {
 		 text.col.legend.hist.title=text.col.legend.hist.title,
 		 text.size.legend.z=text.size.legend.z,
 		 text.col.legend.z=text.col.legend.z,
-		 text.col.legend.hist.z=text.legend.hist.z,
-		 text.id=g$id)
+		 text.col.legend.hist.z=text.legend.hist.z)
 	
 }

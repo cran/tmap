@@ -4,27 +4,56 @@
 \alias{geocode_OSM}
 \title{Geocodes a location using OpenStreetMap Nominatim}
 \usage{
-geocode_OSM(q, projection = "longlat")
+geocode_OSM(q, projection = "longlat", return.first.only = TRUE,
+  details = FALSE, as.data.frame = NA, as.SPDF = FALSE,
+  server = "http://nominatim.openstreetmap.org")
 }
 \arguments{
-\item{q}{a character that specifies a search query. For instance \code{"India"} or \code{"CBS Weg 11, Heerlen, Netherlands"}.}
+\item{q}{a character (vector) that specifies a search query. For instance \code{"India"} or \code{"CBS Weg 11, Heerlen, Netherlands"}.}
 
 \item{projection}{projection in which the coordinates and bounding box are returned. Either a \code{PROJ.4} character string or a shortcut. See \code{\link{get_proj4}} for a list of shortcut values.}
+
+\item{return.first.only}{Only return the first result}
+
+\item{details}{provide output details, other than the point coordinates and bounding box}
+
+\item{as.data.frame}{Return the output as a \code{data.frame}. If \code{FALSE}, a list is returned with at least two items: \code{"coords"}, a vector containing the coordinates, and \code{"bbox"}, the corresponding bounding box. By default false, unless \code{q} contains multiple queries}
+
+\item{as.SPDF}{Return the output as \code{\link[sp:SpatialPointsDataFrame]{SpatialPointsDataFrame}}. If \code{TRUE}, \code{return.first.only} will be set to \code{TRUE}.}
+
+\item{server}{OpenStreetMap Nominatim server name. Could also be a local OSM Nominatim server.}
 }
 \value{
-A list of two items: \code{"coords"}, a vector containing the longitude and latitude coordinates, and \code{"bbox"}, the corresponding bounding box.
+If \code{as.SPDF} then a \code{\link[sp:SpatialPointsDataFrame]{SpatialPointsDataFrame}} is returned. Else, if \code{as.data.frame}, then a \code{data.frame} is returned, else a list.
 }
 \description{
-Geocodes a location (based on a search query) to coordinates and a bounding box. Similar to geocode from the ggmap package. It uses OpenStreetMap Nominatim.
+Geocodes a location (based on a search query) to coordinates and a bounding box. Similar to geocode from the ggmap package. It uses OpenStreetMap Nominatim. For processing large amount of queries, please read the usage policy (\url{http://wiki.openstreetmap.org/wiki/Nominatim_usage_policy}).
 }
 \examples{
 geocode_OSM("India")
-
 geocode_OSM("CBS Weg 1, Heerlen")
-
 geocode_OSM("CBS Weg 1, Heerlen", projection = "rd")
+
+\dontrun{
+data(metro)
+
+five_cities <- metro[sample(length(metro), 5), ]
+
+locations <- geocode_OSM(five_cities$name_long)
+
+five_cities <- append_data(five_cities, locations, fixed.order = TRUE)
+
+five_cities2 <- five_cities@data
+sp::coordinates(five_cities2) <- ~lon+lat
+
+tmap_mode("view")
+tm_shape(five_cities) +
+	tm_dots(col = "blue") +
+tm_shape(five_cities2) +
+	tm_dots(col = "red")
+}
 }
 \seealso{
-\code{\link{bb}}
+\code{\link{rev_geocode_OSM}}, \code{\link{bb}}
 }
 

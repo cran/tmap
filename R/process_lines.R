@@ -1,50 +1,19 @@
-process_line_lwd_vector <- function(x, g, rescale) {
-	
-	if (is.null(g$lwd.legend)) {
-		w_legend <- pretty(x, 7)
-		w_legend <- w_legend[w_legend!=0]
-		w_legend <- w_legend[-c(length(w_legend)-3,length(w_legend)-1)]
-	} else {
-		w_legend <- g$lwd.legend
-	}
-	
-	
-	
-	maxW <- ifelse(rescale, max(x, na.rm=TRUE), 1)
-	line.legend.lwds <-  g$scale * (w_legend/maxW)
-	line.lwd.legend.labels <- format(w_legend, trim=TRUE)
-
-	if (is.null(g$line.lwd.legend.labels)) {
-		line.lwd.legend.labels <- do.call("fancy_breaks", c(list(vec=w_legend, intervals=FALSE), g$legend.format))
-	} else {
-		if (length(g$line.lwd.legend.labels) != length(w_legend)) stop("length of sizes.legend.labels is not equal to the number of bubbles in the legend", call. = FALSE)
-		line.lwd.legend.labels <- g$line.lwd.legend.labels
-	}
-	
-	
-	
-	line.lwd <- g$scale * (x/maxW)
-	list(line.lwd=line.lwd,
-		 line.legend.lwds=line.legend.lwds,
-		 line.lwd.legend.labels=line.lwd.legend.labels)
-}
-
-
-process_lines <- function(data, g, gt, gby, z, allow.small.mult) {
+process_lines <- function(data, g, gt, gby, z, interactive) {
 	npol <- nrow(data)
 	by <- data$GROUP_BY
 	shpcols <- names(data)[1:(ncol(data)-1)]
 
-	# update legend format from tm_layout
-	to_be_assigned <- setdiff(names(gt$legend.format), names(g$legend.format))
-	g$legend.format[to_be_assigned] <- gt$legend.format[to_be_assigned]
-	
+
 	xcol <- g$col
 	xlwd <- g$lwd
 	
-	if (!allow.small.mult) xcol <- xcol[1]
-	if (!allow.small.mult) xlwd <- xlwd[1]
-	
+	if (interactive) {
+		if (length(xcol)>1) warning("Facets are not supported in view mode yet. Only line color aesthetic value \"", xcol[1], "\" will be shown.", call.=FALSE)
+		if (length(xlwd)>1) warning("Facets are not supported in view mode yet. Only line width aesthetic value \"", xlwd[1], "\" will be shown.", call.=FALSE)
+		xcol <- xcol[1]	
+		xlwd <- xlwd[1]
+	} 
+
 	if (is.na(xcol[1])) xcol <- gt$aes.colors["lines"]
 	if (is.null(g$colorNA)) g$colorNA <- "#00000000"
 	if (is.na(g$colorNA)[1]) g$colorNA <- gt$aes.colors["na"]
@@ -88,6 +57,9 @@ process_lines <- function(data, g, gt, gby, z, allow.small.mult) {
 	
 	nx <- max(nx, nlevels(by))
 	
+	# update legend format from tm_layout
+	g$legend.format <- process_legend_format(g$legend.format, gt$legend.format, nx)
+
 	dtcol <- process_data(data[, xcol, drop=FALSE], by=by, free.scales=gby$free.scales.line.col, is.colors=is.colors)
 	dtlwd <- process_data(data[, xlwd, drop=FALSE], by=by, free.scales=gby$free.scales.line.lwd, is.colors=FALSE, split.by=split.by)
 	
@@ -196,7 +168,8 @@ process_lines <- function(data, g, gt, gby, z, allow.small.mult) {
 		 line.col.legend.z=line.col.legend.z,
 		 line.lwd.legend.z=line.lwd.legend.z,
 		 line.col.legend.hist.z=line.col.legend.hist.z,
-		 line.id=g$id
+		 line.id=g$id,
+		 line.popup.vars=g$popup.vars
 	)
 
 }

@@ -1,6 +1,6 @@
-#' Create a smooth map in various formats: smooth raster, contour lines, and dasymetric polygons.
+#' Create a smooth map in various formats: smooth raster, contour lines, and polygons.
 #' 
-#' Create contour lines (isolines) from a shape object. To make the iso lines smooth, a 2D kernal density estimator is applied on the shape object. These lines are used to draw an isopleth. Also, the polygons between the countour lines are returned. They can be used to create a dasymetric map.
+#' Create a smooth map from a shape object. A 2D kernel density estimator is applied to the shape, which can be a spatial points, polygons, or raster object. Various format are returned: a smooth raster, contour lines, and polygons. The covered area can be specified, i.e., the area outside of it is extracted from the output.
 #' 
 #' For the estimation of the 2D kernal density, code is borrowed from \code{\link[KernSmooth:bkde2D]{bkde2D}}. This implemention is slightly different: \code{\link[KernSmooth:bkde2D]{bkde2D}} takes point coordinates and applies linear binning, whereas in this function, the data is already binned, with values 1 if the values of \code{var} are not missing and 0 if values of \code{var} are missing.
 #' 
@@ -20,14 +20,14 @@
 #' @param cover \code{\link[sp:SpatialPolygons]{SpatialPolygons}} shape that determines the covered area in which the contour lines are placed. If specified, \code{cover.type} is ignored.
 #' @param cover.threshold numeric value between 0 and 1 that determines which part of the estimated 2D kernal density is returned as cover. Only applicable when \code{cover.type="smooth"}.
 #' @param weight single number that specifies the weight of a single point. Only applicable if \code{shp} is a \code{\link[sp:SpatialPoints]{SpatialPoints}} object.
-#' @param extracting.method Method of how coordinates are extracted from the dasymetric polygons. Options are: \code{"full"} (default), \code{"grid"}, and \code{"single"}. See details. For the slowest method \code{"full"}, \code{\link[raster:extract]{extract}} is used. For \code{"grid"}, points on a grid layout are selected that intersect with the polygon. For \code{"simple"}, a simple point is generated with \code{\link[rgeos:gPointOnSurface]{gPointOnSurface}}.
-#' @param buffer.width Buffer width of the iso lines to cut dasymetric polygons. Should be small enough to let the polygons touch each other without space in between. However, too low values may cause geometric errors.
+#' @param extracting.method Method of how coordinates are extracted from the kernel density polygons. Options are: \code{"full"} (default), \code{"grid"}, and \code{"single"}. See details. For the slowest method \code{"full"}, \code{\link[raster:extract]{extract}} is used. For \code{"grid"}, points on a grid layout are selected that intersect with the polygon. For \code{"simple"}, a simple point is generated with \code{\link[rgeos:gPointOnSurface]{gPointOnSurface}}.
+#' @param buffer.width Buffer width of the iso lines to cut kernel density polygons. Should be small enough to let the polygons touch each other without space in between. However, too low values may cause geometric errors.
 #' @param to.Raster should the "raster" output (see \code{output}) be a \code{\link[raster:Raster-class]{RasterLayer}}? By default, it is returned as a \code{\link[sp:SpatialGridDataFrame]{SpatialGridDataFrame}}
 #' @return List with the following items:
 #' \describe{
 #' \item{\code{"raster"}}{A smooth raster, which is either a \code{\link[sp:SpatialGridDataFrame]{SpatialGridDataFrame}} or a \code{\link[raster:Raster-class]{RasterLayer}} (see \code{to.Raster})}
 #' \item{\code{"iso"}}{Contour lines, which is a \code{\link[sp:SpatialLinesDataFrame]{SpatialLinesDataFrame}}}
-#' \item{\code{"dasy"}}{Dasymetric polygons, which is a \code{\link[sp:SpatialPolygonsDataFrame]{SpatialPolygonsDataFrame}}}
+#' \item{\code{"polygons"}}{Kernel density polygons, which is a \code{\link[sp:SpatialPolygonsDataFrame]{SpatialPolygonsDataFrame}}}
 #' \item{\code{"bbox"}}{Bounding box of the used raster}
 #' \item{\code{"ncol"}}{Number of rows in the raster}
 #' \item{\code{"nrow"}}{Number of columns in the raster}
@@ -40,15 +40,22 @@
 #' @example ../examples/smooth_map.R
 #' @export
 smooth_map <- function(shp, var=NULL, nrow=NA, ncol=NA, N=250000, unit="km", unit.size=1000, smooth.raster=TRUE, nlevels=5, style = ifelse(is.null(breaks), "pretty", "fixed"), breaks = NULL, bandwidth=NA, cover.type=NA, cover=NULL, cover.threshold=.6, weight=1, extracting.method="full", buffer.width=NA, to.Raster=FALSE) {
+	
 	bbx <- bb(shp)
 	prj <- get_projection(shp)
 #	asp <- get_asp_ratio(shp)
 
-	pb <- txtProgressBar()
+	pb <- txtProgressBar(style=3)
 	
 	if (!inherits(shp, c("SpatialPoints", "SpatialPolygons", "SpatialGrid", "Raster"))) {
 		stop("shp is not a Raster nor a SpatialPoints, -Polygons, or -Grid object")
 	}
+	
+	if (!inherits(shp, c("SpatialPoints"))) {
+		if (inherits(shp, "Spatial") && !("data" %in% slotNames(shp))) stop("No data found in shape.")
+		if (missing(var)) var <- names(shp)[1]
+	}
+	
 		
 	## determine bounding box and grid size
 	if (inherits(shp, c("SpatialPoints", "SpatialPolygons"))) {
@@ -61,12 +68,23 @@ smooth_map <- function(shp, var=NULL, nrow=NA, ncol=NA, N=250000, unit="km", uni
 		}
 		
 	} else {
-		if (inherits(shp, "Raster")) shp <- as(shp, "SpatialGridDataFrame")
-		ncol <- shp@grid@cells.dim[1]
-		nrow <- shp@grid@cells.dim[2]
+		#if (inherits(shp, "Raster")) shp <- as(shp, "SpatialGridDataFrame")
+		if (!inherits(shp, "RasterLayer")) shp <- raster(shp, layer=var)
+		# if (inherits(shp, "SpatialGrid")) {
+		# 	shp <- raster(shp, layer=var)
+		# } else {
+		# 	shp <- raster(shp, layer=var)
+		# }
+			# shp <- as(shp, "SpatialGridDataFrame")
+		ncol <- ncol(shp)
+		nrow <- nrow(shp)
+		
+		#ncol <- shp@grid@cells.dim[1]
+		#nrow <- shp@grid@cells.dim[2]
 	}
 	N <- nrow * ncol
 
+	# determine cell area (needed to calculate densities)
 	if (!is_projected(shp) || is.na(unit)) {
 		warning("shp is not projected; therefore density values cannot be calculated", call. = FALSE)
 		cell.area <- 1
@@ -88,11 +106,12 @@ smooth_map <- function(shp, var=NULL, nrow=NA, ncol=NA, N=250000, unit="km", uni
 		bandwidth <- rep(bandwidth, length.out=2)
 	}
 
+	# create an empty grid
 	cover_r <- raster(extent(bbx), nrows=nrow, ncols=ncol, crs=prj)
 	
 	setTxtProgressBar(pb, .1)
-		
-	## process cover
+	
+	## process cover: fill the empty grid with T/F that indicates whether grid cells are inside or not
 	if (is.na(cover.type)) cover.type <- ifelse(inherits(shp, "SpatialPolygons"), "original", "rect")
 	if (missing(cover)) {
 			
@@ -101,8 +120,13 @@ smooth_map <- function(shp, var=NULL, nrow=NA, ncol=NA, N=250000, unit="km", uni
 			if (!is.na(prj)) cover <- set_projection(cover, current.projection = prj)
 			cover_r[] <- TRUE
 		} else if (cover.type=="original") {
-			if (inherits(shp, "SpatialGrid")) {
-				cover_r[] <- shp[[var]]
+			if (inherits(shp, "Raster")) {
+				warning("cover.type=\"original\" only applied to raster output")
+				cover <- as(extent(bbx), "SpatialPolygons")
+				if (!is.na(prj)) cover <- set_projection(cover, current.projection = prj)
+				
+				cover_r <- shp
+
 			} else {
 				if (inherits(shp, "SpatialPoints")) {
 					cover <- gConvexHull(shp)
@@ -114,6 +138,7 @@ smooth_map <- function(shp, var=NULL, nrow=NA, ncol=NA, N=250000, unit="km", uni
 				cover_r <- poly_to_raster(cover, nrow = nrow, ncol = ncol, to.Raster = TRUE)
 			}
 		}  else if (cover.type=="smooth") {
+			if (!inherits(shp, "Raster")) stop("Raster shape required when cover.type=\"smooth\"")
 			cover_list <- smooth_raster_cover(shp, var=var, bandwidth = bandwidth*unit.size, threshold = cover.threshold, output=c("RasterLayer", "SpatialPolygons"))	
 			cover_r <- cover_list$RasterLayer
 			cover_r[!cover_r[]] <- NA
@@ -130,33 +155,37 @@ smooth_map <- function(shp, var=NULL, nrow=NA, ncol=NA, N=250000, unit="km", uni
 	
 
 	if (inherits(shp, "SpatialPoints")) {
+		# for spatial points, use the 2d binned kernel density estimator from KernSmooth
 		co <- coordinates(shp)
 		x <- bkde2D(co, bandwidth=bandwidth*unit.size, gridsize=c(ncol, nrow), range.x=list(bbx[1,], bbx[2,]))
 		
-		# normalize
-		#x$fhat <- x$fhat * (length(shp) * weight / sum(x$fhat, na.rm=TRUE))
 		var <- "count"
 	} else {
-		if (missing(var)) var <- names(shp)[1]
+		# otherwise, the shape is converted to a raster (if it isn't already)
 		if (inherits(shp, "SpatialPolygons")){
 			shp@data <- shp@data[,var, drop=FALSE]
-			shp <- poly_to_raster(shp, nrow = nrow, ncol=ncol, copy.data = TRUE)
+			shp <- poly_to_raster(shp, nrow = nrow, ncol=ncol, copy.data = TRUE, to.Raster = TRUE)
 		}
-		shpr <- raster(shp, layer=var) #if (nlayers(shp)>1) raster(shp, layer=var) else shp
+		# get raster with selected variable
+		# shpr <- raster(shp, layer=var)
+		# browser()
+		
 		if (smooth.raster) {
-			m <- as.matrix(shpr)
+			# apply 2d kernel density estimator, similar to bkde2D, but without binning (since this is already binned data)
+			m <- as.matrix(shp)
 			x <- kde2D(m, bandwidth = bandwidth*unit.size, gridsize=c(ncol, nrow), range.x=list(bbx[1,], bbx[2,]))
 			
-			# normalize
-			#x$fhat <- x$fhat * (sum(shp[[var]], na.rm=TRUE) / sum(x$fhat, na.rm=TRUE))
 		} else {
-			r <- shpr
+			# copy raster (without 2d kernel density) and deterine levels
+			r <- shp
 			lvls <- num2breaks(r[], n=nlevels, style=style, breaks=breaks)$brks
 		}
 	}
 	setTxtProgressBar(pb, .5)
 	
 	if (inherits(shp, "SpatialPoints") || smooth.raster) {
+		# in this case, the 2d kernel density has been applied
+		
 		# fill raster values
 		r <- raster(extent(bbx), nrows=nrow, ncols=ncol, crs=prj)
 		r[] <- as.vector(x$fhat[, ncol(x$fhat):1])
@@ -169,7 +198,7 @@ smooth_map <- function(shp, var=NULL, nrow=NA, ncol=NA, N=250000, unit="km", uni
 		if (inherits(shp, "SpatialPoints")) {
 			norm_weight <- length(shp) * weight / sum(r[], na.rm=TRUE)
 		} else {
-			norm_weight <- sum(shp[[var]], na.rm=TRUE) / sum(r[], na.rm=TRUE)
+			norm_weight <- sum(shp[], na.rm=TRUE) / sum(r[], na.rm=TRUE)
 		}
 		r[] <- r[] * norm_weight / cell.area
 		x$fhat <- x$fhat * norm_weight / cell.area
@@ -183,6 +212,8 @@ smooth_map <- function(shp, var=NULL, nrow=NA, ncol=NA, N=250000, unit="km", uni
 		cl2 <- contour_lines_to_SLDF(cl, proj4string = CRS(prj))
 		#cl2$levelNR <- as.numeric(as.character(cl2$level))
 	} else {
+		# no 2d kernel density has been applied. Instead contour lines are found from the original raster
+		
 		bbr <- bb(r)
 		
 		# extend raster to prevent bleeding (due to isolines that do not reach the boundary)
@@ -205,16 +236,17 @@ smooth_map <- function(shp, var=NULL, nrow=NA, ncol=NA, N=250000, unit="km", uni
 	
 	# make sure lines are inside poly
 	cp <- lines2polygons(ply = cover, lns = cl2, rst = r, lvls=lvls, extracting.method="full", buffer.width = buffer.width)
-	attr(cp, "dasymetric") <- TRUE
+	attr(cp, "kernel_density") <- TRUE
 	
 	setTxtProgressBar(pb, .9)
 	
 	lns <- SpatialLinesDataFrame(gIntersection(cover, cl2, byid = TRUE), data=cl2@data, match.ID = FALSE)
 	attr(lns, "isolines") <- TRUE
+	setTxtProgressBar(pb, 1)
 	
 	list(raster = if(to.Raster) r else as(r, "SpatialGridDataFrame"),
 		 iso = lns,
-		 dasy = cp,
+		 polygons = cp,
 		 bbox = bbx,
 		 nrow = nrow,
 		 ncol = ncol,
