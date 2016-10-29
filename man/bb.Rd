@@ -32,9 +32,9 @@ If \code{x} is not specified, a bounding box can be created from scratch (see de
 
 \item{relative}{boolean that determines whether relative values are used for \code{width}, \code{height}, \code{xlim} and \code{ylim} or absolute. If \code{x} is unspecified, \code{relative} is set to \code{"FALSE"}.}
 
-\item{current.projection}{projection string (see \code{\link{set_projection}}) of the that corresponds to the}
+\item{current.projection}{projection that corresponds to the bounding box specified by \code{x}. Either a \code{\link[sp:CRS]{CRS}} object or a character value. If it is a character, it can either be a \code{PROJ.4} character string or a shortcut. See \code{\link{get_proj4}} for a list of shortcut values.}
 
-\item{projection}{projection string (see \code{\link{set_projection}}) to transform the bounding box to.}
+\item{projection}{projection to transform the bounding box to. Either a \code{\link[sp:CRS]{CRS}} object or a character value. If it is a character, it can either be a \code{PROJ.4} character string or a shortcut. See \code{\link{get_proj4}} for a list of shortcut values.}
 
 \item{as.extent}{should the bounding box be returned as \code{\link[raster:extent]{extent}}? If \code{FALSE} (default) then a matrix is returned}
 }
@@ -76,12 +76,14 @@ bb(NLD_muni, projection="longlat")
 bb(NLD_muni, ext=1.5)
 bb(NLD_muni, width=2, relative = TRUE)
 bb(NLD_muni, xlim=c(.25, .75), ylim=c(.25, .75), relative = TRUE)
-bb("Limburg", projection = "rd")
 
+\dontrun{
+bb("Limburg", projection = "rd")
 bb_italy <- bb("Italy", projection = "eck4")
 
 tm_shape(World, bbox=bb_italy) + tm_polygons()
 # shorter alternative: tm_shape(World, bbox="Italy") + tm_polygons()
+}
 }
 \seealso{
 \code{\link{geocode_OSM}}

@@ -29,8 +29,8 @@
 #' @param xlim limits of the x-axis. These are either absolute or relative (depending on the argument \code{relative}).
 #' @param ylim limits of the y-axis. See \code{xlim}.
 #' @param relative boolean that determines whether relative values are used for \code{width}, \code{height}, \code{xlim} and \code{ylim} or absolute. If \code{x} is unspecified, \code{relative} is set to \code{"FALSE"}.
-#' @param current.projection projection string (see \code{\link{set_projection}}) of the that corresponds to the 
-#' @param projection projection string (see \code{\link{set_projection}}) to transform the bounding box to.
+#' @param current.projection projection that corresponds to the bounding box specified by \code{x}. Either a \code{\link[sp:CRS]{CRS}} object or a character value. If it is a character, it can either be a \code{PROJ.4} character string or a shortcut. See \code{\link{get_proj4}} for a list of shortcut values.
+#' @param projection projection to transform the bounding box to. Either a \code{\link[sp:CRS]{CRS}} object or a character value. If it is a character, it can either be a \code{PROJ.4} character string or a shortcut. See \code{\link{get_proj4}} for a list of shortcut values.
 #' @param as.extent should the bounding box be returned as \code{\link[raster:extent]{extent}}? If \code{FALSE} (default) then a matrix is returned
 #' @return bounding box (see argument \code{as.extent})
 #' @import sp
@@ -46,12 +46,12 @@ bb <- function(x=NA, ext=NULL, cx=NULL, cy=NULL, width=NULL, height=NULL, xlim=N
 		b <- res$bbox
 		cx <- res$coords[1]
 		cy <- res$coords[2]
-		current.projection <- "longlat"
+		current.projection <- .CRS_longlat
 	} else if (inherits(x, "Extent")) {
 		b <- bbox(x)		
 	} else if (inherits(x, c("Spatial", "Raster"))) {
 		b <- bbox(x)	
-		current.projection <- proj4string(x)
+		current.projection <- get_projection(x, as.CRS = TRUE)
 	} else if (is.matrix(x) && length(x)==4) {
 		b <- x
 	} else if (is.vector(x) && length(x)==4) {
@@ -129,58 +129,56 @@ bb <- function(x=NA, ext=NULL, cx=NULL, cy=NULL, width=NULL, height=NULL, xlim=N
 		   dimnames=list(c("x", "y"), c("min", "max")))
 	
 	if (!missing(projection)) {
+		#####################################################
+		# Reproject bounding box
+		#####################################################
 		if (is.null(current.projection)) {
 			if (!maybe_longlat(b)) {
 				stop("Current projection unknown. Please specify the projection.")
 			}
 			warning("Current projection unknown. Long lat coordinates (wgs84) assumed.", call. = FALSE)
-			current.projection <- "longlat"	
-		} 
+			current.projection <- .CRS_longlat
+		} else current.projection <- get_proj4(current.projection, as.CRS = TRUE)
+		projection <- get_proj4(projection, as.CRS = TRUE)
 		
+		sp_poly <- as(extent(b), "SpatialPolygons")
+		attr(sp_poly, "proj4string") <- current.projection
 		
-		errorFound  <- TRUE
-		opt <- options(warn=-1, verbose=FALSE)
-		log <- capture.output({
-		iter <- 1
-		while(errorFound) {
-			sp_poly <- as(extent(b), "SpatialPolygons")
-			
+		# STEP 1: try to cut the bounding box, such that it is feasible (i.e. corresponding to lon between -180 and 180 and lat between -90 and 90)
+		world_end <- tryCatch({
+			suppressMessages({
+				end_of_the_world(proj=current.projection)
+			})
+		}, error=function(e) {
+			NULL
+		})
+		if (is.null(world_end)) {
+			sp_poly2 <- sp_poly
+		} else {
 			sp_poly2 <- tryCatch({
-			  world_end <- end_of_the_world(proj=current.projection)
-			  gIntersection(sp_poly, world_end)
+				gIntersection(sp_poly, world_end)
 			}, error=function(e){
 				sp_poly
 			})
-			if (is.null(sp_poly2)) sp_poly2 <- sp_poly
-			
-			co <- sp_poly2@polygons[[1]]@Polygons[[1]]@coords
-			
-			# add intermediate points
-			co2 <- apply(co, 2, function(v) {
-				n <- length(v)
-				c(v[1], rep(v[-n], each=4) + as.vector(sapply((v[-1] - v[-n]) / 4, function(w)cumsum(rep(w,4)))))
-			})
-			
-			sp_pnts <- SpatialPoints(co2, proj4string = CRS(get_proj4(current.projection)))
-			
-			errorFound  <- FALSE
-			tryCatch({
-				sp_pnts2_prj <- set_projection(sp_pnts, projection=projection)
-			}, error=function(e) {
-				assign("b", bb(b, ext=.99), envir = parent.env(environment()))
-				assign("errorFound", TRUE, envir = parent.env(environment()))
-				NULL
-			})
-			#cat("test\n")
-			if (iter==100) stop("Something went wrong with the bounding box. Please check the projection.") else iter <- iter + 1
+			if (is.null(sp_poly2) || !inherits(sp_poly2, "SpatialPolygons")) sp_poly2 <- sp_poly
 		}
+
+		# STEP 2: Extract the bounding box corner points and add intermediate points, which can be needed since the exterme values may not be corner points once they are projected. Create a SpatialPoints objects from these points.
+		co <- sp_poly2@polygons[[1]]@Polygons[[1]]@coords
+		co2 <- apply(co, 2, function(v) {
+			n <- length(v)
+			c(v[1], rep(v[-n], each=4) + as.vector(sapply((v[-1] - v[-n]) / 4, function(w)cumsum(rep(w,4)))))
+		})
+		sp_pnts <- SpatialPoints(co2, proj4string = current.projection)
+		
+		# STEP 3: Reproject SpatialPoints object
+		tryCatch({
+			sp_pnts2_prj <- set_projection(sp_pnts, projection=projection)
+		}, error=function(e) {
+			stop("Something went wrong with the bounding box. Please check the projection.", call.=FALSE)
 		})
 
-		do.call("options", opt)
-		
-		#sp_rect_prj <- set_projection(sp_rect, projection=projection)
-		#sp_rect_prj <- set_projection(sp_rect, current.projection = current.projection, projection=projection)
-		#sp_rect_prj <- spTransform(sp_rect, CRSobj = get_proj4(projection))
+		# STEP 4: Get bounding box of reprojected object
 		b <- sp_pnts2_prj@bbox
 		dimnames(b) <- list(c("x", "y"), c("min", "max"))
 	}

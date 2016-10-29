@@ -1,5 +1,5 @@
 process_grid <- function(gt, bbx, proj, sasp) {
-	grid.n.x <- grid.n.y <- grid.projection <- NULL
+	grid.n.x <- grid.n.y <- grid.projection <- grid.is.projected <- NULL
 	within(gt, { 
 		if (!is.na(grid.projection)) {
 			bbx_orig <- bbx
@@ -51,7 +51,7 @@ process_grid <- function(gt, bbx, proj, sasp) {
 								 seq(grid.y[length(grid.y)], by=diff(grid.y[1:2]), length.out = gny2))
 				} else grid.y2 <- NA
 			}
-			if (grid.projection %in% c("longlat", "latlong")) {
+			if (!grid.is.projected) {
 				grid.x2[abs(grid.x2-180)<1e-9] <- 180
 				grid.x2[abs(grid.x2- -180)<1e-9] <- -180
 				grid.y2[abs(grid.y2-90)<1e-9] <- 90
@@ -90,7 +90,7 @@ process_grid <- function(gt, bbx, proj, sasp) {
 				grid.co.x.lns <- numeric(0)
 				grid.co.y.lns <- numeric(0)
 			} else {
-				lns <- SpatialLinesDataFrame(SpatialLines(lnsList[lnsSel], proj4string = CRS(get_proj4(grid.projection))), data.frame(ID=c("x", "y")[lnsSel]), match.ID=FALSE)
+				lns <- SpatialLinesDataFrame(SpatialLines(lnsList[lnsSel], proj4string = get_proj4(grid.projection, as.CRS = TRUE)), data.frame(ID=c("x", "y")[lnsSel]), match.ID=FALSE)
 				
 				# project it to current projection
 				lns_proj <- set_projection(lns, projection = proj)

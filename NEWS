@@ -1,4 +1,8 @@
-version 1.6 (will be published on CRAN soon)
+version 1.6-1
+- improved projections: code is more efficient now and shortcuts are renewed. Also, CRS objects are now supported for all project arguments (e.g. tm_shape, set_projection), and as.CRS is added to get_projection and get_proj4.
+- Rscript works: methods is moved from imports to depends
+
+version 1.6
 - [!] tm_symbols added, to create proportional symbol maps: besides bubbles, it also supports other symbol shapes, png icons, and small ggplot2 plots
 - [!] imported cartogram function from cartogram package (tnx Sebastian!)
 - [!] reverse geocoding function rev_geocode_OSM added
