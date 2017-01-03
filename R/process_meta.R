@@ -1,4 +1,4 @@
-process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, panel.names, asp_ratio, shp_info, any.legend, interactive) {
+process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, panel.names, gm, any.legend, interactive) {
 	attr.color <- aes.colors <- aes.color <- pc <- grid.alpha <- NULL
 	
 	credit.show <- !is.null(gc)
@@ -8,36 +8,13 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, panel.names, 
 	
 	gf <- within(gf, {
 		by <- NULL
-		if (is.null(ncol) && is.null(nrow)) {
-			#           asp ~ nrow      
-			#       |-------------- 
-			#   1   |
-			# ~ncol |       nx
-			#       | 
-			ncol_init <- sqrt(nx/asp_ratio)
-			nrow_init <- nx / ncol_init
-			
-			# rounding:
-			nrow_ceiling <- min(ceiling(nrow_init), nx)
-			ncol_ceiling <- min(ceiling(ncol_init), nx)
-			
-			# find minimal change
-			nrow_xtra <- abs(nrow_ceiling - nrow_init) * ncol_init
-			ncol_xtra <- abs(ncol_ceiling - ncol_init) * nrow_init
-			
-			# calculaet the other, and subtract 1 when possible
-			if (nrow_xtra < ncol_xtra) {
-				nrow <- nrow_ceiling
-				ncol <- ceiling(nx / nrow)
-				if ((nrow-1) * ncol >= nx) nrow <- nrow - 1
-			} else {
-				ncol <- ncol_ceiling
-				nrow <- ceiling(nx / ncol)
-				if ((ncol-1) * nrow >= nx) ncol <- ncol - 1
-			}
+		if (is.na(ncol) && is.na(nrow)) {
+			nrowcol <- get_arrangement(nx = nx, asp_ratio = gm$shape.asp_ratio)
+			nrow <- nrowcol[1]
+			ncol <- nrowcol[2]
 		} else {
-			if (is.null(ncol)) ncol <- ceiling(nx / nrow)
-			if (is.null(nrow)) nrow <- ceiling(nx / ncol)
+			if (is.na(ncol)) ncol <- ceiling(nx / nrow)
+			if (is.na(nrow)) nrow <- ceiling(nx / ncol)
 		}
 	})
 	
@@ -90,14 +67,15 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, panel.names, 
 			}
 		}
 
-		if (asp_ratio>1) {
+		if (gm$shape.asp_ratio>1) {
 			asp_w <- 1
-			asp_h <- 1/asp_ratio
+			asp_h <- 1/gm$shape.asp_ratio
 		} else {
-			asp_w <- asp_ratio
+			asp_w <- gm$shape.asp_ratio
 			asp_h <- 1
 		}
 		scale.extra <- (min(1/ (asp_w * gf$ncol), 1 / (asp_h * gf$nrow))) ^ (1/gf$scale.factor)
+		asp_w <- asp_h <- NULL
 		scale <- scale * scale.extra
 
 		title.size <- title.size * scale
@@ -130,7 +108,7 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, panel.names, 
 # 		}
 		
 		inner.margins <- if (is.na(inner.margins[1])) {
-			if (shp_info$is_raster) rep(0, 4) else rep(0.02, 4)
+			if (gm$shape.any_raster) rep(0, 4) else rep(0.02, 4)
 		} else rep(inner.margins, length.out=4)
 		
  		attr.color.light <- is_light(attr.color)
@@ -149,8 +127,7 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, panel.names, 
 		
 		#attr.color <- do.call("process_color", c(list(col=attr.color), pc))
 		bg.color <- do.call("process_color", c(list(col=bg.color), pc))
-		bg.overlay <- do.call("process_color", c(list(col=bg.overlay), pc))
-		
+
 		if (!is.null(outer.bg.color)) outer.bg.color <- do.call("process_color", c(list(col=outer.bg.color), pc))
 		
 		if (is.na(legend.bg.color)) legend.bg.color <- !is.na(legend.frame)
@@ -194,6 +171,18 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, panel.names, 
 			inner.margins <- rep(0, 4)
 			outer.margins <- rep(0, 4)
 			asp <- NA
+			if (title[1]=="" && !is.ena(panel.names[1]) && panel.names[1]!="") {
+				if (is.list(panel.names)) {
+					title <- unlist(lapply(panel.names[[1]], function(n1) {
+						lapply(panel.names[[2]], function(n2) {
+							paste(n1, n2, sep = " / ")
+						})
+					}))
+				} else {
+					title <- panel.names
+				}
+				
+			}
 		}
 		
 	})	
@@ -278,6 +267,30 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, panel.names, 
 	
 	if (scale.show) {
 		gsb <- within(gsb, {
+			if (interactive) {
+				if (is.na(scale.width))
+					scale.width <- 100
+				else if (scale.width < 1) {
+					message("Scale bar width set to 100 pixels")
+					scale.width <- 100
+				}
+				
+				if (is.na(scale.position[1])) scale.position <- gt$attr.position
+				if (is_num_string(scale.position[1])) {
+					scale.position <- paste(ifelse(as.numeric(scale.position[2])<.5, "bottom", "top"),
+											ifelse(as.numeric(scale.position[1])<.5, "left", "right"), sep="")
+				} else {
+					scale.position <- paste(ifelse(scale.position[2] == "bottom", "bottom", "top"),
+											ifelse(scale.position[1] == "left", "left", "right"), sep="")
+				}
+			} else {
+				if (is.na(scale.width))
+					scale.width <- .25
+				else if (scale.width > 1) {
+					message("Scale bar width set to 0.25 of the map width")
+					scale.width <- .25
+				}
+			}
 			scale.size <- scale.size * gt$scale
 			scale.lwd <- scale.lwd * gt$scale
 			scale.show <- TRUE
@@ -328,9 +341,9 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, panel.names, 
 		glab <- list(xlab.show=FALSE, ylab.show=FALSE)
 	}
 	
-	
-	
+
 	gt[c("compass.type", "compass.size")] <- NULL
 	
-	c(gt, gf, gg, gc, gl, gsb, gcomp, glab, shp_info)
+
+	c(gt, gf, gg, gc, gl, gsb, gcomp, glab, gm)
 }

@@ -2,12 +2,15 @@
 #' 
 #' Creates a \code{\link{tmap-element}} that specifies facets (small multiples). Small multiples can be created in two ways: 1) by specifying the \code{by} argument with one or two variable names, by which the data is grouped, 2) by specifying multiple variable names in any of the aesthetic argument of the layer functions (for instance, the argument \code{col} in \code{\link{tm_fill}}). This function further specifies the facets, for instance number of rows and columns, and whether the coordinate and scales are fixed or free (i.e. independent of each other).
 #' 
+#' The global option \code{tmap.limits} controlls the limit of the number of facets that are plotted. By default, \code{options(tmap.limits=c(facets.view=4, facets.plot=64))}. The maximum number of interactive facets is set to four since otherwise it may become very slow.
+#' 
 #' @param by data variable name by which the data is split, or a vector of two variable names to split the data by two variables (where the first is used for the rows and the second for the columns).
 #' @param ncol number of columns of the small multiples grid. Not applicable if \code{by} contains two variable names.
 #' @param nrow number of rows of the small multiples grid. Not applicable if \code{by} contains two variable names.
 #' @param free.coords logical. If the \code{by} argument is specified, should each map has its own coordinate ranges?
 #' @param drop.units logical. If the \code{by} argument is specified, should non-selected spatial units be dropped? If \code{FALSE}, they are plotted where mapped aesthetics are regared as missing values. By default, \code{TRUE} if \code{free.coords=TRUE}. Not applicable for raster shapes.
 #' @param drop.empty.facets logical. If the \code{by} argument is specified, should empty facets be dropped? Empty facets occur when the \code{by}-variable contains unused levels. When \code{TRUE} and two \code{by}-variables are specified, empty rows and colums are dropped.
+#' @param sync logical. Should the navigation in view mode (zooming and panning) be synchronized? By default \code{TRUE}, unless \code{free.coords} is set to \code{TRUE}.
 #' @param showNA If the \code{by} argument is specified, should missing values of the \code{by}-variable be shown in a facet? If two \code{by}-variables are specified, should missing values be shown in an additional row and column? If \code{NA}, missing values only are shown if they exist. Similar to the \code{useNA} argument of \code{\link[base:table]{table}}, where \code{TRUE}, \code{FALSE}, and \code{NA} correspond to \code{"always"}, \code{"no"}, and \code{"ifany"} respectively.
 #' @param textNA text used for facets of missing values.
 #' @param free.scales logical. Should all scales of the plotted data variables be free, i.e. independent of each other? Possible data variables are color from \code{\link{tm_fill}}, color and size from \code{\link{tm_symbols}} and line color from \code{\link{tm_lines}}.
@@ -24,13 +27,14 @@
 #' @param scale.factor Number that determines how the elements (e.g. font sizes, symbol sizes, line widths) of the small multiples are scaled in relation to the scaling factor of the shapes. The elements are scaled to the \code{scale.factor}th root of the scaling factor of the shapes. So, for \code{scale.factor=1}, they are scaled proportional to the scaling of the shapes. Since elements, especially text, are often too small to read, a higher value is recommended. By default, \code{scale.factor=2}.
 #' @param drop.shapes deprecated: renamed to \code{drop.units}
 #' @export
-#' @example ../examples/tm_facets.R
+#' @example ./examples/tm_facets.R
 #' @seealso \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
 #' @return \code{\link{tmap-element}}
-tm_facets <- function(by=NULL, ncol=NULL, nrow=NULL, 
+tm_facets <- function(by=NULL, ncol=NA, nrow=NA, 
 					  free.coords=FALSE,
 					  drop.units=free.coords,
 					  drop.empty.facets=TRUE,
+					  sync=!free.coords,
 					  showNA=NA,
 					  textNA="Missing",
 					  free.scales=is.null(by),
@@ -64,7 +68,7 @@ tm_facets <- function(by=NULL, ncol=NULL, nrow=NULL,
 #' @param y y coordinates for horizontal grid lines. If \code{NA}, it is specified with a pretty scale and \code{n.y}.
 #' @param n.x prefered number of grid lines for the x axis.
 #' @param n.y prefered number of grid lines for the y axis.
-#' @param projection projection character. If specified, the grid lines are projected accordingly. See \code{\link{set_projection}} for projection details. Many world maps are projected, but still have latitude longitude (\code{"longlat"}) grid lines.
+#' @param projection projection character. If specified, the grid lines are projected accordingly. See \code{\link[tmaptools:set_projection]{set_projection}} for projection details. Many world maps are projected, but still have latitude longitude (\code{"longlat"}) grid lines.
 #' @param col color of the grid lines.
 #' @param lwd line width of the grid lines
 #' @param alpha alpha transparency of the grid lines. Number between 0 and 1. By default, the alpha transparency of \code{col} is taken. 
@@ -107,7 +111,7 @@ tm_grid <- function(x=NA,
 #' @param just Justification of the attribute relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{position} is specified by numeric coordinates. The default value is controlled by the argument \code{"attr.just"} of \code{\link{tm_layout}}.
 #' @export
 #' @seealso \code{\link{tm_xlab}}
-#' @example ../examples/tm_credits.R
+#' @example ./examples/tm_credits.R
 tm_credits <- function(text,
 					   size=.7,
 					   col=NA,
@@ -135,7 +139,7 @@ tm_credits <- function(text,
 #' @param margin margin around the logo in number of text line heights.
 #' @param position position of the logo. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the center of the text. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
 #' @param just Justification of the attribute relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{position} is specified by numeric coordinates. The default value is controlled by the argument \code{"attr.just"} of \code{\link{tm_layout}}.
-#' @example ../examples/tm_logo.R
+#' @example ./examples/tm_logo.R
 #' @export
 tm_logo <- function(file,
 					height=3,
@@ -155,8 +159,8 @@ tm_logo <- function(file,
 #' 
 #' Creates a scale bar. By default, the coordinate units are assumed to be meters, and the map units in kilometers. This can be changed in \code{\link{tm_shape}}.
 #' 
-#' @param breaks breaks of the scale bar. If not specified, breaks will be automatically be chosen given the prefered \code{width} of the scale bar.
-#' @param width (prefered) width of the scale bar. Only applicable when \code{breaks=N ULL}
+#' @param breaks breaks of the scale bar. If not specified, breaks will be automatically be chosen given the prefered \code{width} of the scale bar. Not available for view mode.
+#' @param width (prefered) width of the scale bar. Only applicable when \code{breaks=NULL}. In plot mode, it corresponds the relative width; the default is 0.25 so one fourth of the map width. In view mode, it corresponds to the width in pixels; the default is 100.
 #' @param size relative text size (which is upperbound by the available label width)
 #' @param text.color color of the text. By default equal to the argument \code{attr.color} of \code{\link{tm_layout}}.
 #' @param color.dark color of the dark parts of the scale bar, typically (and by default) black.
@@ -165,9 +169,9 @@ tm_logo <- function(file,
 #' @param position position of the scale bar Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left bottom corner of the scale bar. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
 #' @param just Justification of the attribute relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{position} is specified by numeric coordinates. The default value is controlled by the argument \code{"attr.just"} of \code{\link{tm_layout}}.
 #' @export
-#' @example ../examples/tm_scale_bar.R
+#' @example ./examples/tm_scale_bar.R
 tm_scale_bar <- function(breaks=NULL,
-						 width=.25, 
+						 width=NA, 
 						 size=.5,
 						 text.color=NA,
 						 color.dark="black", 
@@ -199,7 +203,7 @@ tm_scale_bar <- function(breaks=NULL,
 #' @param position position of the compass. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left bottom corner of the compass. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
 #' @param just Justification of the attribute relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{position} is specified by numeric coordinates. The default value is controlled by the argument \code{"attr.just"} of \code{\link{tm_layout}}.
 #' @export
-#' @example ../examples/tm_compass.R
+#' @example ./examples/tm_compass.R
 tm_compass <- function(north=0, 
 					   type=NA, 
 					   fontsize=.8, 
@@ -229,7 +233,7 @@ tm_compass <- function(north=0,
 #' @export
 #' @name tm_xlab
 #' @rdname axis_labels
-#' @example  ../examples/tm_lab.R
+#' @example  ./examples/tm_lab.R
 tm_xlab <- function(text,
 					size=.8,
 					rotation=0) {

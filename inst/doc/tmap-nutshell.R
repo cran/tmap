@@ -132,11 +132,11 @@ tm <- tm_shape(World) +
 	tm_fill("well_being", id="name", title="Well-being") +
 	tm_format_World()
 
-## ------------------------------------------------------------------------
-save_tmap(tm, "World_map.png", width=1920, height=1080)
+## ---- eval=FALSE---------------------------------------------------------
+#  save_tmap(tm, "World_map.png", width=1920, height=1080)
 
-## ------------------------------------------------------------------------
-save_tmap(tm, "World_map.html")
+## ---- eval=FALSE---------------------------------------------------------
+#  save_tmap(tm, "World_map.html")
 
 ## ---- fig.height=4-------------------------------------------------------
 tm_shape(Europe[Europe$name=="Austria", ]) +

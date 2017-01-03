@@ -4,14 +4,14 @@
 \alias{tm_scale_bar}
 \title{Scale bar}
 \usage{
-tm_scale_bar(breaks = NULL, width = 0.25, size = 0.5, text.color = NA,
+tm_scale_bar(breaks = NULL, width = NA, size = 0.5, text.color = NA,
   color.dark = "black", color.light = "white", lwd = 1, position = NA,
   just = NA)
 }
 \arguments{
-\item{breaks}{breaks of the scale bar. If not specified, breaks will be automatically be chosen given the prefered \code{width} of the scale bar.}
+\item{breaks}{breaks of the scale bar. If not specified, breaks will be automatically be chosen given the prefered \code{width} of the scale bar. Not available for view mode.}
 
-\item{width}{(prefered) width of the scale bar. Only applicable when \code{breaks=N ULL}}
+\item{width}{(prefered) width of the scale bar. Only applicable when \code{breaks=NULL}. In plot mode, it corresponds the relative width; the default is 0.25 so one fourth of the map width. In view mode, it corresponds to the width in pixels; the default is 100.}
 
 \item{size}{relative text size (which is upperbound by the available label width)}
 
@@ -37,7 +37,7 @@ data(NLD_muni)
 qtm(NLD_muni, theme = "NLD") + tm_scale_bar(position=c("left", "bottom"))
 
 data(Europe)
-tm_shape(Europe, unit = "miles", unit.size=1609) + 
+tm_shape(Europe, unit = "mi") + 
 	tm_polygons() + 
 tm_scale_bar()  + tm_layout(attr.outside = TRUE)
 

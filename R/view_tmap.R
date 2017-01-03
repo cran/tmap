@@ -1,15 +1,17 @@
-view_tmap <- function(gps, shps, bbx) {
+view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE) {
 	
 	# determine view
 
 	# take first small multiple
-	gp <- gps[[1]]
+	#gp <- gps[[1]]
 	gt <- gp$tm_layout
 	gp$tm_layout <- NULL
 	
 	lf <- leaflet()
 	basemaps <- gt$basemaps
-
+	basemaps.alpha <- gt$basemaps.alpha
+	
+	
 	if (is.null(names(basemaps))) names(basemaps) <- sapply(basemaps, FUN = function(bm) {
 		if (substr(bm, 1, 4) == "http") {
 			x <- strsplit(bm, "/", fixed=TRUE)[[1]]
@@ -20,9 +22,14 @@ view_tmap <- function(gps, shps, bbx) {
 	})
 	
 	if (!is.na(gt$set.zoom.limits[1])) {
-	  tileOptions <- tileOptions(minZoom=gt$set.zoom.limits[1], maxZoom=gt$set.zoom.limits[2])
+	  tileOptions <- lapply(basemaps.alpha, function(a) {
+	  	tileOptions(minZoom=gt$set.zoom.limits[1], maxZoom=gt$set.zoom.limits[2], opacity=a)
+	  })
+	  	
 	} else {
-	  tileOptions <- tileOptions()
+	  tileOptions <- lapply(basemaps.alpha, function(a) {
+	  	tileOptions(opacity=a)
+	  })
 	}
 	
 	# add base layer(s)
@@ -31,31 +38,37 @@ view_tmap <- function(gps, shps, bbx) {
 			bm <- unname(basemaps[i])
 			bmname <- names(basemaps)[i]
 			if (substr(bm, 1, 4) == "http") {
-				lf <- lf %>% addTiles(bm, group=bmname, options=tileOptions)
+				lf <- lf %>% addTiles(bm, group=bmname, options=tileOptions[[i]])
 			} else {
-				lf <- lf %>% addProviderTiles(bm, group=bmname, options = tileOptions)
+				lf <- lf %>% addProviderTiles(bm, group=bmname, options = tileOptions[[i]])
 			}
 		}
 	}
 	
 	# add background overlay
-	if (gt$bg.overlay.alpha!=0) {
-		if (any(sapply(gp, function(gpl)!is.null(gpl$raster)))) {
-			warning("Background overlays do not work yet with raster images. Background disabled.", call. = FALSE)
-		} else {
-			lf <- lf %>%  addRectangles(-540,-90,540,90, stroke=FALSE, fillColor=gt$bg.overlay, fillOpacity = gt$bg.overlay.alpha, layerId=0) 
-			lf$x$limits <- NULL
-		}
-	}
+	lf <- appendContent(lf, {
+		tags$head(
+			tags$style(HTML(paste(".leaflet-container {background:", gt$bg.color, ";}", sep="")))
+		)	
+	})
 	
-		
+	# if (gt$bg.overlay.alpha!=0) {
+	# 	if (any(sapply(gp, function(gpl)!is.null(gpl$raster)))) {
+	# 		warning("Background overlays do not work yet with raster images. Background disabled.", call. = FALSE)
+	# 	} else {
+	# 		lf <- lf %>%  addRectangles(-540,-90,540,90, stroke=FALSE, fillColor=gt$bg.overlay, fillOpacity = gt$bg.overlay.alpha, layerId=0)
+	# 		lf$x$limits <- NULL
+	# 	}
+	# }
+	
+
 	if (!length(gp)) {
 		if (length(basemaps)>1) lf <- lf %>% addLayersControl(baseGroups=names(basemaps), options = layersControlOptions(autoZIndex = TRUE))
-		
+
 		if (!is.null(gt$bbx)) {
-			lf <- lf %>% 
-				fitBounds(gt$bbx[1], gt$bbx[2], gt$bbx[3], gt$bbx[4]) %>% 
-				addMarkers(gt$center[1], gt$center[2])
+			lf <- lf %>%
+				fitBounds(gt$shape.bbx[1], gt$shape.bbx[2], gt$shape.bbx[3], gt$shape.bbx[4]) %>%
+				addMarkers(gt$shape.center[1], gt$shape.center[2])
 		}
 		lf <- set_bounds_view(lf, gt)
 		return(lf)
@@ -65,6 +78,10 @@ view_tmap <- function(gps, shps, bbx) {
 	id <- 1
 	alpha <- gt$alpha
 
+	bbx <- attr(shps[[1]], "bbox")
+	
+	warns <- c(symbol=FALSE, text=FALSE, raster=FALSE) # to prevent a warning for each shape
+	
 	group_selection <- mapply(function(shp, gpl, shp_name) {
 		bbx <- attr(shp, "bbox")
 		upl <- units_per_line(bbx)
@@ -72,7 +89,7 @@ view_tmap <- function(gps, shps, bbx) {
 		if (inherits(shp, "Spatial")) {
 			res <- get_sp_coordinates(shp, gpl, gt, bbx)
 			co <- res$co
-			if (gt$line.center.type[1]=="segment") {
+			if (gt$shape.line.center.type[1]=="segment") {
 				gpl <- res$gpl
 				shp <- res$shp
 			}	
@@ -82,25 +99,26 @@ view_tmap <- function(gps, shps, bbx) {
 			bres <- split_alpha_channel(gpl$col, alpha=alpha)
 			bcol <- bres$col
 			bopacity <- bres$opacity
-			
+
 			fres <- split_alpha_channel(gpl$fill, alpha=alpha)
 			fcol <- fres$col
 			fopacity <- fres$opacity
-			
+
 			if (!is.null(gpl$fill)) {
 				popups <- get_popups(gpl, type="fill")
 			} else {
 				popups <- NULL
 			}
 			stroke <- gpl$lwd>0 && !is.na(bcol) && bopacity!=0
-			
-			lf <- lf %>% addPolygons(data=shp, stroke=stroke, weight=gpl$lwd, color=bcol, fillColor = fcol, fillOpacity = fopacity, popup = popups, options = pathOptions(clickable=!is.null(popups)), group=shp_name, layerId = id)
-			
-			
-			if (!is.na(gpl$xfill)) {
+
+		
+			lf <- lf %>% addPolygons(data=shp, stroke=stroke, weight=gpl$lwd, color=bcol, fillColor = fcol, opacity=bopacity, fillOpacity = fopacity, popup = popups, options = pathOptions(clickable=!is.null(popups)), group=shp_name, layerId = id)
+
+
+			if (!is.na(gpl$xfill[1])) {
 				if (gpl$fill.legend.show) lf <- lf %>% add_legend(gpl, gt, aes="fill", alpha=alpha)
 			}
-			
+
 			assign("lf", lf, envir = e)
 			assign("id", id+1, envir = e)
 			TRUE
@@ -117,7 +135,7 @@ view_tmap <- function(gps, shps, bbx) {
 			lf <- lf %>% addPolylines(data=shp, stroke=TRUE, weight=gpl$line.lwd, color=lcol, opacity = lopacity, popup = popups, options = pathOptions(clickable=!is.null(popups)), dashArray=dashArray, group=shp_name, layerId = id)
 
 			
-			if (!is.na(gpl$xline)) {
+			if (!is.na(gpl$xline[1])) {
 				if (gpl$line.col.legend.show) lf <- lf %>% add_legend(gpl, gt, aes="line.col", alpha=alpha)
 			}
 			
@@ -147,6 +165,18 @@ view_tmap <- function(gps, shps, bbx) {
 			
 			symbol.size <- gpl$symbol.size
 			symbol.shape <- gpl$symbol.shape
+			sel <- !is.na(symbol.size) & !is.na(fcol) & !is.na(symbol.shape)
+			
+			# return NULL is no symbols are selected (see tm_facets example)
+			if (!any(sel)) return(FALSE)
+			
+			if (!all(sel)) {
+				co <- co[sel, , drop=FALSE]
+				fcol <- fcol[sel]
+				fopacity <- fopacity[sel]
+				symbol.size <- symbol.size[sel]
+				symbol.shape <- symbol.shape[sel]
+			}
 			
 			if (gpl$symbol.misc$symbol.are.markers) {
 				if (is.na(gpl$symbol.names)) {
@@ -155,7 +185,7 @@ view_tmap <- function(gps, shps, bbx) {
 				}
 			}
 			
-			popups <- get_popups(gpl, type="symbol")
+			popups <- get_popups(gpl, type="symbol")[sel]
 
 			# sort symbols
 			if (length(symbol.size)!=1) {
@@ -198,9 +228,10 @@ view_tmap <- function(gps, shps, bbx) {
 				lf <- lf %>% addMarkers(lng = co2[,1], lat=co2[,2], popup=popups2, group=shp_name, icon=icons, layerId = id)
 			} else {
 				if (!all(symbol.shape2 %in% c(1, 16, 19, 20, 21))) {
-					warning("Symbol shapes other than circles are not supported in view mode.", call.=FALSE)
+					warns["symbol"]
+					assign("warns", warns, envir = e)
 				}
-				
+
 				if (fixed) {
 					lf <- lf %>% addCircleMarkers(lng=co2[,1], lat=co2[,2], fill = any(!is.na(fcol2)), fillColor = fcol2, fillOpacity=fopacity, color = bcol, stroke = !is.na(bcol) && bopacity!=0, radius = 20*symbol.size2, weight = 1, popup=popups2, group=shp_name, layerId = id)
 				} else {
@@ -210,7 +241,7 @@ view_tmap <- function(gps, shps, bbx) {
 				
 			
 			
-			if (!is.na(gpl$xcol)) {
+			if (!is.na(gpl$xcol[1])) {
 				if (gpl$symbol.col.legend.show) lf <- lf %>% add_legend(gpl, gt, aes="symbol.col", alpha=alpha)
 			}
 			
@@ -221,15 +252,19 @@ view_tmap <- function(gps, shps, bbx) {
 			
 		}
 		plot_tm_text <- function() {
-			if (is.null(gpl$symbol.misc) || !gpl$symbol.misc$symbol.are.markers) warning("Text labels not supported in view mode.", call.=FALSE)
+			if (is.null(gpl$symbol.misc) || !gpl$symbol.misc$symbol.are.markers) {
+				warns["text"] <- TRUE
+				assign("warns", warns, envir = e)
+			}
  			FALSE
 		}
 		plot_tm_raster <- function() {
 			if (gpl$raster.misc$is.OSM) {
-				warning("Raster data contains OpenStreetMapData (read with read_osm), and therefore not shown in view mode.", call.=FALSE)
+				warns["raster"] <- TRUE
+				assign("warns", warns, envir = e)
 				return(FALSE)	
 			}
-			if (is.na(gpl$xraster)) {
+			if (is.na(gpl$xraster[1])) {
 				gpl$raster.legend.palette <- unique(gpl$raster)
 			}
 			
@@ -239,7 +274,7 @@ view_tmap <- function(gps, shps, bbx) {
 			
 			lf <- lf %>% addRasterImage(x=shp, colors=res_leg$col, opacity = res_leg$opacity, group=shp_name, project = FALSE, layerId = id)
 			
-			if (!is.na(gpl$xraster)) {
+			if (!is.na(gpl$xraster[1])) {
 				if (gpl$raster.legend.show) lf <- lf %>% add_legend(gpl, gt, aes="raster", alpha=alpha)
 			}
 
@@ -258,6 +293,12 @@ view_tmap <- function(gps, shps, bbx) {
 		any(layer_selection)
 	}, shps, gp, gt$shp_name, SIMPLIFY = TRUE)
 	
+	if (showWarns) {
+		if (warns["symbol"]) warning("Symbol shapes other than circles are not supported in view mode.", call.=FALSE)
+		if (warns["text"]) warning("Text labels not supported in view mode.", call.=FALSE)
+		if (warns["raster"]) warning("Raster data contains OpenStreetMapData (read with read_osm), and therefore not shown in view mode.", call.=FALSE)
+	}
+	
 	groups <- gt$shp_name[group_selection]
 	
 	#center <- c(mean(lims[c(1,3)]), mean(lims[c(2,4)]))
@@ -275,8 +316,32 @@ view_tmap <- function(gps, shps, bbx) {
 
 	
 	lf <- lf %>% addLayersControl(baseGroups=names(basemaps), overlayGroups = groups, options = layersControlOptions(autoZIndex = TRUE), position=control.position)  
+
+	# if (gt$scale.show) {
+	# 	leaflet_version <- packageVersion("leaflet")
+	# 	if (leaflet_version > "1.0.2") {
+	# 		u <- gt$shape.units_args$unit
+	# 		metric <- (u %in% c("m", "km", "metric"))
+	# 		lf <- lf %>% addScaleBar(position = gt$scale.position, options = scaleBarOptions(maxWidth=gt$scale.width, metric=metric, imperial = !metric))
+	# 	} else {
+	# 		message("Scale bar support in view mode need leaflet >= 1.02; installed version: ", leaflet_version)
+	# 	}
+	# }
+	# print(leaflet_id)
+	# if (gt$title!="") {
+	# 	lf <- lf %>% onRender(paste("
+	# 		function(el, x) {
+	# 			var tldiv = document.getElementsByClassName(\"leaflet-top leaflet-left\")[", leaflet_id-1, "];
+	# 			var titlediv = document.createElement('div');
+	# 			titlediv.className = \"info legend leaflet-control\";
+	# 			titlediv.innerHTML = \"<b>", gt$title, "</b>\";
+	# 			tldiv.insertBefore(titlediv, tldiv.childNodes[0]);
+	# 		}", sep=""))
+	# }
 	
-	set_bounds_view(lf, gt, bbx)
+	lf <- set_bounds_view(lf, gt, bbx)
+	lf$title <- gt$title
+	lf
 }
 
 set_bounds_view <- function(lf, gt, bbx) {
@@ -419,7 +484,7 @@ add_legend <- function(map, gpl, gt, aes, alpha, list.only=FALSE) {
 	
 	title <- if (nonempty_text(gpl[[title_name]])) expr_to_char(gpl[[title_name]]) else NULL
 
-	legend.position <- gt$view.legend.position
+	legend.position <-gt$view.legend.position
 
 	if (is.cont) {
 		if (style=="quantile") {
@@ -455,8 +520,7 @@ units_per_line <- function(bbx) {
 	max_lines <- par("din")[2]*10
 	
 	# calculate top-center to bottom-center
-	vdist <- distGeo(p1=c(mean(bbx[1,]), bbx[2,1]),
-					 p2=c(mean(bbx[1,]), bbx[2,2]))
+	vdist <- tmaptools::approx_distances(bbx, projection = "longlat", target = "m")$vdist
 	vdist/max_lines
 }
 
@@ -477,18 +541,3 @@ lty2dashArray <- function(lty) {
 		  collapse=",")
 }
 
-get_view <- function(bbx) {
-	lng <- mean(bbx[1,])
-	lat <- mean(bbx[2,])
-	
-	lng_diff <- range(bbx[1,])
-	lat_diff <- range(bbx[2,])
-	max_diff <- max(lng_diff, lat_diff)
-	if (max_diff < 360 / (2^20)) {
-		zoom <- -21
-	} else {
-		zoom <- round(-(log2(max_diff) - (log2(360)))) + 2
-		if (zoom < 1) zoom <- 1
-	}
-	c(lng=lng, lat=lat, zoom=zoom)
-}

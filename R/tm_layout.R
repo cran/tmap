@@ -99,17 +99,18 @@
 #' @param panel.label.height Height of the labels in number of text line heights.
 #' @param panel.label.rot Rotation angles of the panel labels. Vector of two values: the first is the rotation angle (in degrees) of the row panels, which are only used in cross-table facets (when \code{\link{tm_facets}}'s \code{by} is specified with two variables). The second is the rotation angle of the column panels.
 #' @param attr.outside Logical that determines whether the attributes are plot outside of the map/facets.
-#' @param attr.outside.position Character that determines the outside position of the legend, either \code{top} or \code{bottom}. Only applicable when \code{attr.outside=TRUE}.
+#' @param attr.outside.position Character that determines the outside position of the attributes: \code{"top"} or \code{"bottom"}. Only applicable when \code{attr.outside=TRUE}. If the legend is also drawn outside (with \code{legend.outside=TRUE}) and on the same side of the map (e.g. also \code{"top"} or \code{"bottom"}), the attributes are placed between the map and the legend. This can be changed by setting \code{attr.outside.position} to \code{"TOP"} or \code{"BOTTOM"}: in this case, the attributes are placed above respecvitely below the legend.
 #' @param attr.outside.size Numeric value that determines the relative height of the attribute viewport, when \code{attr.outside=TRUE}.
 #' @param attr.position Position of the map attributes, which are \code{\link{tm_credits}}, \code{\link{tm_scale_bar}} and \code{\link{tm_compass}}. Vector of two values, specifing the x and y coordinates. The first value is \code{"left"}, \code{"LEFT"}, \code{"center"}, \code{"right"}, or \code{"RIGHT"}, and the second value \code{"top"}, \code{"TOP"}, \code{"center"}, \code{"bottom"}, or \code{"BOTTOM"}. The uppercase values correspond to the position without margins (so tighter to the frame). Positions can also be set separately in the map attribute fuctions. If \code{attr.outside=TRUE}, this argument specifies the position of the attributes within the outside panel.
 #' @param attr.just Justification of the attributes relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{attr.position} is specified by numeric coordinates. It can also be specified per attribute function.
 #' @param design.mode Logical that enables the design mode. If \code{TRUE}, inner and outer margins, legend position, aspect ratio are explicitely shown. Also, feedback text in the console is given.
 #' @param basemaps vector of one or more names of baselayer maps used in the interactive view mode. See \code{\link{tm_view}}.
-#' @param bg.overlay color of the background overlay rectangle used in the interactive view mode. See \code{\link{tm_view}}.
-#' @param bg.overlay.alpha alpha transparency of \code{bg.overlay}
+#' @param basemaps.alpha alpha transparancy (opacity) of the basemaps. See \code{\link{tm_view}}.
+#' @param bg.overlay Not used anymore. See \code{\link{tm_view}}.
+#' @param bg.overlay.alpha Not used anymore. See \code{\link{tm_view}}.
 #' @param ... other arguments from \code{tm_layout}
 #' @seealso \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
-#' @example ../examples/tm_layout.R
+#' @example ./examples/tm_layout.R
 #' @export
 tm_layout <- function(title=NA,
 					  scale=1,
@@ -179,6 +180,7 @@ tm_layout <- function(title=NA,
 					  attr.just = c("left", "bottom"),
 					  design.mode = FALSE,
 					  basemaps = c("CartoDB.Positron", "OpenStreetMap", "Esri.WorldTopoMap"),
+					  basemaps.alpha = c(.5, 1, 1),
 					  bg.overlay=NULL,
 					  bg.overlay.alpha=0) {
 	legend.stack <- match.arg(legend.stack)
@@ -329,6 +331,7 @@ tm_style_natural <- function(bg.color="lightskyblue1",
 							 legend.bg.color="grey90",
 							 earth.boundary=TRUE,
 							 basemaps="Thunderforest.Landscape",
+							 basemaps.alpha=1,
 							 ...) {
 
 	args <- c(as.list(environment()), list(...))
@@ -347,7 +350,8 @@ tm_style_cobalt <- function(bg.color="#002240",
 							aes.color=c(fill="#0088FF", borders="#002240", symbols="#FF9D00", dots="#FF9D00", lines="#FFEE80", text="white", na="grey60"),
 							aes.palette=list(seq="YlGn", div="RdYlGn", cat="Set3"),
 							attr.color="white", 
-							bg.overlay.alpha=.3,
+							basemaps="CartoDB.DarkMatter",
+							basemaps.alpha=.5,
 							...) {
 	# Bu="#0088FF" DaBu="#002240" LiBu="#BED6FF" Or="#FF9D00", W="white" Yl="FFEE80"
 	# See https://www.hartwork.org/beamer-theme-matrix/
@@ -378,7 +382,8 @@ tm_style_albatross <- function(bg.color="#00007F",
 								aes.color=c(fill="#4C4C88", borders="#00004C", symbols="#BFBFFF", dots="#BFBFFF", lines="#BFBFFF", text="#FFE700", na="grey60"),
 								aes.palette=list(seq="YlOrRd", div="RdYlGn", cat="Set3"),
 								attr.color="#BFBFFF",
-								bg.overlay.alpha=.3,
+								basemaps="CartoDB.DarkMatter",
+								basemaps.alpha=.5,
 								...) {
 	# Y="#FFE700", Bu="#00007F", DaBu="#00004C", Gr="#BFBFFF", DaGr="#4C4C88"
 	# See https://www.hartwork.org/beamer-theme-matrix/
@@ -419,9 +424,8 @@ tm_style_classic <- function(sepia.intensity=.7,
 							 fontfamily="serif", 
 							 frame.double.line=TRUE, 
 							 compass.type="rose",
-							 bg.overlay="gold",
-							 bg.overlay.alpha=.5,
 							 basemaps="Esri.WorldTopoMap",
+							 basemaps.alpha=.5,
 							 ...) {
 	args <- c(as.list(environment()), list(...))
 	g <- do.call("tm_layout", args)

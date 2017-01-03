@@ -497,8 +497,17 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 plot_scale <- function(gt, just, xrange, crop_factor) {
 	light <- do.call("process_color", c(list(gt$scale.color.light, alpha=1), gt$pc))
 	dark <- do.call("process_color", c(list(gt$scale.color.dark, alpha=1), gt$pc))
+
+	unit <- gt$shape.units$target
+	unit.size <- 1/gt$shape.units$to
 	
-	xrange2 <- xrange/gt$unit.size
+	if (is.na(unit.size)) {
+		warning("Unable to determine shape coordinate units. Please check if the \"+units\" part of the projection is present. Otherwise, specify coords.unit or unit.size")
+	} else if (!gt$shape.units$projected && ((gt$shape.bbx[4]-gt$shape.bbx[2]) > 30)) {
+		warning("Scale bar set for latitude ", gsub("long@lat(.+)$", "\\1", gt$shape.units$unit), " and will be different at the top and bottom of the map.")
+	}
+	
+	xrange2 <- xrange/unit.size
 	
 	if (is.null(gt$scale.breaks)) {
 		ticks2 <- pretty(c(0, xrange2*crop_factor), 4)
@@ -508,10 +517,10 @@ plot_scale <- function(gt, just, xrange, crop_factor) {
 	ticks2Labels <- format(ticks2, trim=TRUE)
 	ticksWidths <- text_width_npc(ticks2Labels)
 	
-	labels <- c(ticks2Labels, gt$unit)
+	labels <- c(ticks2Labels, unit)
 	
 	n <- length(ticks2)
-	ticks3 <- ticks2*gt$unit.size / xrange
+	ticks3 <- ticks2*unit.size / xrange
 	
 	widths <- ticks3[2] - ticks3[1]
 	size <- min(gt$scale.size, widths/max(ticksWidths))
@@ -521,7 +530,7 @@ plot_scale <- function(gt, just, xrange, crop_factor) {
 	#my <- lineHeight / 2
 	#mx <- convertWidth(convertHeight(unit(my, "npc"), "inch"), "npc", TRUE)
 	
-	unitWidth <- text_width_npc(gt$unit) * size
+	unitWidth <- text_width_npc(unit) * size
 	width <- widths * (n-1) + .5*ticksWidths[1]*size + .5*ticksWidths[n]*size+ unitWidth   #widths * n 
 	
 	xtext <- x[1] + c(ticks3, ticks3[n] + .5*ticksWidths[n]*size + .5*unitWidth)# + widths*.5 + unitWidth*.5) #+ position[1]

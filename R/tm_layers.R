@@ -64,7 +64,7 @@
 #' @param legend.hist.z index value that determines the position of the histogram legend element. (See \code{legend.size.z})
 #' @note The absolute fontsize (in points) is determined by the (ROOT) viewport, which may depend on the graphics device.
 #' @export
-#' @example ../examples/tm_text.R
+#' @example ./examples/tm_text.R
 #' @seealso \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
 #' @return \code{\link{tmap-element}}
 tm_text <-  function(text, size=1, col=NA, root=3, 
@@ -105,17 +105,17 @@ tm_text <-  function(text, size=1, col=NA, root=3,
 	
 #' Draw iso (contour) lines with labels
 #' 
-#' This function is a wrapper of \code{\link{tm_lines}} and \code{\link{tm_text}} aimed to draw isopleths, which can be created with \code{\link{smooth_map}}. 
+#' This function is a wrapper of \code{\link{tm_lines}} and \code{\link{tm_text}} aimed to draw isopleths, which can be created with \code{\link[tmaptools:smooth_map]{smooth_map}}. 
 #' 
 #' @param col line color. See \code{\link{tm_lines}}.
-#' @param text text to display. By default, it is the variable named \code{"level"} of the shape that is created with \code{\link{smooth_map}}
+#' @param text text to display. By default, it is the variable named \code{"level"} of the shape that is created with \code{\link[tmaptools:smooth_map]{smooth_map}}
 #' @param size text size (see \code{\link{tm_text}})
 #' @param remove.overlap see \code{\link{tm_text}}
 #' @param along.lines see \code{\link{tm_text}}
 #' @param overwrite.lines see \code{\link{tm_text}}
 #' @param ... arguments passed on to \code{\link{tm_lines}} or \code{\link{tm_text}}
 #' @export
-#' @seealso \code{\link{smooth_map}}
+#' @seealso \code{\link[tmaptools:smooth_map]{smooth_map}}
 tm_iso <- function(col=NA, text="level", size=.5, 
 				   remove.overlap=TRUE, along.lines=TRUE, overwrite.lines=TRUE, ...) {
 	args <- list(...)
@@ -181,7 +181,7 @@ tm_iso <- function(col=NA, text="level", size=.5,
 #' @param popup.vars names of data variables that are shown in the popups in \code{"view"} mode. If \code{NA} (default), only aesthetic variables (i.e. specified by \code{col} and \code{lwd}) are shown). If they are not specified, all variables are shown. Set popup.vars to \code{FALSE} to disable popups.
 #' @export
 #' @seealso \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
-#' @example ../examples/tm_lines.R
+#' @example ./examples/tm_lines.R
 #' @return \code{\link{tmap-element}}
 tm_lines <- function(col=NA, lwd=1, lty="solid", alpha=NA,
 					 scale=1,
@@ -231,7 +231,7 @@ tm_lines <- function(col=NA, lwd=1, lty="solid", alpha=NA,
 #' @param col For \code{tm_fill}, it is one of
 #' \itemize{
 #' \item a single color value
-#' \item the name of a data variable that is contained in \code{shp}. Either the data variable contains color values, or values (numeric or categorical) that will be depicted by a color palette (see \code{palette}. In the latter case, a choropleth is drawn. #' \item \code{"MAP_COLORING"}. In this case polygons will be colored such that adjacent polygons do not get the same color. See the underlying function \code{\link{map_coloring}} for details.}
+#' \item the name of a data variable that is contained in \code{shp}. Either the data variable contains color values, or values (numeric or categorical) that will be depicted by a color palette (see \code{palette}. In the latter case, a choropleth is drawn. #' \item \code{"MAP_COLORING"}. In this case polygons will be colored such that adjacent polygons do not get the same color. See the underlying function \code{\link[tmaptools:map_coloring]{map_coloring}} for details.}
 #' For \code{tm_borders}, it is a single color value that specifies the border line color. If multiple values are specified, small multiples are drawn (see details).
 #' @param alpha transparency number between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of the \code{col} is used (normally 1).
 #' @param palette a palette name or a vector of colors. See \code{RColorBrewer::display.brewer.all()} for the named palettes. Use a \code{"-"} as prefix to reverse the palette. The default palette is taken from \code{\link{tm_layout}}'s argument \code{aes.palette}, which typically depends on the style. The type of palette from \code{aes.palette} is automatically determined, but can be overwritten: use \code{"seq"} for sequential, \code{"div"} for diverging, and \code{"cat"} for categorical.
@@ -269,10 +269,10 @@ tm_lines <- function(col=NA, lwd=1, lty="solid", alpha=NA,
 #' @param legend.hist.z index value that determines the position of the histogram legend element 
 #' @param id name of the data variable that specifies the indices of the polygons. Only used for \code{"view"} mode (see \code{\link{tmap_mode}}).
 #' @param popup.vars names of data variables that are shown in the popups in \code{"view"} mode. If \code{convert2density=TRUE}, the derived density variable name is suffixed with \code{_density}. If \code{NA} (default), only aesthetic variables (i.e. specified by \code{col} and \code{lwd}) are shown). If they are not specified, all variables are shown. Set popup.vars to \code{FALSE} to disable popups.
-#' @param ... for \code{tm_polygons}, these arguments passed to either \code{tm_fill} or \code{tm_borders}. For \code{tm_fill}, these arguments are passed on to \code{\link{map_coloring}}.
+#' @param ... for \code{tm_polygons}, these arguments passed to either \code{tm_fill} or \code{tm_borders}. For \code{tm_fill}, these arguments are passed on to \code{\link[tmaptools:map_coloring]{map_coloring}}.
 #' @keywords choropleth
 #' @export
-#' @example ../examples/tm_fill.R
+#' @example ./examples/tm_fill.R
 #' @seealso \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
 #' @return \code{\link{tmap-element}}	
 tm_fill <- function(col=NA, 
@@ -342,9 +342,9 @@ tm_polygons <- function(col=NA,
 
 #' Draw a raster
 #' 
-#' Creates a \code{\link{tmap-element}} that draws a raster. For coloring, there are three options: 1) a fixed color is used, 2) a color palette is mapped to a data variable, 3) RGB values are used. 
+#' Creates a \code{\link{tmap-element}} that draws a raster. For coloring, there are three options: 1) a fixed color is used, 2) a color palette is mapped to a data variable, 3) RGB values are used. The function \code{tm_raster} is designed for option 2, while \code{tm_rgb} is used for option 3.
 #' 
-#' Small multiples can be drawn in two ways: either by specifying the \code{by} argument in \code{\link{tm_facets}}, or by defining multiple variables in the aesthetic arguments. The aesthetic argument of \code{tm_raster} is \code{col}. In the latter case, the arguments, except for \code{thres.poly}, and the ones starting with \code{legend.}, can be specified for small multiples as follows. If the argument normally only takes a single value, such as \code{n}, then a vector of those values can be specified, one for each small multiple. If the argument normally can take a vector, such as \code{palette}, then a list of those vectors (or values) can be specified, one for each small multiple.
+#' Small multiples can be drawn in two ways: either by specifying the \code{by} argument in \code{\link{tm_facets}}, or by defining multiple variables in the aesthetic arguments. The aesthetic argument of \code{tm_raster} is \code{col}. In the latter case, the arguments, except for the ones starting with \code{legend.}, can be specified for small multiples as follows. If the argument normally only takes a single value, such as \code{n}, then a vector of those values can be specified, one for each small multiple. If the argument normally can take a vector, such as \code{palette}, then a list of those vectors (or values) can be specified, one for each small multiple.
 #' 
 #' @param col three options: a single color value, the name of a data variable that is contained in \code{shp}, or the name of a variable in \code{shp} that contain color values. In the second case the values (numeric or categorical) that will be depicted by a color palette (see \code{palette}. If omitted, and if \code{shp} contains three numeric layers that range between 0 and 255, these are interpreted as RGB values, else, the first data variable is selected.
 #' If multiple values are specified, small multiples are drawn (see details). By default, it is the name of the first data variable.
@@ -360,7 +360,7 @@ tm_polygons <- function(col=NA,
 #' @param max.categories in case \code{col} is the name of a categorical variable, this value determines how many categories (levels) it can have maximally. If the number of levels is higher than \code{max.categories} and \code{auto.palette.mapping} is \code{FALSE}, then levels are combined.
 #' @param colorNA color used for missing values. Use \code{NULL} for transparency.
 #' @param saturation Number that determines how much saturation (also known as chroma) is used: \code{saturation=0} is greyscale and \code{saturation=1} is normal. This saturation value is multiplied by the overall saturation of the map (see \code{\link{tm_layout}}).
-#' @param interpolate Should the raster image be interpolated? By default \code{FALSE} when \code{col} is a data variable and \code{TRUE} when the raster is a bitmap image (e.g. a basemap created with \code{\link{read_osm}}).
+#' @param interpolate Should the raster image be interpolated? By default \code{FALSE} for \code{tm_raster} and \code{TRUE} for \code{tm_rgb}.
 #' @param textNA text used for missing values.
 #' @param showNA logical that determines whether missing values are named in the legend. By default (\code{NA}), this depends on the presence of missing values.
 #' @param title title of the legend element
@@ -381,8 +381,11 @@ tm_polygons <- function(col=NA,
 #' @param legend.hist.title title for the histogram. By default, one title is used for both the histogram and the normal legend.
 #' @param legend.z index value that determines the position of the legend element with respect to other legend elements. The legend elements are stacked according to their z values. The legend element with the lowest z value is placed on top.
 #' @param legend.hist.z index value that determines the position of the histogram legend element 
+#' @param ... arguments passed on from \code{tm_raster} to \code{tm_rgb}
+#' @name tm_raster
+#' @rdname raster
 #' @export
-#' @example ../examples/tm_raster.R
+#' @example ./examples/tm_raster.R
 #' @seealso \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
 #' @return \code{\link{tmap-element}}	
 tm_raster <- function(col=NA,
@@ -398,7 +401,7 @@ tm_raster <- function(col=NA,
 					  max.categories = 12,
 					  colorNA = NULL,
 					  saturation = 1,
-					  interpolate = NA,
+					  interpolate = FALSE,
 					  textNA = "Missing",
 					  showNA = NA,
 					  title=NA,
@@ -410,17 +413,20 @@ tm_raster <- function(col=NA,
 					  legend.z=NA,
 					  legend.hist.z=NA) {
 	g <- list(tm_raster=as.list(environment()))
+	g$tm_raster$is.RGB <- FALSE
 	class(g) <- "tmap"
 	g
 }
 
-# 
-# tm_rgb <- function(saturation) {
-# 	g <- list(tm_raster=as.list(environment()))
-# 	g$tm_raster$col <- "_RGB_"
-# 	class(g) <- "tmap"
-# 	g
-# }
+#' @name tm_rgb
+#' @rdname raster
+#' @export
+tm_rgb <- function(alpha = NA, saturation = 1, interpolate=TRUE, ...) {
+	g <- do.call("tm_raster", c(list(alpha=alpha, saturation=saturation, interpolate=interpolate), list(...)))
+	g$tm_raster$is.RGB <- TRUE
+	class(g) <- "tmap"
+	g
+}
 
 
 
@@ -514,7 +520,7 @@ tm_raster <- function(col=NA,
 #' @param legend.z shortcut for \code{legend.col.z shortcut} for \code{tm_dots}
 #' @keywords symbol map
 #' @export
-#' @example ../examples/tm_symbols.R
+#' @example ./examples/tm_symbols.R
 #' @references Flannery J (1971). The Relative Effectiveness of Some Common Graduated Point Symbols in the Presentation of Quantitative Data. Canadian Cartographer, 8 (2), 96-109.
 #' @seealso \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
 #' @return \code{\link{tmap-element}}
@@ -600,7 +606,7 @@ tm_bubbles <- function(size=1,
 					   border.col=NA,
 					   legend.max.symbol.size=1,
 					   ...) {
-	g <- do.call("tm_symbols", c(list(size=size, col=col, shape=shape, scale=scale, legend.max.symbol.size=legend.max.symbol.size), list(...)))
+	g <- do.call("tm_symbols", c(list(size=size, col=col, shape=shape, scale=scale, border.col=border.col, legend.max.symbol.size=legend.max.symbol.size), list(...)))
 	g
 }
 
