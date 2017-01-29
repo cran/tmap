@@ -66,6 +66,11 @@ tm_shape(Europe[Europe$continent=="Europe",]) +
     tm_facets("name", free.coords=TRUE, drop.units=TRUE)
 
 ## ---- fig.width=10-------------------------------------------------------
+tm1 <- qtm(Europe, fill = "red")
+tm2 <- qtm(Europe, fill = "blue")
+tmap_arrange(tm1, tm2, asp = NA)
+
+## ---- fig.width=10-------------------------------------------------------
 data(land)
 data(World)
 pal8 <- c("#33A02C", "#B2DF8A", "#FDBF6F", "#1F78B4", "#999999", "#E31A1C", "#E6E6E6", "#A6CEE3")
@@ -75,16 +80,16 @@ tm_shape(World) +
     tm_borders() +
 tm_format_World(inner.margins=0) +
 tm_legend(text.size=1,
-		  title.size=1.2,
-		  position = c("left","bottom"), 
-		  bg.color = "white", 
-		  bg.alpha=.2, 
-		  frame="gray50", 
-		  height=.6, 
-		  hist.width=.2,
-		  hist.height=.2, 
-		  hist.bg.color="gray60", 
-		  hist.bg.alpha=.5)
+	title.size=1.2,
+	position = c("left","bottom"), 
+	bg.color = "white", 
+	bg.alpha=.2, 
+	frame="gray50", 
+	height=.6, 
+	hist.width=.2,
+	hist.height=.2, 
+	hist.bg.color="gray60", 
+	hist.bg.alpha=.5)
 
 ## ---- fig.width=10-------------------------------------------------------
 qtm(Europe, style="natural", title="Natural style") # equivalent to: qtm(Europe) + tm_style_natural(title="Natural style")

@@ -22,7 +22,7 @@ If multiple values are specified, small multiples are drawn (see details). By de
 
 \item{alpha}{transparency number between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of the \code{col} is used (normally 1).}
 
-\item{palette}{a palette name or a vector of colors. See \code{RColorBrewer::display.brewer.all()} for the named palettes. Use a \code{"-"} as prefix to reverse the palette. The default palette is taken from \code{\link{tm_layout}}'s argument \code{aes.palette}, which typically depends on the style. The type of palette from \code{aes.palette} is automatically determined, but can be overwritten: use \code{"seq"} for sequential, \code{"div"} for diverging, and \code{"cat"} for categorical.}
+\item{palette}{a palette name or a vector of colors. See \code{tmaptools::palette_explorer()} for the named palettes. Use a \code{"-"} as prefix to reverse the palette. The default palette is taken from \code{\link{tm_layout}}'s argument \code{aes.palette}, which typically depends on the style. The type of palette from \code{aes.palette} is automatically determined, but can be overwritten: use \code{"seq"} for sequential, \code{"div"} for diverging, and \code{"cat"} for categorical.}
 
 \item{n}{preferred number of classes (in case \code{col} is a numeric variable)}
 
@@ -34,7 +34,7 @@ If multiple values are specified, small multiples are drawn (see details). By de
 
 \item{labels}{labels of the classes}
 
-\item{auto.palette.mapping}{When diverging colour palettes are used (i.e. "RdBu") this method automatically maps colors to values such that the middle colors (mostly white or yellow) are assigned to values of 0, and the two sides of the color palette are assigned to negative respectively positive values. When categorical color palettes are used, this method stretches the palette is there are more levels than colors.}
+\item{auto.palette.mapping}{When diverging colour palettes are used (i.e. "RdBu") this method automatically maps colors to values such that the middle colors (mostly white or yellow) are assigned to values of 0, and the two sides of the color palette are assigned to negative respectively positive values. When categorical color palettes are used, this method stretches the palette if there are more levels than colors.}
 
 \item{contrast}{vector of two numbers that determine the range that is used for sequential and diverging palettes (applicable when \code{auto.palette.mapping=TRUE}). Both numbers should be between 0 and 1. The first number determines where the palette begins, and the second number where it ends. For sequential palettes, 0 means the brightest color, and 1 the darkest color. For diverging palettes, 0 means the middle color, and 1 both extremes. If only one number is provided, this number is interpreted as the endpoint (with 0 taken as the start).}
 
@@ -92,14 +92,14 @@ data(World, land, metro)
 
 pal8 <- c("#33A02C", "#B2DF8A", "#FDBF6F", "#1F78B4", "#999999", "#E31A1C", "#E6E6E6", "#A6CEE3")
 tm_shape(land, ylim = c(-88,88)) +
-    tm_raster("cover_cls", palette = pal8, title="Global Land Cover") +
-tm_shape(metro) + tm_dots(col="#E31A1C") +
+    tm_raster("cover_cls", palette = pal8, title = "Global Land Cover") +
+tm_shape(metro) + tm_dots(col = "#E31A1C") +
 tm_shape(World) +
-    tm_borders(col="black") +
-tm_layout(scale=.8, 
+    tm_borders(col = "black") +
+tm_layout(scale = .8, 
 	legend.position = c("left","bottom"),
-    legend.bg.color = "white", legend.bg.alpha=.2, 
-    legend.frame="gray50")
+    legend.bg.color = "white", legend.bg.alpha = .2, 
+    legend.frame = "gray50")
 
 \dontrun{
 pal20 <- c("#003200", "#3C9600", "#006E00", "#556E19", "#00C800", "#8CBE8C",
@@ -107,16 +107,16 @@ pal20 <- c("#003200", "#3C9600", "#006E00", "#556E19", "#00C800", "#8CBE8C",
 		   "#E664E6", "#9B82E6", "#B4FEF0", "#646464", "#C8C8C8", "#FF0000",
 		   "#FFFFFF", "#5ADCDC")
 tm_shape(land) +
-	tm_raster("cover", max.categories = 20, palette=pal20, title="Global Land Cover") + 
+	tm_raster("cover", max.categories = 20, palette = pal20, title = "Global Land Cover") + 
 	tm_layout(scale=.8, legend.position = c("left","bottom"))
 }
 
 
 tm_shape(land, ylim = c(-88,88)) +
-    tm_raster("trees", palette = "Greens", title="Percent Tree Cover") +
+    tm_raster("trees", palette = "Greens", title = "Percent Tree Cover") +
 tm_shape(World) +
     tm_borders() +
-tm_layout(legend.position = c("left","bottom"), bg.color="lightblue")
+tm_layout(legend.position = c("left", "bottom"), bg.color = "lightblue")
 
 # TIP: check out these examples in view mode, enabled with tmap_mode("view")
 

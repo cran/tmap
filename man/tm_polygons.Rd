@@ -29,7 +29,7 @@ For \code{tm_borders}, it is a single color value that specifies the border line
 
 \item{alpha}{transparency number between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of the \code{col} is used (normally 1).}
 
-\item{palette}{a palette name or a vector of colors. See \code{RColorBrewer::display.brewer.all()} for the named palettes. Use a \code{"-"} as prefix to reverse the palette. The default palette is taken from \code{\link{tm_layout}}'s argument \code{aes.palette}, which typically depends on the style. The type of palette from \code{aes.palette} is automatically determined, but can be overwritten: use \code{"seq"} for sequential, \code{"div"} for diverging, and \code{"cat"} for categorical.}
+\item{palette}{a palette name or a vector of colors. See \code{tmaptools::palette_explorer()} for the named palettes. Use a \code{"-"} as prefix to reverse the palette. The default palette is taken from \code{\link{tm_layout}}'s argument \code{aes.palette}, which typically depends on the style. The type of palette from \code{aes.palette} is automatically determined, but can be overwritten: use \code{"seq"} for sequential, \code{"div"} for diverging, and \code{"cat"} for categorical.}
 
 \item{convert2density}{boolean that determines whether \code{col} is converted to a density variable. Should be \code{TRUE} when \code{col} consists of absolute numbers. The area size is either approximated from the shape object, or given by the argument \code{area}.}
 
@@ -45,7 +45,7 @@ For \code{tm_borders}, it is a single color value that specifies the border line
 
 \item{labels}{labels of the classes.}
 
-\item{auto.palette.mapping}{When diverging colour palettes are used (i.e. "RdBu") this method automatically maps colors to values such that the middle colors (mostly white or yellow) are assigned to values of 0, and the two sides of the color palette are assigned to negative respectively positive values. When categorical color palettes are used, this method stretches the palette is there are more levels than colors.}
+\item{auto.palette.mapping}{When diverging colour palettes are used (i.e. "RdBu") this method automatically maps colors to values such that the middle colors (mostly white or yellow) are assigned to values of 0, and the two sides of the color palette are assigned to negative respectively positive values. When categorical color palettes are used, this method stretches the palette if there are more levels than colors.}
 
 \item{contrast}{vector of two numbers that determine the range that is used for sequential and diverging palettes (applicable when \code{auto.palette.mapping=TRUE}). Both numbers should be between 0 and 1. The first number determines where the palette begins, and the second number where it ends. For sequential palettes, 0 means the brightest color, and 1 the darkest color. For diverging palettes, 0 means the middle color, and 1 both extremes. If only one number is provided, this number is interpreted as the endpoint (with 0 taken as the start).}
 
@@ -109,7 +109,7 @@ Creates a \code{\link{tmap-element}} that draws the polygons. \code{tm_fill} fil
 Small multiples can be drawn in two ways: either by specifying the \code{by} argument in \code{\link{tm_facets}}, or by defining multiple variables in the aesthetic arguments. The aesthetic argument of \code{tm_fill} (and \code{tm_polygons}) is \code{col}. In the latter case, the arguments, except for \code{thres.poly}, and the ones starting with \code{legend.}, can be specified for small multiples as follows. If the argument normally only takes a single value, such as \code{n}, then a vector of those values can be specified, one for each small multiple. If the argument normally can take a vector, such as \code{palette}, then a list of those vectors (or values) can be specified, one for each small multiple.
 }
 \examples{
-data(World, Europe, NLD_muni, NLD_prov)
+data(World, Europe)
 
 # Constant fill
 tm_shape(World) + tm_fill("darkolivegreen3") + tm_format_World(title="A green World")
@@ -123,38 +123,39 @@ tm_shape(Europe) +
     tm_fill("isNLD") +
 tm_layout("Find the Netherlands!")
 
-# Numeric data variable
-tm_shape(NLD_muni) +
-    tm_fill(col="population", convert2density=TRUE, 
-        style="kmeans", title = expression("Population (per " * km^2 * ")"), 
-        legend.hist=TRUE, id="name") +
-    tm_borders("grey25", alpha=.5) + 
-tm_shape(NLD_prov) +
-    tm_borders("grey40", lwd=2) +
-tm_format_NLD_wide(bg.color="white", frame = FALSE, legend.hist.bg.color="grey90")
-
-tm_shape(World) +
-    tm_polygons("HPI", palette="RdYlGn", style="cont", n=8, auto.palette.mapping=FALSE, 
-    			title="Happy Planet Index", id="name") +
-    tm_text("iso_a3", size="AREA", scale=1.5) +
-tm_format_World() + 
-tm_style_grey()
-
 # Categorical data variable
 if (require(RColorBrewer)) {
 pal <- brewer.pal(10, "Set3")[c(10, 8, 4, 5)]
 tm_shape(Europe) +
 	tm_polygons("EU_Schengen", palette=pal, title = "European Countries", showNA=FALSE) +
-	tm_format_Europe()
+tm_format_Europe()
 }
 
 tm_shape(World) +
-    tm_polygons("economy", title="Economy", id="name") +
-    tm_text("iso_a3", size="AREA", scale=1.5) +
-tm_format_World()
+	tm_polygons("economy", title="Economy", id="name") +
+	tm_text("iso_a3", size="AREA", scale=1.5) +
+	tm_format_World()
+
+# Numeric data variable
+tm_shape(World) +
+	tm_polygons("HPI", palette="RdYlGn", style="cont", n=8, auto.palette.mapping=FALSE,
+		title="Happy Planet Index", id="name") +
+	tm_text("iso_a3", size="AREA", scale=1.5) +
+tm_format_World() + 
+tm_style_grey()
+
+\dontrun{
+data(NLD_muni, NLD_prov)
+tm_shape(NLD_muni) +
+	tm_fill(col="population", convert2density=TRUE, 
+		style="kmeans", title = expression("Population (per " * km^2 * ")"), 
+		legend.hist=TRUE, id="name") +
+	tm_borders("grey25", alpha=.5) + 
+tm_shape(NLD_prov) +
+	tm_borders("grey40", lwd=2) +
+tm_format_NLD_wide(bg.color="white", frame = FALSE, legend.hist.bg.color="grey90")
 
 # Map coloring algorithm
-\dontrun{
 tm_shape(NLD_prov) +
     tm_fill("name", legend.show = FALSE) +
 tm_shape(NLD_muni) +
@@ -163,13 +164,10 @@ tm_shape(NLD_prov) +
     tm_borders(lwd=2) +
     tm_text("name", shadow=TRUE) +
 tm_format_NLD(title="Dutch provinces and\\nmunicipalities", bg.color="white")
-}
 
 # Cartogram
-\dontrun{
 if (require(cartogram)) {
 	NLD_prov_pop <- cartogram(NLD_prov, "population")
-	
 	tm_shape(NLD_prov_pop) +
 		tm_polygons("origin_non_west", title = "Non-western origin (\%)")
 }

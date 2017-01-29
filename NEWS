@@ -1,3 +1,8 @@
+version 1.8-1
+- added tm_rgb (shortcut for rgb rasters)
+- fixed interactive maps in rmarkdown
+- fixed but in qtm called without arguments
+
 version 1.8
 - [!] package split: non-plotting functions migrated to tmaptools
 - added tmap_arrange for arranging custom small multiples
