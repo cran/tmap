@@ -1,13 +1,3 @@
-elem_subplot <- function(x, id, gt, just) {
-	type <- x$type
-	cols <- if (type=="credits") c(1,2) else ifelse(just=="left", 1, 2)
-	cellplot(id, cols, e={
-		lineHeight <- convertHeight(unit(1, "lines"), unitTo="npc", valueOnly=TRUE)
-		rectGrob(gp=gpar(col="green", fill=NA))
-	})
-}
-
-
 legend_subplot <- function(x, id, gt, histWidth) {
 	legend.type <- x$legend.type
 	cols <- if (legend.type=="hist") 1 else c(1,2)
@@ -408,11 +398,13 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 		} else if (legend.type %in% c("fill", "raster")) {
 			fill <- legend.palette
 			xtraWidth <- ws[1]/2
+			col <- ifelse(legend.type =="fill", border.col, NA)
+			if (legend.type=="raster") lwd <- NA
 			rectGrob(x=xs, 
 					 y=1-my-hs/2, 
 					 width= ws, 
 					 height= hs,
-					 gp=gpar(fill=fill, col=border.col, lwd=lwd))
+					 gp=gpar(fill=fill, col=col, lwd=lwd))
 		} else if (legend.type %in% c("symbol.size", "symbol.col", "symbol.shape")) {
 			cols <- legend.palette
 			
@@ -671,7 +663,6 @@ plot_compass <- function(gt, just) {
 	u <- 1/(gt$compass.nlines)
 	#vpComp <- viewport(x=u, y=u, height=1-2*u, width=1-2*u, just=c("left", "bottom"))
 	
-	
 	light <- do.call("process_color", c(list(gt$compass.color.light, alpha=1), gt$pc))
 	dark <- do.call("process_color", c(list(gt$compass.color.dark, alpha=1), gt$pc))
 	
@@ -807,7 +798,7 @@ plot_compass <- function(gt, just) {
 	}
 	
 	grobComp <- if (gt$compass.type %in% c("arrow", "4star", "8star")) {
-		polygonGrob(x=x[[1]], y=y[[1]], id=id, gp=gpar(fill=fill, lwd=gt$compass.lwd))
+		polygonGrob(x=x[[1]], y=y[[1]], id=id, gp=gpar(fill=fill, lwd=gt$compass.lwd, col=dark))
 	} else if (gt$compass.type=="radar") {
 		gTree(children = gList(
 			circleGrob(x=x[[1]], y=y[[1]], r = cr[1], gp=gpar(lwd=2*LWD, col=dark, fill=light)),

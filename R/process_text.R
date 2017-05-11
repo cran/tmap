@@ -23,11 +23,11 @@ process_text <- function(data, g, fill, gt, gby, z, interactive) {
 	xtcol <- g$col
 	xtext <- g$text
 	
-	if (interactive) {
-		xtsize <- xtsize[1]
-		xtcol <- xtcol[1]
-		xtext <- xtext[1]
-	}
+	# if (interactive) {
+	# 	xtsize <- xtsize[1]
+	# 	xtcol <- xtcol[1]
+	# 	xtext <- xtext[1]
+	# }
 
 	if (is.null(g$colorNA)) g$colorNA <- "#00000000"
 	if (is.na(g$colorNA)[1]) g$colorNA <- gt$aes.colors["na"]
@@ -46,6 +46,14 @@ process_text <- function(data, g, fill, gt, gby, z, interactive) {
 	nxtext <- length(xtext)
 	
 	varysize <- all(xtsize %in% shpcols) && !is.null(xtsize)
+	
+	if ((varysize || identical(xtsize, "AREA")) && interactive && !gt$text.size.variable) {
+		message("Text size will be constant in view mode. Set tm_view(text.size.variable = TRUE) to enable text size variables.")
+		varysize <- FALSE
+		nxtsize <- 1
+		xtsize <- 1
+	}
+	
 	varycol <- all(xtcol %in% shpcols) && !is.null(xtcol) && !(is.na(xtcol[1]))
 	
 	nx <- max(nxtcol, nxtsize, nxtext)
@@ -88,7 +96,7 @@ process_text <- function(data, g, fill, gt, gby, z, interactive) {
 			cols <- matrix(colvec, nrow=npol, ncol=nx, byrow = TRUE)
 		}
 		if (!is.matrix(cols)) {
-			cols <- matrix(cols, ncol=nx)
+			cols <- matrix(cols, nrow=npol,ncol=nx)
 		} else {
 			if (ncol(cols)!=nx) {
 				cols <- cols[,rep(1:ncol(cols), length.out=nx)]
@@ -123,6 +131,7 @@ process_text <- function(data, g, fill, gt, gby, z, interactive) {
 		size <- sapply(res, function(r)r$size)
 		text_sel <- sapply(res, function(r)r$text_sel)
 		size.legend.labels <- lapply(res, function(r)r$size.legend.labels)
+		size.legend.values <- lapply(res, function(r)r$size.legend.values)
 		legend.sizes <- lapply(res, function(r)r$legend.sizes)
 		max.size <- lapply(res, function(r)r$max.size)
 	} else {
@@ -132,10 +141,12 @@ process_text <- function(data, g, fill, gt, gby, z, interactive) {
 		
 		if (varysize) {
 			size.legend.labels <- res$size.legend.labels
+			size.legend.values <- res$size.legend.values
 			legend.sizes <- res$legend.sizes
 			max.size <- res$max.size
 		} else {
 			size.legend.labels <- NA
+			size.legend.values <- NA
 			size.legend.text <- NA
 			legend.sizes <- NA
 			max.size <- res$max.size
@@ -187,6 +198,7 @@ process_text <- function(data, g, fill, gt, gby, z, interactive) {
 	}
 	col <- dcr$col
 	col.legend.labels <- dcr$legend.labels
+	col.legend.values <- dcr$legend.values
 	col.legend.palette <- dcr$legend.palette
 	col.neutral <- gt$aes.colors[["text"]] # preferable over dcr$col.neutral to match examples
 	breaks <- dcr$breaks
@@ -198,17 +210,17 @@ process_text <- function(data, g, fill, gt, gby, z, interactive) {
 	
 	if (is.list(values)) {
 		# process legend text
-		col.legend.text <- mapply(function(txt, v, s, l, gsci) {
+		col.legend.text <- mapply(function(txt, v, b, s, l, gsci) {
 			if (is.na(gsci$labels.text[1])) {
 				
-				if (is.na(breaks[1])) {
+				if (is.na(b[1])) {
 					# categorical
 					nl <- nlevels(v)
 					ids <- as.integer(v)
 				} else {
 					# numeric
-					nl <- length(breaks) - 1
-					ids <- as.integer(cut(v, breaks=breaks, include.lowest = TRUE, right = FALSE))
+					nl <- length(b) - 1
+					ids <- as.integer(cut(v, breaks=b, include.lowest = TRUE, right = FALSE))
 				}
 				ix <- sapply(1:nl, function(i)which(ids==i & s)[1])
 				if (length(l)==nl+1) {
@@ -225,7 +237,7 @@ process_text <- function(data, g, fill, gt, gby, z, interactive) {
 				}
 			}
 			coltext
-		}, as.data.frame(text, stringsAsFactors = FALSE), values, as.list(as.data.frame(text_sel)), if (is.list(col.legend.labels)) col.legend.labels else list(col.legend.labels), if (is.list(dtcol)) gsc else list(g), SIMPLIFY=FALSE)
+		}, as.data.frame(text, stringsAsFactors = FALSE), values, breaks, as.list(as.data.frame(text_sel)), if (is.list(col.legend.labels)) col.legend.labels else list(col.legend.labels), if (is.list(dtcol)) gsc else list(g), SIMPLIFY=FALSE)
 	}
 	
 
@@ -286,11 +298,13 @@ process_text <- function(data, g, fill, gt, gby, z, interactive) {
 		 text.along.lines=g$along.lines,
 		 text.overwrite.lines=g$overwrite.lines,
 		 text.col.legend.labels=col.legend.labels,
+		 text.col.legend.values=col.legend.values,
 		 text.col.legend.text=col.legend.text,
 		 text.col.legend.palette=col.legend.palette,
 		 text.col.legend.sizes = max.size,
 		 text.col.legend.misc=list(),
 		 text.size.legend.labels=size.legend.labels,
+		 text.size.legend.values=size.legend.values,
 		 text.size.legend.text=size.legend.text,
 		 text.size.legend.palette= col.neutral,
 		 text.size.legend.sizes = legend.sizes,

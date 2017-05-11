@@ -66,7 +66,7 @@ qtm <- function(shp,
 				bubble.col=NULL,
 				...) {
 	args <- list(...)
-	shp_name <- deparse(substitute(shp))
+	shp_name <- deparse(substitute(shp))[1]
 	called <- names(match.call(expand.dots = TRUE)[-1])
 	
 	if (missing(shp)) {
@@ -86,7 +86,7 @@ qtm <- function(shp,
 		#list(tm_shortcut=list(basemaps=basemaps, bg.overlay.alpha=0, bbx=res$bbox, center=res$coords))
 		class(g) <- "tmap"
 		return(g)
-	} else if (inherits(shp, "sf")) {
+	} else if (inherits(shp, c("sf", "sfc"))) {
 		shp <- as(shp, "Spatial")
 	}
 	

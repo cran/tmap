@@ -5,8 +5,8 @@
 \title{Specify the shape object}
 \usage{
 tm_shape(shp, is.master = NA, projection = NULL, bbox = NULL,
-  unit = "metric", simplify = 1, line.center.type = c("segment",
-  "midpoint"), ...)
+  unit = getOption("tmap.unit"), simplify = 1,
+  line.center.type = c("segment", "midpoint"), ...)
 }
 \arguments{
 \item{shp}{shape object, which is one of
@@ -104,4 +104,3 @@ tmap_mode(current.mode)
 \seealso{
 \code{\link[tmaptools:read_shape]{read_shape}} to read ESRI shape files, \code{\link[tmaptools:set_projection]{set_projection}}, \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
 }
-

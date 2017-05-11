@@ -75,15 +75,15 @@ print_shortcut <- function(x, interactive, args, knit) {
 }
 
 supported_elem_view_mode <- function(nms) {
-	if (any(nms=="tm_grid")) warning("Grid lines not supported in view mode.", call.=FALSE)
+	#if (any(nms=="tm_grid")) warning("Grid lines not supported in view mode.", call.=FALSE)
 	if (any(nms=="tm_credits")) warning("Credits not supported in view mode.", call.=FALSE)
 	if (any(nms=="tm_logo")) warning("Logo not supported in view mode.", call.=FALSE)
 	if (any(nms=="tm_compass")) warning("Compass not supported in view mode.", call.=FALSE)
 	if (any(nms=="tm_xlab")) warning("X-axis label not supported in view mode.", call.=FALSE)
 	if (any(nms=="tm_ylab")) warning("Y-axis label not supported in view mode.", call.=FALSE)
-	if (any(nms=="tm_scale_bar")) warning("Scale bar not yet supported in view mode, it will be in the next version.", call.=FALSE)
+	#if (any(nms=="tm_scale_bar")) warning("Scale bar not yet supported in view mode, it will be in the next version.", call.=FALSE)
 	
-	which(!(nms %in% c("tm_grid", "tm_scale_bar", "tm_credits", "tm_logo", "tm_compass", "tm_xlab", "tm_ylab")))
+	which(!(nms %in% c("tm_credits", "tm_logo", "tm_compass", "tm_xlab", "tm_ylab")))
 }
 
 
@@ -209,8 +209,8 @@ determine_asp_ratios <- function(gm, interactive) {
 		lasp <- NA
 		fpi <- NULL
 	} else {
-		dw <- convertWidth(unit(1-sum(gm$margins[c(2,4)]),"npc"), "inch", valueOnly=TRUE)
-		dh <- convertHeight(unit(1-sum(gm$margins[c(1,3)]),"npc"), "inch", valueOnly=TRUE)
+		dw <- convertWidth(unit(1-sum(gm$outer.margins[c(2,4)]),"npc"), "inch", valueOnly=TRUE)
+		dh <- convertHeight(unit(1-sum(gm$outer.margins[c(1,3)]),"npc"), "inch", valueOnly=TRUE)
 		
 		fpi <- preprocess_facet_layout(gm, gm$legend.outside, dh, dw)
 		
@@ -221,7 +221,7 @@ determine_asp_ratios <- function(gm, interactive) {
 		fasp <- fpi$dsw / fpi$dsh #-  fpi$pSH - fpi$between.margin.in)
 		
 		# aspect ratio per facet minus extern legend
-		lasp <- fasp * (1-fpi$legmarx) / (1-fpi$legmary-fpi$attrmary)
+		lasp <- fasp * (1-fpi$legmarx) / (1-fpi$legmary-fpi$attrmary-fpi$attrmary)
 	}
 	list(shape.dw = dw,
 		 shape.dh = dh,
@@ -337,9 +337,9 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 		multi_shapes <- (is.list(shps[[1]]))
 		showWarns <- c(TRUE, rep(FALSE, length(gps)-1))
 		if (multi_shapes) {
-			lfs <- mapply(view_tmap, gps2, shps, leaflet_id=1:nx, showWarns=showWarns, SIMPLIFY = FALSE)
+			lfs <- mapply(view_tmap, gps2[1:nx], shps[1:nx], leaflet_id=1:nx, showWarns=showWarns, SIMPLIFY = FALSE)
 		} else {
-			lfs <- mapply(view_tmap, gps2, leaflet_id=1:nx, showWarns=showWarns, MoreArgs = list(shps=shps), SIMPLIFY = FALSE)
+			lfs <- mapply(view_tmap, gps2[1:nx], leaflet_id=1:nx, showWarns=showWarns, MoreArgs = list(shps=shps), SIMPLIFY = FALSE)
 		}
 		lf <- if (nx==1) lfs[[1]] else lfmv <- do.call(mapview::latticeView, c(lfs, lVargs))
 		
@@ -381,28 +381,33 @@ add_leaflet_titles <- function(lf) {
 	if (inherits(lf, "shiny.tag.list")) {
 		ncld <- length(lf[[1]])
 		lf[[1]] <- mapply(function(l, i) {
-			l$children[[1]] <- l$children[[1]] %>% htmlwidgets::onRender(paste("
+			title <- l$children[[1]]$title
+			if (title!="") {
+				l$children[[1]] <- l$children[[1]] %>% htmlwidgets::onRender(paste("
 					function(el, x) {
 						var tldiv = document.getElementsByClassName(\"leaflet-top leaflet-left\")[",i,"];
 						var titlediv = document.createElement('div');
 						titlediv.className = \"info legend leaflet-control\";
-						titlediv.innerHTML = \"<b>", l$children[[1]]$title, "</b>\";
+						titlediv.innerHTML = \"<b>", title, "</b>\";
 						tldiv.insertBefore(titlediv, tldiv.childNodes[0]);
 					}", sep="")
-			)
+				)
+			}
 			l
 		}, lf[[1]], 0:(ncld-1), SIMPLIFY = FALSE)
 	} else {
-		lf <- lf %>% htmlwidgets::onRender(paste("
-					function(el, x) {
-						var tldiv = document.getElementsByClassName(\"leaflet-top leaflet-left\")[0];
-						var titlediv = document.createElement('div');
-						titlediv.className = \"info legend leaflet-control\";
-						titlediv.innerHTML = \"<b>", lf$title, "</b>\";
-						tldiv.insertBefore(titlediv, tldiv.childNodes[0]);
-					}", sep="")
-		)
-		
+		title <- lf$title
+		if (title!="") {
+			lf <- lf %>% htmlwidgets::onRender(paste("
+						function(el, x) {
+							var tldiv = document.getElementsByClassName(\"leaflet-top leaflet-left\")[0];
+							var titlediv = document.createElement('div');
+							titlediv.className = \"info legend leaflet-control\";
+							titlediv.innerHTML = \"<b>", title, "</b>\";
+							tldiv.insertBefore(titlediv, tldiv.childNodes[0]);
+						}", sep="")
+			)
+		}
 	}
 	lf
 }

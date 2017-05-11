@@ -2,9 +2,10 @@
 #' 
 #' Creates a \code{\link{tmap-element}} that specifies facets (small multiples). Small multiples can be created in two ways: 1) by specifying the \code{by} argument with one or two variable names, by which the data is grouped, 2) by specifying multiple variable names in any of the aesthetic argument of the layer functions (for instance, the argument \code{col} in \code{\link{tm_fill}}). This function further specifies the facets, for instance number of rows and columns, and whether the coordinate and scales are fixed or free (i.e. independent of each other).
 #' 
-#' The global option \code{tmap.limits} controlls the limit of the number of facets that are plotted. By default, \code{options(tmap.limits=c(facets.view=4, facets.plot=64))}. The maximum number of interactive facets is set to four since otherwise it may become very slow.
+#' The global option \code{tmap.limits} controlls the limit of the number of facets that are plotted. By default, \code{tmap_options(tmap.limits=c(facets.plot=64, facets.view=4))}. The maximum number of interactive facets is set to four since otherwise it may become very slow.
 #' 
 #' @param by data variable name by which the data is split, or a vector of two variable names to split the data by two variables (where the first is used for the rows and the second for the columns).
+#' @param along data variable name by which the data is split and plotted on separate pages. This is especially useful for animations made with \code{\link{animation_tmap}}. The \code{along} argument can be used in combination with the \code{by} argument. It is only supported in \code{"plot"} mode (so not in \code{"view"} mode).
 #' @param ncol number of columns of the small multiples grid. Not applicable if \code{by} contains two variable names.
 #' @param nrow number of rows of the small multiples grid. Not applicable if \code{by} contains two variable names.
 #' @param free.coords logical. If the \code{by} argument is specified, should each map has its own coordinate ranges?
@@ -30,14 +31,16 @@
 #' @example ./examples/tm_facets.R
 #' @seealso \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
 #' @return \code{\link{tmap-element}}
-tm_facets <- function(by=NULL, ncol=NA, nrow=NA, 
+tm_facets <- function(by=NULL, 
+					  along=NULL,
+					  ncol=NA, nrow=NA, 
 					  free.coords=FALSE,
 					  drop.units=free.coords,
 					  drop.empty.facets=TRUE,
 					  sync=!free.coords,
 					  showNA=NA,
 					  textNA="Missing",
-					  free.scales=is.null(by),
+					  free.scales=is.null(by) && is.null(along),
 					  free.scales.fill=free.scales,
 					  free.scales.symbol.size=free.scales,
 					  free.scales.symbol.col=free.scales,
@@ -74,6 +77,8 @@ tm_facets <- function(by=NULL, ncol=NA, nrow=NA,
 #' @param alpha alpha transparency of the grid lines. Number between 0 and 1. By default, the alpha transparency of \code{col} is taken. 
 #' @param labels.size font size of the tick labels
 #' @param labels.col font color of the tick labels
+#' @param labels.margin.x margin between tick labels of x axis and the frame
+#' @param labels.margin.y margin between tick labels of y axis and the frame
 #' @param labels.inside.frame Show labels inside the frame?
 #' @export
 tm_grid <- function(x=NA,
@@ -86,6 +91,8 @@ tm_grid <- function(x=NA,
 					alpha=NA,
 					labels.size=.6,
 					labels.col=NA,
+					labels.margin.x=0,
+					labels.margin.y=0,
 					labels.inside.frame=TRUE) {
 	g <- list(tm_grid=as.list(environment()))
 	names(g$tm_grid) <- paste("grid", names(g$tm_grid), sep=".")

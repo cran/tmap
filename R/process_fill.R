@@ -53,7 +53,8 @@ process_fill <- function(data, g, gb, gt, gby, z, interactive) {
 	
 	# update legend format from tm_layout
 	g$legend.format <- process_legend_format(g$legend.format, gt$legend.format, nx)
-
+	g$popup.format <- process_popup_format(g$popup.format, gt$legend.format, g$popup.vars)
+	
 	# return if data is matrix of color values
 	if (is.matrix(dt)) {
 		if (!is.colors) {
@@ -64,7 +65,8 @@ process_fill <- function(data, g, gb, gt, gby, z, interactive) {
 					xfill=rep(NA, nx), 
 					fill.lenged.title=rep(NA, nx),
 					fill.id=g$id,
-					fill.popup.vars=g$popup.vars))	
+					fill.popup.vars=g$popup.vars,
+					fill.popup.format=g$popup.format))	
 	} 
 
 	# process areas
@@ -87,6 +89,7 @@ process_fill <- function(data, g, gb, gt, gby, z, interactive) {
 	if (dcr$is.constant) xfill <- rep(NA, nx)
 	col <- dcr$col
 	col.legend.labels <- dcr$legend.labels
+	col.legend.values <- dcr$legend.values
 	col.legend.palette <- dcr$legend.palette
 	col.neutral <- dcr$col.neutral
 	breaks <- dcr$breaks
@@ -108,6 +111,7 @@ process_fill <- function(data, g, gb, gt, gby, z, interactive) {
 	if (!g$legend.show) fill.legend.title <- NA
 	list(fill=col,
 		 fill.legend.labels=col.legend.labels,
+		 fill.legend.values=col.legend.values,
 		 fill.legend.palette=col.legend.palette,
 		 fill.legend.misc=list(lwd=gb$lwd, border.col=gb$col),
 		 fill.legend.hist.misc=list(values=values, breaks=breaks, densities=g$convert2density),
@@ -120,5 +124,6 @@ process_fill <- function(data, g, gb, gt, gby, z, interactive) {
 		 fill.legend.z=fill.legend.z,
 		 fill.legend.hist.z=fill.legend.hist.z,
 		 fill.id=g$id,
-		 fill.popup.vars=g$popup.vars)
+		 fill.popup.vars=g$popup.vars,
+		 fill.popup.format=g$popup.format)
 }

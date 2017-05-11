@@ -36,8 +36,8 @@ cat2pal <- function(x,
 	legend.palette <- if (palette[1] %in% rownames(brewer.pal.info)) {
 		revPal(suppressWarnings(get_brewer_pal(palette, nCol, contrast, stretch = auto.palette.mapping, plot = FALSE)))
 	} else {
-		if (auto.palette.mapping) {
-			colorRampPalette(palette)(nCol)
+		if (auto.palette.mapping && (length(palette) < nCol)) {
+			colorRampPalette(palette)(nCol)	
 		} else rep(palette, length.out=nCol)
 	}
     
@@ -64,11 +64,12 @@ cat2pal <- function(x,
 		if (is.na(showNA)) showNA <- FALSE
 	}
 
+	legend.values <- legend.labels
 	
 	if (showNA) {
 		legend.labels <- c(legend.labels, legend.NA.text)
 		legend.palette <- c(legend.palette, colorNA)
 	}
 	
-	list(cols=cols, legend.labels=legend.labels, legend.palette=legend.palette)
+	list(cols=cols, legend.labels=legend.labels, legend.values=legend.values, legend.palette=legend.palette)
 }

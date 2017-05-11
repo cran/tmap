@@ -1,4 +1,4 @@
-process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, panel.names, gm, any.legend, interactive) {
+process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, nxa, panel.names, along.names, gm, any.legend, interactive) {
 	attr.color <- aes.colors <- aes.color <- pc <- grid.alpha <- NULL
 	
 	credit.show <- !is.null(gc)
@@ -9,12 +9,12 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, panel.names, 
 	gf <- within(gf, {
 		by <- NULL
 		if (is.na(ncol) && is.na(nrow)) {
-			nrowcol <- get_arrangement(nx = nx, asp_ratio = gm$shape.asp_ratio)
+			nrowcol <- get_arrangement(nx = nxa, asp_ratio = gm$shape.asp_ratio)
 			nrow <- nrowcol[1]
 			ncol <- nrowcol[2]
 		} else {
-			if (is.na(ncol)) ncol <- ceiling(nx / nrow)
-			if (is.na(nrow)) nrow <- ceiling(nx / ncol)
+			if (is.na(ncol)) ncol <- ceiling(nxa / nrow)
+			if (is.na(nrow)) nrow <- ceiling(nxa / ncol)
 		}
 	})
 	
@@ -24,19 +24,41 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, panel.names, 
 	freescales <- names(gf)[substr(names(gf), 1, 11) == "free.scales"]
 	
 	gt <- within(gt, {
-		if (!any.legend) {
+		#nxa <- nxa
+		
+		## number of pages (np) and number of plots (small multiples) per page (pp)
+		if (length(along.names)==1) {
+			# wrap of plots
+			np <- ceiling(nx / (gf$nrow * gf$ncol))
+			pp <- min(gf$nrow * gf$ncol, nx)
+			along <- FALSE
+		} else {
+			# plots along
+			np <- nx / nxa
+			pp <- nxa
+			along <- TRUE
+		}
+
+		if (!any.legend || !legend.show) {
 			if (legend.only) stop("No legend to show.", call.=FALSE)
 			legend.show <- FALSE
 			legend.outside <- FALSE
 		} else {
-			if (is.na(legend.outside)) legend.outside <- (nx > 1) && !any(vapply(gf[freescales], "[", logical(1), 1))
+			if (is.na(legend.outside)) legend.outside <- (pp > 1) && !any(vapply(gf[freescales], "[", logical(1), 1))
 		}
 		
+		if (legend.outside) {
+			title.snap.to.legend <- TRUE
+		} else if (is.na(title.snap.to.legend)) {
+			title.snap.to.legend <- FALSE
+		}
+
 		if (is.na(panel.show)) panel.show <- !is.na(panel.names[1]) || !is.ena(panel.labels[1])
 		if (legend.only) {
 			title <- rep("", nx)
 			legend.width <- .9
 			legend.height <- .9
+			main.title <- rep("", np)
 		} else {
 			if (nx>1) {
 				title <- rep(nonna_text(title), length.out=nx)
@@ -64,6 +86,15 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, panel.names, 
 			}
 			if (panel.show) {
 				panel.names <- panel.labels
+				if (nxa > 1 && !is.list(panel.names)) {
+					panel.names <- rep(panel.names, np)
+				}
+			}
+			
+			if (!is.na(main.title[1]) || is.na(along.names[1])) {
+				main.title <- rep(nonna_text(main.title), length.out=np)
+			} else {
+				main.title <- along.names	
 			}
 		}
 
@@ -115,6 +146,7 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, panel.names, 
  		aes.color.light <- is_light(aes.colors)
 
 		title.color <- do.call("process_color", c(list(col=title.color), pc))
+		main.title.color <- do.call("process_color", c(list(col=main.title.color), pc))
 		legend.text.color <- do.call("process_color", c(list(col=legend.text.color), pc))
 		if (!is.na(frame)) frame <- do.call("process_color", c(list(col=frame), pc))
 		if (!is.na(legend.frame)) legend.frame <- do.call("process_color", c(list(col=legend.frame), pc))
@@ -305,8 +337,8 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, panel.names, 
 			if (is.na(compass.text.color)) compass.text.color <- gt$attr.color
 			compass.text.color <- do.call("process_color", c(list(col=compass.text.color), gt$pc))
 			
-			if (is.na(compass.color.dark)) compass.color.dark <- ifelse(gt$attr.color.light, "black", gt$attr.color)
-			if (is.na(compass.color.light)) compass.color.light <- ifelse(gt$attr.color.light, gt$attr.color, "white")
+			if (is.na(compass.color.dark)) compass.color.dark <- ifelse(gt$attr.color.light, gt$attr.color, gt$attr.color)
+			if (is.na(compass.color.light)) compass.color.light <- ifelse(gt$attr.color.light, "black", "white")
 			compass.color.dark <- do.call("process_color", c(list(col=compass.color.dark), gt$pc))
 			compass.color.light <- do.call("process_color", c(list(col=compass.color.light), gt$pc))
 			

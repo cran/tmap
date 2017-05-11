@@ -28,7 +28,7 @@
 #' 
 #' @name tm_layout
 #' @rdname tm_layout
-#' @param title Global title of the map. For small multiples, multiple titles can be specified. Titles for the legend items are specified at the layer functions (e.g. \code{\link{tm_fill}}). 
+#' @param title Global title of the map. For small multiples, multiple titles can be specified. The title is drawn inside the map. Alternatively, use \code{panel.labels} to print the map as a panel, with the title inside the panel header (especially useful for small multiples). Another alternative is the \code{main.title} which prints a title above the map. Titles for the legend items are specified at the layer functions (e.g. \code{\link{tm_fill}}).
 #' @param scale numeric value that serves as the global scale parameter. All font sizes, symbol sizes, border widths, and line widths are controled by this value. Each of these elements can be scaled independantly with the \code{scale}, \code{lwd}, or \code{size} arguments provided by the \code{\link{tmap-element}s}.
 #' @param title.size Relative size of the title
 #' @param bg.color Background color. By default it is \code{"white"}. A recommended alternative for choropleths is light grey (e.g., \code{"grey85"}).
@@ -68,7 +68,7 @@
 #' @param legend.title.size Relative font size for the legend title
 #' @param legend.text.size Relative font size for the legend text elements
 #' @param legend.hist.size Relative font size for the choropleth histogram
-#' @param legend.format list of formatting options for the legend numbers. Only applicable for layer functions (such as \code{\link{tm_fill}}) where if \code{labels} is undefined. Parameters are:
+#' @param legend.format list of formatting options for the legend numbers. Only applicable for layer functions (such as \code{\link{tm_fill}}) where \code{labels} is undefined. Parameters are:
 #' \describe{
 #' \item{fun}{Function to specify the labels. It should take a numeric vector, and should return a character vector of the same size. By default it is not specified. If specified, the list items \code{scientific}, \code{format}, and \code{digits} (see below) are not used.}
 #' \item{scientific}{Should the labels be formatted scientically? If so, square brackets are used, and the \code{format} of the numbers is \code{"g"}. Otherwise, \code{format="f"}, and \code{text.separator}, \code{text.less.than}, and \code{text.or.more} are used. Also, the numbers are automatically  rounded to millions or billions if applicable.}
@@ -84,7 +84,7 @@
 #' @param legend.bg.alpha Transparency number between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of the \code{legend.bg.color} is used (normally 1).
 #' @param legend.hist.bg.color Background color of the histogram
 #' @param legend.hist.bg.alpha Transparency number between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of the \code{legend.hist.bg.color} is used (normally 1).
-#' @param title.snap.to.legend Logical that determines whether the title is part of the legend. By default \code{FALSE}
+#' @param title.snap.to.legend Logical that determines whether the title is part of the legend. By default \code{FALSE}, unless the legend is drawn outside the map (see \code{legend.outside}).
 #' @param title.position Position of the title. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y coordinates of the tile. The uppercase values correspond to the position without margins (so tighter to the frame). 
 #' By default the title is placed on top of the legend (determined by \code{legend.position}).
 #' @param title.color color of the title
@@ -98,6 +98,10 @@
 #' @param panel.label.bg.color Background color of the panel labels
 #' @param panel.label.height Height of the labels in number of text line heights.
 #' @param panel.label.rot Rotation angles of the panel labels. Vector of two values: the first is the rotation angle (in degrees) of the row panels, which are only used in cross-table facets (when \code{\link{tm_facets}}'s \code{by} is specified with two variables). The second is the rotation angle of the column panels.
+#' @param main.title Title that is printed above the map (or small multiples). When multiple pages are generated (see \code{along} argument of \code{\link{tm_facets}}), a vector can be provided. By default, the main title is only printed when this \code{along} argument is specified.
+#' @param main.title.size Size of the main title
+#' @param main.title.color Color of the main title
+#' @param main.title.position Position of the main title. Either a numeric value between 0 (left) and 1 (right), or a character value: \code{"left"}, \code{"center"}, or \code{"right"}.
 #' @param attr.outside Logical that determines whether the attributes are plot outside of the map/facets.
 #' @param attr.outside.position Character that determines the outside position of the attributes: \code{"top"} or \code{"bottom"}. Only applicable when \code{attr.outside=TRUE}. If the legend is also drawn outside (with \code{legend.outside=TRUE}) and on the same side of the map (e.g. also \code{"top"} or \code{"bottom"}), the attributes are placed between the map and the legend. This can be changed by setting \code{attr.outside.position} to \code{"TOP"} or \code{"BOTTOM"}: in this case, the attributes are placed above respecvitely below the legend.
 #' @param attr.outside.size Numeric value that determines the relative height of the attribute viewport, when \code{attr.outside=TRUE}.
@@ -161,7 +165,7 @@ tm_layout <- function(title=NA,
 					  legend.bg.alpha = 1,
 					  legend.hist.bg.color = NA,
 					  legend.hist.bg.alpha = 1,
-					  title.snap.to.legend = FALSE,
+					  title.snap.to.legend = NA,
 					  title.position = c("left", "top"),
 					  title.color=attr.color,
 					  title.bg.color=NA,
@@ -173,6 +177,10 @@ tm_layout <- function(title=NA,
 					  panel.label.bg.color = "grey80",
 					  panel.label.height = 1.25,
 					  panel.label.rot = c(90, 0),
+					  main.title = NA,
+					  main.title.size = 1.5,
+					  main.title.color = "black",
+					  main.title.position = "left",
 					  attr.outside = FALSE,
 					  attr.outside.position = "bottom",
 					  attr.outside.size=NA,
@@ -180,7 +188,7 @@ tm_layout <- function(title=NA,
 					  attr.just = c("left", "bottom"),
 					  design.mode = FALSE,
 					  basemaps = c("CartoDB.Positron", "OpenStreetMap", "Esri.WorldTopoMap"),
-					  basemaps.alpha = c(.5, 1, 1),
+					  basemaps.alpha = c(1, 1, 1),
 					  bg.overlay=NULL,
 					  bg.overlay.alpha=0) {
 	legend.stack <- match.arg(legend.stack)
@@ -330,7 +338,7 @@ tm_style_natural <- function(bg.color="lightskyblue1",
 							 legend.frame=TRUE,
 							 legend.bg.color="grey90",
 							 earth.boundary=TRUE,
-							 basemaps="Thunderforest.Landscape",
+							 basemaps="Esri.NatGeoWorldMap",
 							 basemaps.alpha=1,
 							 ...) {
 

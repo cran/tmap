@@ -29,8 +29,8 @@ process_gps <- function(gps, shps, x, gm, nx, interactive, return.asp) {
 		#if (!is.null(gm$credits.text)) gm$credits.text <- sapply(gm$credits.text, "[[", i)
 		gm[c("logo.file", "logo.position", "logo.just", "logo.height", "logo.width", "logo.halign", "logo.margin", "logo.id")] <- lapply(
 			gm[c("logo.file", "logo.position", "logo.just", "logo.height", "logo.width", "logo.halign", "logo.margin", "logo.id")],
-			function(gm) {
-				gm[gm$logo.show]	
+			function(gmi) {
+				gmi[gm$logo.show]	
 			})
 		gm$logo.show <- any(gm$logo.show)
 		
@@ -42,7 +42,7 @@ process_gps <- function(gps, shps, x, gm, nx, interactive, return.asp) {
 	if (!interactive) {
 
 		if (gm$legend.outside) {
-			leg_ids <- seq(1, nx, by=gm$ncol * gm$nrow)
+			leg_ids <- seq(1, nx, by=gm$pp) #ncol * gm$nrow)
 			gp_leg <- lapply(leg_ids, function(li) {
 				gli <- gps[[li]]
 				gli$tm_layout <- within(gli$tm_layout, {
@@ -135,7 +135,7 @@ process_gps <- function(gps, shps, x, gm, nx, interactive, return.asp) {
 	
 	## shapes have been subset (diff_shapes) and cropped. Therefore, the corresponding aesthetics have to be subset accordingly:
 	if (gm$shape.diff_shapes) {
-		matchIDs <- lapply(shps, function(ss) lapply(ss, function(s) if (inherits(s, "Raster")) s[] else s$tmapID))
+		matchIDs <- lapply(shps[1:nx], function(ss) lapply(ss, function(s) if (inherits(s, "Raster")) s[] else s$tmapID))
 	} else {
 		matchIDs <- lapply(shps, function(s) if (inherits(s, "Raster")) s[] else s$tmapID)
 		matchIDs <- lapply(1:nx, function(i) matchIDs)

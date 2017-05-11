@@ -2,7 +2,7 @@ process_tm <- function(x, gm, interactive) {
 	fill <- NULL; xfill <- NULL; xraster <- NULL; text <- NULL
 	## fill meta info
 	
-	gt <- preprocess_gt(x, interactive=interactive)
+	gt <- preprocess_gt(x, interactive=interactive, orig_CRS = gm$shape.orig_CRS)
 	
 	## get grid element
 	gridid <- which(names(x)=="tm_grid")[1]
@@ -63,6 +63,7 @@ process_tm <- function(x, gm, interactive) {
 		gf$shp_name <- x[[shape.id.orig[i]]]$shp_name
 		gf$shp_nr <- ifelse(!is.null(gf$by), i, 0)
 		gf$by <- if (is.null(gf$by)) "" else gf$by
+		gf$along <- if (is.null(gf$along)) "" else gf$along
 		gf
 	})
 	
@@ -76,6 +77,7 @@ process_tm <- function(x, gm, interactive) {
 	}
 	for (i in 1:startID) {
 		x[[shape.id.orig[i]]]$by <- gfs[[i]]$by
+		x[[shape.id.orig[i]]]$along <- gfs[[i]]$along
 	}
 	
 	# update with remaining gf's
@@ -83,9 +85,10 @@ process_tm <- function(x, gm, interactive) {
 		for (i in (startID+1):nshps) {
 			gf$shp_name <- c(gf$shp_name, gfs[[i]]$shp_name)
 			gf$shp_nr <- c(gf$shp_nr, gfs[[i]]$shp_nr)
-			gf_args <- setdiff(gfs[[i]]$call, "by")
+			gf_args <- setdiff(gfs[[i]]$call, c("by", "along"))
 			gf[gf_args] <- gfs[[i]][gf_args]
 			x[[shape.id.orig[i]]]$by <- gfs[[i]]$by
+			x[[shape.id.orig[i]]]$along <- gfs[[i]]$along
 		}
 	}
 	xnames <- names(x)
@@ -196,6 +199,7 @@ process_tm <- function(x, gm, interactive) {
 	} else {
 		panel.names <- NA
 	}
+	
 
 	## check number of levels for two variables and override gf
 	ncols <- sapply(gp, function(i)i$ncol)
@@ -220,12 +224,17 @@ process_tm <- function(x, gm, interactive) {
 	}))
 	if (any(!is.na(providers))) gt$basemaps <- providers[!is.na(providers)][1]
 	
-	nx <- limit_nx(nx)
 
 	any.legend <- any(vapply(gp, function(x)x$any.legend, logical(1))) || (length(legids))
 
-	## process meta
-	gmeta <- process_meta(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, panel.names, gm, any.legend, interactive)
+	## get along names
+	along.names <- gp[[1]]$along.names
+	
+	nxa <- nx / length(along.names)
+	nxa <- limit_nx(nxa)
+	nx <- nxa * length(along.names)
+	
+	gmeta <- process_meta(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, nxa, panel.names, along.names, gm, any.legend, interactive)
 	panel.mode <- if (!gmeta$panel.show) {
 		"none"
 	} else if (is.list(panel.names)) {

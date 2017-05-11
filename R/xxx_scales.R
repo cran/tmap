@@ -14,14 +14,28 @@ fancy_breaks <- function(vec, intervals=FALSE, interval.closure="left", fun=NULL
         x <- do.call(fun, list(vec))
     } else {
         ### analyse the numeric vector
-        frm <- gsub(" ", "", sprintf("%20.10f", abs(vec[!is.infinite(vec)])))
+    	vec_fin <- unique(vec[!is.infinite(vec)])
+        frm <- gsub(" ", "", sprintf("%20.10f", abs(vec_fin)))
 
         # get width before decimal point
         mag <- max(nchar(frm)-11)
 
         # get number of decimals (which is number of decimals in vec, which is reduced when mag is large)
         ndec <- max(10 - nchar(frm) + nchar(sub("0+$","",frm)))
-        if (is.na(digits)) digits <- max(min(ndec, 4-mag), 0)
+        if (is.na(digits)) {
+            digits <- max(min(ndec, 4-mag), 0)
+
+            # add sign to frm
+            frm_sign <- paste0(ifelse(vec_fin<0, "-", "+"), frm)
+            
+            # test if number of digits is sufficient for unique labels
+            if (!scientific) {
+                while (anyDuplicated(substr(frm_sign, 1, nchar(frm_sign)-10 + digits)) && (digits < 10)) {
+                    digits <- digits + 1
+                }
+            }
+
+        }
 
         if (!scientific) {
             if (mag>11 || (mag > 9 && all(vec - floor(vec/1e9)*1e9 < 1))) {
