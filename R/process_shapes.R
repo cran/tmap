@@ -48,7 +48,11 @@ process_shapes <- function(shps, g, gm, data_by, allow.crop, interactive) {
 		
 		shps_by_splt <- mapply(function(s_by, d_by) {
 			if (inherits(s_by, "Spatial")) {
-				split(s_by, f = d_by, drop=FALSE)	 # split_shape
+				s_by2 <- split(s_by, f = d_by, drop=FALSE)	 # split_shape
+				lapply(s_by2, function(s2) {
+					if (length(s2)>0) s2$tmapID <- 1L:length(s2$tmapID)	
+					s2
+				})
 			}  else {
 				split_raster(s_by, f = d_by, drop=FALSE)
 			} 
@@ -75,6 +79,10 @@ process_shapes <- function(shps, g, gm, data_by, allow.crop, interactive) {
 			}
 			if (!("x" %in% names(args))) args$x <- bbx
 			bbox <- do.call("bb", args)  #get_bbox_lim(bbx, relative, bbox, xlim, ylim, ext)
+			
+			if (any((bbox[,2] - bbox[,1]) < 1e-8)) bbox <- bb(cx = bbox[1,1], cy = bbox[2,1], width = 1, height = 1)
+			
+			
 			bbox_asp <- get_bbox_asp(bbox, gm$inner.margins, longlat, pasp, interactive=interactive)$bbox
 			
 			if (inside_bbox) {
@@ -96,6 +104,10 @@ process_shapes <- function(shps, g, gm, data_by, allow.crop, interactive) {
 		if (!("x" %in% names(args))) args$x <- shp.bbox
 		
 		bbox <- do.call("bb", args)  #bbox <- get_bbox_lim(shp.bbox, relative, bbox, xlim, ylim, ext)
+		
+		if (any((bbox[,2] - bbox[,1]) < 1e-8)) bbox <- bb(cx = bbox[1,1], cy = bbox[2,1], width = 1, height = 1)
+		
+		
 		bbox_asp <- get_bbox_asp(bbox, gm$inner.margins, longlat, pasp, interactive=interactive)
 		bbx <- bbox_asp$bbox
 		if (drop_shapes) bboxes <- rep(list(bbx), nplots)
@@ -172,7 +184,9 @@ process_shapes <- function(shps, g, gm, data_by, allow.crop, interactive) {
 	
 	}
 	if (diff_shapes) {
-		shps2 <- lapply(1:nplots, function(i)lapply(shps2, function(j)j[[i]]))
+		shps2 <- lapply(1:nplots, function(i)lapply(shps2, function(j) {
+			j[[i]]
+		}))
 	}
 	
 	

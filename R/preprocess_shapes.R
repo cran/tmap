@@ -11,6 +11,7 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 	
 	if (inherits(shp, c("Raster", "SpatialPixels", "SpatialGrid"))) {
 		is.RGB <- attr(raster_facets_vars, "is.RGB")
+		to.Cat <- attr(raster_facets_vars, "to.Cat")
 		if (interactive) gm$shape.master_CRS <- .CRS_merc
 		if (inherits(shp, "Spatial")) {
 			
@@ -44,7 +45,7 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 			lvls <- get_data_frame_levels(shp@data[, raster_facets_vars, drop=FALSE])
 			
 			## use bilinear interpolation for numeric data only
-			use_interp <- (all(sapply(lvls, is.null)))
+			use_interp <- (all(sapply(lvls, is.null))) && !to.Cat
 			shp <- raster::subset(brick(shp), raster_facets_vars, drop=FALSE)
 		} else {
 			is.OSM <- FALSE
@@ -52,11 +53,17 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 			
 			# color values are encoded by a colortable (and not interpreted as factors)
 			if (length(colortable(shp))>0) {
-				lvls <- list(colortable(shp))
+				ctable <- colortable(shp)
+				uctable <- unique(ctable)
+				mtch <- match(ctable, uctable)
+
 				if (nlayers(shp)>1) shp <- raster::subset(shp, 1)
-				shp <- setValues(shp, getValues(shp) + 1L)
+				shp <- setValues(shp, mtch[getValues(shp) + 1L])
 				names(shp) <- "PIXEL__COLOR"
 				use_interp <- FALSE
+				
+				lvls <- list(uctable)
+				
 			} else {
 				# in order to not loose factor levels, subset the data here
 				shpnames <- get_raster_names(shp)
@@ -88,7 +95,7 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 					if (nlayers(shp)>1) shp <- raster::subset(shp, raster_facets_vars)
 					
 					#lvls <- get_raster_levels(shp)
-					use_interp <- (all(sapply(lvls, is.null)))
+					use_interp <- (all(sapply(lvls, is.null))) && !to.Cat
 
 				} else {
 					use_interp <- FALSE

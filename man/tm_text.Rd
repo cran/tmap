@@ -18,9 +18,9 @@ tm_text(text, size = 1, col = NA, root = 3, size.lim = NA,
   just = c("center", "center"), xmod = 0, ymod = 0, title.size = NA,
   title.col = NA, legend.size.show = TRUE, legend.col.show = TRUE,
   legend.format = list(), legend.size.is.portrait = FALSE,
-  legend.col.is.portrait = TRUE, legend.hist = FALSE,
-  legend.hist.title = NA, legend.size.z = NA, legend.col.z = NA,
-  legend.hist.z = NA)
+  legend.col.is.portrait = TRUE, legend.size.reverse = FALSE,
+  legend.col.reverse = FALSE, legend.hist = FALSE, legend.hist.title = NA,
+  legend.size.z = NA, legend.col.z = NA, legend.hist.z = NA)
 }
 \arguments{
 \item{text}{name of the variable in the shape object that contains the text labels}
@@ -114,14 +114,20 @@ tm_text(text, size = 1, col = NA, root = 3, size.lim = NA,
 \item{format}{By default, \code{"f"}, i.e. the standard notation \code{xxx.xxx}, is used. If \code{scientific=TRUE} then \code{"g"}, which means that numbers are formatted scientically, i.e. \code{n.dddE+nn} if needed to save space.}
 \item{digits}{Number of digits after the decimal point if \code{format="f"}, and the number of significant digits otherwise.}
 \item{text.separator}{Character string to use to separate numbers in the legend (default: "to").}
-\item{text.less.than}{Character string to use to translate "Less than" (which is the default).}
-\item{text.or.more}{Character string to use to translate "or more" (which is the default). }
+\item{text.less.than}{Character value(s) to use to translate "Less than". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
+\item{text.or.more}{Character value(s) to use to translate "or more". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
+\item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}}. By default \code{"left"} for legends in portrait format (\code{legend.is.protrait = TRUE}), and \code{"center"} otherwise.
+\item{text.to.columns}{Logical that determines whether the text is aligned to three columns (from, text.separator, to). By default \code{FALSE}.}
 \item{...}{Other arguments passed on to \code{\link[base:formatC]{formatC}}}
 }}
 
 \item{legend.size.is.portrait}{logical that determines whether the legend element regarding the text sizes is in portrait mode (\code{TRUE}) or landscape (\code{FALSE})}
 
 \item{legend.col.is.portrait}{logical that determines whether the legend element regarding the text colors is in portrait mode (\code{TRUE}) or landscape (\code{FALSE})}
+
+\item{legend.size.reverse}{logical that determines whether the items of the legend regarding the text sizes are shown in reverse order, i.e. from bottom to top when \code{legend.size.is.portrait = TRUE} and from right to left when \code{legend.size.is.portrait = FALSE}}
+
+\item{legend.col.reverse}{logical that determines whether the items of the legend regarding the text colors are shown in reverse order, i.e. from bottom to top when \code{legend.col.is.portrait = TRUE} and from right to left when \code{legend.col.is.portrait = FALSE}}
 
 \item{legend.hist}{logical that determines whether a histogram is shown regarding the text colors}
 
@@ -168,7 +174,7 @@ tm_shape(metro[metro$pop2010>=2e6, ]) +
 	tm_format_Europe()
 
 tm_shape(World) +
-	tm_text("name", size="pop_est", col="continent", palette="Dark2", 
+	tm_text("name", size="pop_est", col="continent", palette="Dark2",
 			title.size = "Population", title.col="Continent") +
 	tm_legend(outside = TRUE)
 

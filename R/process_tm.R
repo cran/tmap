@@ -61,7 +61,7 @@ process_tm <- function(x, gm, interactive) {
 	gfs <- lapply(1:nshps, function(i){
 		gf <- if (facet.ids[i]==0) tm_facets()$tm_facets else x[[facet.ids[i]]]
 		gf$shp_name <- x[[shape.id.orig[i]]]$shp_name
-		gf$shp_nr <- ifelse(!is.null(gf$by), i, 0)
+		gf$shp_nr <- ifelse(!is.null(gf$by) || !is.null(gf$along), i, 0)
 		gf$by <- if (is.null(gf$by)) "" else gf$by
 		gf$along <- if (is.null(gf$along)) "" else gf$along
 		gf
@@ -130,7 +130,18 @@ process_tm <- function(x, gm, interactive) {
 	legids <- which(names(x)=="tm_add_legend") 
 	if (length(legids)) {
 		names(x)[legids] <- paste(names(x)[legids], 1L:length(legids), sep="_")
+		
+		for (legid in legids) {
+			if (x[[legid]]$type == "symbol" && is.list(x[[legid]]$shape)) {
+				just <- x[[legid]]$just
+				
+				x[[legid]]$shape <- submit_symbol_shapes(x[[legid]]$shape, interactive=interactive, just = c(.5, .5),
+														 just.override = FALSE, grob.dim = c(width=48, height=48, render.width=256, render.height=256))
+			}
+		}
+		
 	}
+	
 	
 	
 	n <- length(x)

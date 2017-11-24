@@ -10,14 +10,14 @@
 \usage{
 tm_symbols(size = 1, col = NA, shape = 21, alpha = NA,
   border.col = NA, border.lwd = 1, border.alpha = NA, scale = 1,
-  perceptual = FALSE, size.max = NA, size.lim = NA, sizes.legend = NULL,
-  sizes.legend.labels = NULL, n = 5, style = ifelse(is.null(breaks),
-  "pretty", "fixed"), breaks = NULL, interval.closure = "left",
-  palette = NULL, labels = NULL, auto.palette.mapping = TRUE,
-  contrast = NA, max.categories = 12, colorNA = NA, textNA = "Missing",
-  showNA = NA, shapes = 21:25, shapes.legend = NULL,
-  shapes.legend.fill = NA, shapes.labels = NULL, shapeNA = 4,
-  shape.textNA = "Missing", shapes.n = 5,
+  perceptual = FALSE, clustering = FALSE, size.max = NA, size.lim = NA,
+  sizes.legend = NULL, sizes.legend.labels = NULL, n = 5,
+  style = ifelse(is.null(breaks), "pretty", "fixed"), breaks = NULL,
+  interval.closure = "left", palette = NULL, labels = NULL,
+  auto.palette.mapping = TRUE, contrast = NA, max.categories = 12,
+  colorNA = NA, textNA = "Missing", showNA = NA, shapes = 21:25,
+  shapes.legend = NULL, shapes.legend.fill = NA, shapes.labels = NULL,
+  shapeNA = 4, shape.textNA = "Missing", shapes.n = 5,
   shapes.style = ifelse(is.null(shapes.breaks), "pretty", "fixed"),
   shapes.breaks = NULL, shapes.interval.closure = "left",
   legend.max.symbol.size = 0.8, just = NA, jitter = 0, xmod = 0,
@@ -26,10 +26,11 @@ tm_symbols(size = 1, col = NA, shape = 21, alpha = NA,
   title.shape = NA, legend.size.show = TRUE, legend.col.show = TRUE,
   legend.shape.show = TRUE, legend.format = list(),
   legend.size.is.portrait = FALSE, legend.col.is.portrait = TRUE,
-  legend.shape.is.portrait = TRUE, legend.hist = FALSE,
-  legend.hist.title = NA, legend.size.z = NA, legend.col.z = NA,
-  legend.shape.z = NA, legend.hist.z = NA, id = NA, popup.vars = NA,
-  popup.format = list())
+  legend.shape.is.portrait = TRUE, legend.size.reverse = FALSE,
+  legend.col.reverse = FALSE, legend.shape.reverse = FALSE,
+  legend.hist = FALSE, legend.hist.title = NA, legend.size.z = NA,
+  legend.col.z = NA, legend.shape.z = NA, legend.hist.z = NA, id = NA,
+  popup.vars = NA, popup.format = list())
 
 tm_squares(size = 1, col = NA, shape = 22, scale = 4/3, ...)
 
@@ -40,7 +41,7 @@ tm_dots(col = NA, size = 0.02, shape = 16, title = NA,
   legend.show = TRUE, legend.is.portrait = TRUE, legend.z = NA, ...)
 
 tm_markers(shape = marker_icon(), col = NA, border.col = NULL,
-  text = NULL, text.just = c("center", "top"),
+  clustering = TRUE, text = NULL, text.just = c("center", "top"),
   markers.on.top.of.text = TRUE, ...)
 }
 \arguments{
@@ -61,6 +62,8 @@ tm_markers(shape = marker_icon(), col = NA, border.col = NULL,
 \item{scale}{symbol size multiplier number.}
 
 \item{perceptual}{logical that determines whether symbols are scales with a perceptually (\code{TRUE}) or mathematically (\code{FALSE}, default value). The perceived area of larger symbols is often underestimated. Flannery (1971) experimentally derived a method to compensate this for symbols, which is enabled by this argument.}
+
+\item{clustering}{value that determines whether the symbols are clustered in \code{"view"} mode. It does not work proportional bubbles (i.e. \code{tm_bubbles}). One of: \code{TRUE}, \code{FALSE}, or the output of \code{\link[leaflet:markerClusterOptions]{markerClusterOptions}}.}
 
 \item{size.max}{value that is mapped to \code{size=1}. By default (\code{NA}), the maximum data value is chosen. Only applicable when \code{size} is the name of a numeric variable of \code{shp}}
 
@@ -147,8 +150,10 @@ tm_markers(shape = marker_icon(), col = NA, border.col = NULL,
 \item{format}{By default, \code{"f"}, i.e. the standard notation \code{xxx.xxx}, is used. If \code{scientific=TRUE} then \code{"g"}, which means that numbers are formatted scientically, i.e. \code{n.dddE+nn} if needed to save space.}
 \item{digits}{Number of digits after the decimal point if \code{format="f"}, and the number of significant digits otherwise.}
 \item{text.separator}{Character string to use to separate numbers in the legend (default: "to").}
-\item{text.less.than}{Character string to use to translate "Less than" (which is the default).}
-\item{text.or.more}{Character string to use to translate "or more" (which is the default). }
+\item{text.less.than}{Character value(s) to use to translate "Less than". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
+\item{text.or.more}{Character value(s) to use to translate "or more". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
+\item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}}. By default \code{"left"} for legends in portrait format (\code{legend.is.protrait = TRUE}), and \code{"center"} otherwise.
+\item{text.to.columns}{Logical that determines whether the text is aligned to three columns (from, text.separator, to). By default \code{FALSE}.}
 \item{...}{Other arguments passed on to \code{\link[base:formatC]{formatC}}}
 }}
 
@@ -157,6 +162,12 @@ tm_markers(shape = marker_icon(), col = NA, border.col = NULL,
 \item{legend.col.is.portrait}{logical that determines whether the legend element regarding the symbol colors is in portrait mode (\code{TRUE}) or landscape (\code{FALSE})}
 
 \item{legend.shape.is.portrait}{logical that determines whether the legend element regarding the symbol shapes is in portrait mode (\code{TRUE}) or landscape (\code{FALSE})}
+
+\item{legend.size.reverse}{logical that determines whether the items of the legend regarding the symbol sizes are shown in reverse order, i.e. from bottom to top when \code{legend.size.is.portrait = TRUE} and from right to left when \code{legend.size.is.portrait = FALSE}}
+
+\item{legend.col.reverse}{logical that determines whether the items of the legend regarding the symbol colors are shown in reverse order, i.e. from bottom to top when \code{legend.col.is.portrait = TRUE} and from right to left when \code{legend.col.is.portrait = FALSE}}
+
+\item{legend.shape.reverse}{logical that determines whether the items of the legend regarding the symbol shapes are shown in reverse order, i.e. from bottom to top when \code{legend.shape.is.portrait = TRUE} and from right to left when \code{legend.shape.is.portrait = FALSE}}
 
 \item{legend.hist}{logical that determines whether a histogram is shown regarding the symbol colors}
 
@@ -201,12 +212,13 @@ Creates a \code{\link{tmap-element}} that draws symbols, including symbols and d
 \details{
 Small multiples can be drawn in two ways: either by specifying the \code{by} argument in \code{\link{tm_facets}}, or by defining multiple variables in the aesthetic arguments, which are \code{size}, \code{col}, and \code{shape}. In the latter case, the arguments, except for the ones starting with \code{legend.}, can be specified for small multiples as follows. If the argument normally only takes a single value, such as \code{n}, then a vector of those values can be specified, one for each small multiple. If the argument normally can take a vector, such as \code{palette}, then a list of those vectors (or values) can be specified, one for each small multiple.
 
-A  shape specification is one of the following three options. To specify multiple shapes, a vector or list of these shape specification is required. The shape specification options can also be mixed.
+A  shape specification is one of the following three options. To specify multiple shapes (needed for the \code{shapes} argument), a vector or list of these shape specification is required. The shape specification options can also be mixed. For the \code{shapes} argument, it is possible to use a named vector or list, where the names correspond to the value of the variable speficied by the \code{shape} argument.
 \enumerate{
  \item{A numeric value that specifies the plotting character of the symbol. See parameter \code{pch} of \code{\link[graphics:points]{points}} and the last example to create a plot with all options.}
  \item{A \code{\link[grid:grid.grob]{grob}} object, which can be a ggplot2 plot object created with \code{\link[ggplot2:ggplotGrob]{ggplotGrob}}. To specify multiple shapes, a list of grob objects is required. See example of a proportional symbol map with ggplot2 plots}.
  \item{An icon specification, which can be created with \code{\link{tmap_icons}}.}
  }
+ For small multiples, a list of these shape specification(s) should be provided.
 }
 \examples{
 data(World, Europe, metro)
@@ -224,7 +236,8 @@ tm_shape(metro) +
 tm_format_World()
 
 tm_shape(metro) +
-	tm_symbols(size = "pop2010", col="pop2010", shape="pop2010") +
+	tm_symbols(size = "pop2010", col="pop2010", shape="pop2010",
+		legend.format = list(text.align="right", text.to.columns = TRUE)) +
 tm_layout(legend.outside = TRUE, legend.outside.position = "bottom", legend.stack = "horizontal")
 
 \dontrun{
@@ -257,6 +270,8 @@ ggplotGrob(ggplot(x, aes(x="", y=-perc, fill=origin)) +
 	scale_fill_manual(values=origin_cols) +
 	theme_ps(plot.axes = FALSE))
 })
+
+names(grobs) <- NLD_prov$name
 
 tm_shape(NLD_prov) +
 tm_polygons() +

@@ -51,14 +51,18 @@
 #' \item{format}{By default, \code{"f"}, i.e. the standard notation \code{xxx.xxx}, is used. If \code{scientific=TRUE} then \code{"g"}, which means that numbers are formatted scientically, i.e. \code{n.dddE+nn} if needed to save space.}
 #' \item{digits}{Number of digits after the decimal point if \code{format="f"}, and the number of significant digits otherwise.}
 #' \item{text.separator}{Character string to use to separate numbers in the legend (default: "to").}
-#' \item{text.less.than}{Character string to use to translate "Less than" (which is the default).}
-#' \item{text.or.more}{Character string to use to translate "or more" (which is the default). }
+#' \item{text.less.than}{Character value(s) to use to translate "Less than". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
+#' \item{text.or.more}{Character value(s) to use to translate "or more". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
+#' \item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}}. By default \code{"left"} for legends in portrait format (\code{legend.is.protrait = TRUE}), and \code{"center"} otherwise.
+#' \item{text.to.columns}{Logical that determines whether the text is aligned to three columns (from, text.separator, to). By default \code{FALSE}.}
 #' \item{...}{Other arguments passed on to \code{\link[base:formatC]{formatC}}}
 #' }
 #' @param legend.size.is.portrait logical that determines whether the legend element regarding the text sizes is in portrait mode (\code{TRUE}) or landscape (\code{FALSE})
+#' @param legend.size.reverse logical that determines whether the items of the legend regarding the text sizes are shown in reverse order, i.e. from bottom to top when \code{legend.size.is.portrait = TRUE} and from right to left when \code{legend.size.is.portrait = FALSE}
 #' @param legend.hist logical that determines whether a histogram is shown regarding the text colors
 #' @param legend.hist.title title for the histogram. By default, one title is used for both the histogram and the normal legend for text colors.
 #' @param legend.col.is.portrait logical that determines whether the legend element regarding the text colors is in portrait mode (\code{TRUE}) or landscape (\code{FALSE})
+#' @param legend.col.reverse logical that determines whether the items of the legend regarding the text colors are shown in reverse order, i.e. from bottom to top when \code{legend.col.is.portrait = TRUE} and from right to left when \code{legend.col.is.portrait = FALSE}
 #' @param legend.size.z index value that determines the position of the legend element regarding the text sizes with respect to other legend elements. The legend elements are stacked according to their z values. The legend element with the lowest z value is placed on top.
 #' @param legend.col.z index value that determines the position of the legend element regarding the text colors. (See \code{legend.size.z})
 #' @param legend.hist.z index value that determines the position of the histogram legend element. (See \code{legend.size.z})
@@ -93,6 +97,8 @@ tm_text <-  function(text, size=1, col=NA, root=3,
 					 legend.format=list(),
 					 legend.size.is.portrait=FALSE,
 					 legend.col.is.portrait=TRUE,
+					 legend.size.reverse=FALSE,
+					 legend.col.reverse=FALSE,
 					 legend.hist=FALSE,
 					 legend.hist.title=NA,
 					 legend.size.z=NA,
@@ -166,12 +172,16 @@ tm_iso <- function(col=NA, text="level", size=.5,
 #' \item{format}{By default, \code{"f"}, i.e. the standard notation \code{xxx.xxx}, is used. If \code{scientific=TRUE} then \code{"g"}, which means that numbers are formatted scientically, i.e. \code{n.dddE+nn} if needed to save space.}
 #' \item{digits}{Number of digits after the decimal point if \code{format="f"}, and the number of significant digits otherwise.}
 #' \item{text.separator}{Character string to use to separate numbers in the legend (default: "to").}
-#' \item{text.less.than}{Character string to use to translate "Less than" (which is the default).}
-#' \item{text.or.more}{Character string to use to translate "or more" (which is the default). }
+#' \item{text.less.than}{Character value(s) to use to translate "Less than". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
+#' \item{text.or.more}{Character value(s) to use to translate "or more". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
+#' \item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}}. By default \code{"left"} for legends in portrait format (\code{legend.is.protrait = TRUE}), and \code{"center"} otherwise.
+#' \item{text.to.columns}{Logical that determines whether the text is aligned to three columns (from, text.separator, to). By default \code{FALSE}.}
 #' \item{...}{Other arguments passed on to \code{\link[base:formatC]{formatC}}}
 #' }
 #' @param legend.col.is.portrait logical that determines whether the legend element regarding the line colors is in portrait mode (\code{TRUE}) or landscape (\code{FALSE})
 #' @param legend.lwd.is.portrait logical that determines whether the legend element regarding the line widths is in portrait mode (\code{TRUE}) or landscape (\code{FALSE})
+#' @param legend.col.reverse logical that determines whether the items of the legend regarding the line colors sizes are shown in reverse order, i.e. from bottom to top when \code{legend.col.is.portrait = TRUE} and from right to left when \code{legend.col.is.portrait = FALSE}
+#' @param legend.lwd.reverse logical that determines whether the items of the legend regarding the line widths are shown in reverse order, i.e. from bottom to top when \code{legend.lwd.is.portrait = TRUE} and from right to left when \code{legend.lwd.is.portrait = FALSE}
 #' @param legend.hist logical that determines whether a histogram is shown regarding the line colors
 #' @param legend.hist.title title for the histogram. By default, one title is used for both the histogram and the normal legend for line colors.
 #' @param legend.col.z index value that determines the position of the legend element regarding the line colors with respect to other legend elements. The legend elements are stacked according to their z values. The legend element with the lowest z value is placed on top.
@@ -206,6 +216,8 @@ tm_lines <- function(col=NA, lwd=1, lty="solid", alpha=NA,
 					 legend.format=list(),
 					 legend.col.is.portrait=TRUE,
 					 legend.lwd.is.portrait=FALSE,
+					 legend.col.reverse=FALSE,
+					 legend.lwd.reverse=FALSE,
 					 legend.hist=FALSE,
 					 legend.hist.title=NA,
 					 legend.col.z=NA,
@@ -261,11 +273,14 @@ tm_lines <- function(col=NA, lwd=1, lty="solid", alpha=NA,
 #' \item{format}{By default, \code{"f"}, i.e. the standard notation \code{xxx.xxx}, is used. If \code{scientific=TRUE} then \code{"g"}, which means that numbers are formatted scientically, i.e. \code{n.dddE+nn} if needed to save space.}
 #' \item{digits}{Number of digits after the decimal point if \code{format="f"}, and the number of significant digits otherwise.}
 #' \item{text.separator}{Character string to use to separate numbers in the legend (default: "to").}
-#' \item{text.less.than}{Character string to use to translate "Less than" (which is the default).}
-#' \item{text.or.more}{Character string to use to translate "or more" (which is the default). }
+#' \item{text.less.than}{Character value(s) to use to translate "Less than". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
+#' \item{text.or.more}{Character value(s) to use to translate "or more". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
+#' \item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}}. By default \code{"left"} for legends in portrait format (\code{legend.is.protrait = TRUE}), and \code{"center"} otherwise.
+#' \item{text.to.columns}{Logical that determines whether the text is aligned to three columns (from, text.separator, to). By default \code{FALSE}.}
 #' \item{...}{Other arguments passed on to \code{\link[base:formatC]{formatC}}}
 #' }
 #' @param legend.is.portrait logical that determines whether the legend is in portrait mode (\code{TRUE}) or landscape (\code{FALSE})
+#' @param legend.reverse logical that determines whether the items are shown in reverse order, i.e. from bottom to top when \code{legend.is.portrait = TRUE} and from right to left when \code{legend.is.portrait = FALSE}
 #' @param legend.hist logical that determines whether a histogram is shown
 #' @param legend.hist.title title for the histogram. By default, one title is used for both the histogram and the normal legend.
 #' @param legend.z index value that determines the position of the legend element with respect to other legend elements. The legend elements are stacked according to their z values. The legend element with the lowest z value is placed on top.
@@ -300,6 +315,7 @@ tm_fill <- function(col=NA,
 					legend.show=TRUE,
 					legend.format=list(),
 					legend.is.portrait=TRUE,
+					legend.reverse=FALSE,
 					legend.hist=FALSE,
 					legend.hist.title=NA,
 					legend.z=NA,
@@ -377,11 +393,14 @@ tm_polygons <- function(col=NA,
 #' \item{format}{By default, \code{"f"}, i.e. the standard notation \code{xxx.xxx}, is used. If \code{scientific=TRUE} then \code{"g"}, which means that numbers are formatted scientically, i.e. \code{n.dddE+nn} if needed to save space.}
 #' \item{digits}{Number of digits after the decimal point if \code{format="f"}, and the number of significant digits otherwise.}
 #' \item{text.separator}{Character string to use to separate numbers in the legend (default: "to").}
-#' \item{text.less.than}{Character string to use to translate "Less than" (which is the default).}
-#' \item{text.or.more}{Character string to use to translate "or more" (which is the default). }
+#' \item{text.less.than}{Character value(s) to use to translate "Less than". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
+#' \item{text.or.more}{Character value(s) to use to translate "or more". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
+#' \item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}}. By default \code{"left"} for legends in portrait format (\code{legend.is.protrait = TRUE}), and \code{"center"} otherwise.
+#' \item{text.to.columns}{Logical that determines whether the text is aligned to three columns (from, text.separator, to). By default \code{FALSE}.}
 #' \item{...}{Other arguments passed on to \code{\link[base:formatC]{formatC}}}
 #' }
 #' @param legend.is.portrait logical that determines whether the legend is in portrait mode (\code{TRUE}) or landscape (\code{FALSE})
+#' @param legend.reverse logical that determines whether the items of the legend regarding the text sizes are shown in reverse order, i.e. from bottom to top when \code{legend.is.portrait = TRUE} and from right to left when \code{legend.is.portrait = FALSE}
 #' @param legend.hist logical that determines whether a histogram is shown
 #' @param legend.hist.title title for the histogram. By default, one title is used for both the histogram and the normal legend.
 #' @param legend.z index value that determines the position of the legend element with respect to other legend elements. The legend elements are stacked according to their z values. The legend element with the lowest z value is placed on top.
@@ -413,6 +432,7 @@ tm_raster <- function(col=NA,
 					  legend.show=TRUE,
 					  legend.format=list(),
 					  legend.is.portrait=TRUE,
+					  legend.reverse=FALSE,
 					  legend.hist=FALSE,
 					  legend.hist.title=NA,
 					  legend.z=NA,
@@ -441,12 +461,13 @@ tm_rgb <- function(alpha = NA, saturation = 1, interpolate=TRUE, ...) {
 #' 
 #' Small multiples can be drawn in two ways: either by specifying the \code{by} argument in \code{\link{tm_facets}}, or by defining multiple variables in the aesthetic arguments, which are \code{size}, \code{col}, and \code{shape}. In the latter case, the arguments, except for the ones starting with \code{legend.}, can be specified for small multiples as follows. If the argument normally only takes a single value, such as \code{n}, then a vector of those values can be specified, one for each small multiple. If the argument normally can take a vector, such as \code{palette}, then a list of those vectors (or values) can be specified, one for each small multiple.
 #' 
-#' A  shape specification is one of the following three options. To specify multiple shapes, a vector or list of these shape specification is required. The shape specification options can also be mixed.
+#' A  shape specification is one of the following three options. To specify multiple shapes (needed for the \code{shapes} argument), a vector or list of these shape specification is required. The shape specification options can also be mixed. For the \code{shapes} argument, it is possible to use a named vector or list, where the names correspond to the value of the variable speficied by the \code{shape} argument.
 #' \enumerate{
 #'  \item{A numeric value that specifies the plotting character of the symbol. See parameter \code{pch} of \code{\link[graphics:points]{points}} and the last example to create a plot with all options.}
 #'  \item{A \code{\link[grid:grid.grob]{grob}} object, which can be a ggplot2 plot object created with \code{\link[ggplot2:ggplotGrob]{ggplotGrob}}. To specify multiple shapes, a list of grob objects is required. See example of a proportional symbol map with ggplot2 plots}.
 #'  \item{An icon specification, which can be created with \code{\link{tmap_icons}}.}
 #'  }
+#'  For small multiples, a list of these shape specification(s) should be provided.
 #' 
 #' @name tm_symbols
 #' @rdname tm_symbols
@@ -459,6 +480,7 @@ tm_rgb <- function(alpha = NA, saturation = 1, interpolate=TRUE, ...) {
 #' @param border.alpha transparency number, regarding the symbol borders, between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of the \code{col} is used (normally 1).
 #' @param scale symbol size multiplier number. 
 #' @param perceptual logical that determines whether symbols are scales with a perceptually (\code{TRUE}) or mathematically (\code{FALSE}, default value). The perceived area of larger symbols is often underestimated. Flannery (1971) experimentally derived a method to compensate this for symbols, which is enabled by this argument.
+#' @param clustering value that determines whether the symbols are clustered in \code{"view"} mode. It does not work proportional bubbles (i.e. \code{tm_bubbles}). One of: \code{TRUE}, \code{FALSE}, or the output of \code{\link[leaflet:markerClusterOptions]{markerClusterOptions}}.
 #' @param size.max value that is mapped to \code{size=1}. By default (\code{NA}), the maximum data value is chosen. Only applicable when \code{size} is the name of a numeric variable of \code{shp}
 #' @param size.lim vector of two limit values of the \code{size} variable. Only symbols are drawn whose value is greater than or equal to the first value. Symbols whose values exceed the second value are drawn at the size of the second value. Only applicable when \code{size} is the name of a numeric variable of \code{shp}
 #' @param sizes.legend vector of symbol sizes that are shown in the legend. By default, this is determined automatically.
@@ -505,13 +527,18 @@ tm_rgb <- function(alpha = NA, saturation = 1, interpolate=TRUE, ...) {
 #' \item{format}{By default, \code{"f"}, i.e. the standard notation \code{xxx.xxx}, is used. If \code{scientific=TRUE} then \code{"g"}, which means that numbers are formatted scientically, i.e. \code{n.dddE+nn} if needed to save space.}
 #' \item{digits}{Number of digits after the decimal point if \code{format="f"}, and the number of significant digits otherwise.}
 #' \item{text.separator}{Character string to use to separate numbers in the legend (default: "to").}
-#' \item{text.less.than}{Character string to use to translate "Less than" (which is the default).}
-#' \item{text.or.more}{Character string to use to translate "or more" (which is the default). }
+#' \item{text.less.than}{Character value(s) to use to translate "Less than". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
+#' \item{text.or.more}{Character value(s) to use to translate "or more". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
+#' \item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}}. By default \code{"left"} for legends in portrait format (\code{legend.is.protrait = TRUE}), and \code{"center"} otherwise.
+#' \item{text.to.columns}{Logical that determines whether the text is aligned to three columns (from, text.separator, to). By default \code{FALSE}.}
 #' \item{...}{Other arguments passed on to \code{\link[base:formatC]{formatC}}}
 #' }
 #' @param legend.size.is.portrait logical that determines whether the legend element regarding the symbol sizes is in portrait mode (\code{TRUE}) or landscape (\code{FALSE})
 #' @param legend.col.is.portrait logical that determines whether the legend element regarding the symbol colors is in portrait mode (\code{TRUE}) or landscape (\code{FALSE})
 #' @param legend.shape.is.portrait logical that determines whether the legend element regarding the symbol shapes is in portrait mode (\code{TRUE}) or landscape (\code{FALSE})
+#' @param legend.size.reverse logical that determines whether the items of the legend regarding the symbol sizes are shown in reverse order, i.e. from bottom to top when \code{legend.size.is.portrait = TRUE} and from right to left when \code{legend.size.is.portrait = FALSE}
+#' @param legend.col.reverse logical that determines whether the items of the legend regarding the symbol colors are shown in reverse order, i.e. from bottom to top when \code{legend.col.is.portrait = TRUE} and from right to left when \code{legend.col.is.portrait = FALSE}
+#' @param legend.shape.reverse logical that determines whether the items of the legend regarding the symbol shapes are shown in reverse order, i.e. from bottom to top when \code{legend.shape.is.portrait = TRUE} and from right to left when \code{legend.shape.is.portrait = FALSE}
 #' @param legend.hist logical that determines whether a histogram is shown regarding the symbol colors
 #' @param legend.hist.title title for the histogram. By default, one title is used for both the histogram and the normal legend for symbol colors.
 #' @param legend.size.z index value that determines the position of the legend element regarding the symbol sizes with respect to other legend elements. The legend elements are stacked according to their z values. The legend element with the lowest z value is placed on top.
@@ -539,6 +566,7 @@ tm_symbols <- function(size=1, col=NA,
 						border.alpha=NA,
 						scale=1,
 						perceptual=FALSE,
+						clustering=FALSE,
 						size.max=NA,
 						size.lim=NA,
 						sizes.legend = NULL,
@@ -580,6 +608,9 @@ tm_symbols <- function(size=1, col=NA,
 					   	legend.size.is.portrait=FALSE,
 					    legend.col.is.portrait=TRUE,
 						legend.shape.is.portrait=TRUE,
+						legend.size.reverse=FALSE,
+						legend.col.reverse=FALSE,
+						legend.shape.reverse=FALSE,
 						legend.hist=FALSE,
 						legend.hist.title=NA,
 						legend.size.z=NA,
@@ -648,6 +679,7 @@ tm_dots <- function(col=NA,
 tm_markers <- function(shape=marker_icon(),
 					   col=NA,
 					   border.col=NULL,
+					   clustering=TRUE,
 					   text=NULL,
 					   text.just=c("center", "top"),
 					   markers.on.top.of.text=TRUE,

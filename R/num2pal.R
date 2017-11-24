@@ -10,7 +10,9 @@ num2pal <- function(x, n = 5,
 					   legend.NA.text = "Missing",
 					   showNA=NA,
 					   process.colors=NULL,
-					   legend.format=list(scientific=FALSE)) {
+					   legend.format=list(scientific=FALSE),
+					reverse=FALSE
+					) {
 	breaks.specified <- !is.null(breaks)
 	is.cont <- (style=="cont" || style=="order")
 	
@@ -138,7 +140,6 @@ num2pal <- function(x, n = 5,
 		if (is.na(showNA)) showNA <- FALSE
 	}
 
-	if (showNA && !is.cont) legend.palette <- c(legend.palette, colorNA)
 	
 	
 	if (is.cont) {
@@ -164,7 +165,12 @@ num2pal <- function(x, n = 5,
 			res[res<1 | res>101] <- NA
 			res
 		})
-		legend.palette <- lapply(id_lst, function(i) legend.palette[i])
+		legend.palette <- lapply(id_lst, function(i) {
+			if (reverse) rev(legend.palette[i]) else legend.palette[i]
+		})
+		
+		if (reverse) legend.palette <- rev(legend.palette)
+		
 		if (showNA) legend.palette <- c(legend.palette, colorNA)
 		
 		# temporarily stack gradient colors
@@ -178,12 +184,23 @@ num2pal <- function(x, n = 5,
 			legend.labels <- do.call("fancy_breaks", c(list(vec=b, intervals=FALSE, interval.closure=int.closure), legend.format)) 	
 		} else {
 			legend.labels <- rep(legend.labels, length.out=nbrks_cont)
+			attr(legend.labels, "align") < legend.format$align
 		}
+		
+		if (reverse) {
+			legend.labels.align <- attr(legend.labels, "align")
+			legend.labels <- rev(legend.labels)
+			attr(legend.labels, "align") <- legend.labels.align
+		} 
 		if (showNA) {
+			legend.labels.align <- attr(legend.labels, "align")
 			legend.labels <- c(legend.labels, legend.NA.text)
-		}		
+			attr(legend.labels, "align") <- legend.labels.align
+		}
 		attr(legend.palette, "style") <- style
 	} else {
+		
+
 		# create legend values
 		legend.values <- breaks[-nbrks]
 		
@@ -193,10 +210,34 @@ num2pal <- function(x, n = 5,
 		} else {
 			if (length(legend.labels)!=nbrks-1) warning("number of legend labels should be ", nbrks-1, call. = FALSE)
 			legend.labels <- rep(legend.labels, length.out=nbrks-1)
+			attr(legend.labels, "align") < legend.format$align
 		}
 		
-		if (showNA) legend.labels <- c(legend.labels, legend.NA.text)
+		if (reverse) {
+			legend.labels.brks <- attr(legend.labels, "brks")
+			legend.labels.align <- attr(legend.labels, "align")
+			legend.labels <- rev(legend.labels)
+			if (!is.null(legend.labels.brks)) {
+				attr(legend.labels, "brks") <- legend.labels.brks[length(legend.labels):1L,]
+			}
+			attr(legend.labels, "align") <- legend.labels.align
+			legend.palette <- rev(legend.palette)
+		}		
+		if (showNA) {
+			legend.labels.brks <- attr(legend.labels, "brks")
+			legend.labels.align <- attr(legend.labels, "align")
+			#legend.labels <- c(legend.labels, legend.NA.text)
+			if (!is.null(legend.labels.brks)) {
+				legend.labels <- c(legend.labels, paste(legend.NA.text, " ", sep = ""))
+				attr(legend.labels, "brks") <- rbind(legend.labels.brks, rep(nchar(legend.NA.text) + 2, 2))
+			} else {
+				legend.labels <- c(legend.labels, legend.NA.text)
+			}
+			attr(legend.labels, "align") <- legend.labels.align
+			legend.palette <- c(legend.palette, colorNA)
+		}
 	}
+		
 	list(cols=cols, legend.labels=legend.labels, legend.values=legend.values, legend.palette=legend.palette, breaks=breaks, breaks.palette=breaks.palette, legend.neutral.col = legend.neutral.col)
 }
 

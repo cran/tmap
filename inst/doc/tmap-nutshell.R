@@ -57,13 +57,13 @@ tm_layout(panel.labels=c("1970", "2020"))
 ## ---- fig.width=10-------------------------------------------------------
 tm_shape(Europe) +
     tm_polygons("well_being", title="Well-Being Index") +
-    tm_facets("part") +
+    tm_facets("part", free.coords=FALSE) +
 tm_style_grey()
 
 ## ---- fig.width=10-------------------------------------------------------
 tm_shape(Europe[Europe$continent=="Europe",]) +
     tm_fill("part", legend.show = FALSE) +
-    tm_facets("name", free.coords=TRUE, drop.units=TRUE)
+    tm_facets("name")
 
 ## ---- fig.width=10-------------------------------------------------------
 tm1 <- qtm(Europe, fill = "red")
@@ -154,7 +154,7 @@ tm_shape(World) +
 	tm_fill() +
 tm_shape(rivers) +
 	tm_lines(col="dodgerblue3") +
-	tm_add_legend(type="line", col="dodgerblue3", title="World map") +
+	tm_add_legend(type="line", col="dodgerblue3", labels = "Rivers", title="World map") +
 tm_format_World()
 
 ## ---- fig.height=5-------------------------------------------------------

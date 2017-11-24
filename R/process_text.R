@@ -56,7 +56,9 @@ process_text <- function(data, g, fill, gt, gby, z, interactive) {
 	
 	varycol <- all(xtcol %in% shpcols) && !is.null(xtcol) && !(is.na(xtcol[1]))
 	
-	nx <- max(nxtcol, nxtsize, nxtext)
+	nxfill <- if (is.matrix(fill)) ncol(fill) else 1
+	
+	nx <- max(nxtcol, nxtsize, nxtext, nxfill)
 	if (nxtcol<nx) xtcol <- rep(xtcol, length.out=nx)
 	if (nxtsize<nx) xtsize <- rep(xtsize, length.out=nx)
 	if (nxtext<nx) xtext <- rep(xtext, length.out=nx)
@@ -127,7 +129,7 @@ process_text <- function(data, g, fill, gt, gby, z, interactive) {
 	if (is.list(dtsize)) {
 		# multiple variables for size are defined
 		gss <- split_g(g, n=nx)
-		res <- mapply(process_text_size_vector, dtsize, as.list(as.data.frame(text)), gss, MoreArgs = list(rescale=varysize, gt), SIMPLIFY = FALSE)
+		res <- mapply(process_text_size_vector, dtsize, as.list(as.data.frame(text)), gss, MoreArgs = list(rescale=varysize, gt=gt, reverse=g$legend.size.reverse), SIMPLIFY = FALSE)
 		size <- sapply(res, function(r)r$size)
 		text_sel <- sapply(res, function(r)r$text_sel)
 		size.legend.labels <- lapply(res, function(r)r$size.legend.labels)
@@ -135,7 +137,7 @@ process_text <- function(data, g, fill, gt, gby, z, interactive) {
 		legend.sizes <- lapply(res, function(r)r$legend.sizes)
 		max.size <- lapply(res, function(r)r$max.size)
 	} else {
-		res <- process_text_size_vector(dtsize, text, g, rescale=varysize, gt)
+		res <- process_text_size_vector(dtsize, text, g, rescale=varysize, gt=gt, reverse=g$legend.size.reverse)
 		size <- matrix(res$size, nrow=npol)
 		text_sel <- matrix(res$text_sel, nrow=npol)
 		
@@ -190,7 +192,7 @@ process_text <- function(data, g, fill, gt, gby, z, interactive) {
 	# 	} else !is.na(dtsize)
 	# } 
 	
-	dcr <- process_dtcol(dtcol, sel=sel, g, gt, nx, npol)
+	dcr <- process_dtcol(dtcol, sel=sel, g, gt, nx, npol, reverse=g$legend.col.reverse)
 	if (dcr$is.constant) {
 		xtcol <- rep(NA, nx)
 		col.legend.text <- NA
@@ -258,7 +260,9 @@ process_text <- function(data, g, fill, gt, gby, z, interactive) {
 	xmod <- if (is.character(g$xmod)) data[[g$xmod]] else rep(g$xmod, length.out=npol)
 	ymod <-  if (is.character(g$ymod)) data[[g$ymod]] else rep(g$ymod, length.out=npol)
 	
-
+	xmod <- matrix(xmod, nrow=npol, ncol=nx)
+	ymod <- matrix(ymod, nrow=npol, ncol=nx)
+	
 	if (is.na(g$fontface)) g$fontface <- gt$fontface
 	if (is.na(g$fontfamily)) g$fontfamily <- gt$fontfamily
 
@@ -323,6 +327,8 @@ process_text <- function(data, g, fill, gt, gby, z, interactive) {
 		 text.col.legend.title=text.col.legend.title,
 		 text.size.legend.is.portrait=g$legend.size.is.portrait,
 		 text.col.legend.is.portrait=g$legend.col.is.portrait,
+		 text.size.legend.reverse=g$legend.size.reverse,
+		 text.col.legend.reverse=g$legend.col.reverse,
 		 text.col.legend.hist=g$legend.hist,
 		 text.col.legend.hist.title=text.col.legend.hist.title,
 		 text.size.legend.z=text.size.legend.z,
