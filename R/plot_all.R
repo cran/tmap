@@ -110,7 +110,7 @@ plot_all <- function(i, gp, gal, shps, dasp, sasp, inner.margins.new, legend_pos
 			frameX <- 0
 			frameY <- 0
 		}
-		treeMeta <- meta_plot(gt, leg, legend_pos, bbx, metaX, metaY, frameX, frameY)
+		treeMeta <- meta_plot(gt, leg, legend_pos, bbx, metaX, metaY, frameX, frameY, use_facets)
 		treeMetaX <- gTree(children=gList(treeMeta), name="meta_with_bg") #, vp = treeMetaVP) # previously with grobLegendBG
 		if (!gt$legend.only) {
 			treeMapX <- addGrob(treeMapX, child=treeMetaX) #, gPath=gPath("outer_map"))#, "aspvp"))
