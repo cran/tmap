@@ -61,7 +61,7 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY, use_f
 	if (has.legend) {
 		nx <- length(x)
 		
-		zs <- sapply(x, function(y) y$legend.z)
+		zs <- vapply(x, function(y) y$legend.z, numeric(1))
 		x <- x[order(zs)]
 		
 		if (stackV) {
@@ -97,7 +97,7 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY, use_f
 		}
 
 		# remove empty legend elements
-		x.not.null <- !sapply(x, is.null)
+		x.not.null <- !vapply(x, is.null, logical(1))
 		if (stackV) {
 			k <- sum(x.not.null)
 			x <- x[x.not.null]
@@ -108,7 +108,7 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY, use_f
 		
 		s2 <- 4/3
 		
-		heights <- sapply(x, function(p){
+		heights <- vapply(x, function(p){
 			if (is.null(p)) return(0)
 			type <- p$legend.type
 			port <- p$legend.is.portrait
@@ -125,7 +125,7 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY, use_f
 				max(convertHeight(unit(p$legend.sizes, "inch"), "npc", valueOnly=TRUE)/s2, 1.5*lineHeight*gt$legend.text.size) + 2*margin*lineHeight*gt$legend.text.size + 1.25*lineHeight*gt$legend.text.size
 			} else if (port && type == "text.size") {
 				sum(pmax(convertHeight(unit(p$legend.sizes, "lines"), "npc", valueOnly=TRUE) * 1.25, lineHeight * gt$legend.text.size)) + 2*margin*lineHeight
-			} else if (!port && type == "text.size") {
+			} else if (!port && type %in% c("text.size", "text.col")) {
 				max(convertHeight(unit(p$legend.sizes, "lines"), "npc", valueOnly=TRUE), 1.5*lineHeight*gt$legend.text.size) + 2*margin*lineHeight*gt$legend.text.size + 1.25*lineHeight*gt$legend.text.size
 			} else if (!port && type %in% c("fill", "symbol.col", "symbol.shape", "line.col", "line.lwd", "raster")) {
 				2*margin*lineHeight*gt$legend.text.size + 2.75 * lineHeight*gt$legend.text.size
@@ -137,7 +137,7 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY, use_f
 			} else if (type == "hist") {
 				gt$legend.hist.height
 			}
-		})
+		}, numeric(1))
 		
 		legendWidth <- gt$legend.width
 		
@@ -471,7 +471,7 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY, use_f
 				} else if (e$type=="logo") {
 					grb <- plot_logo(gt, just=elem.just[1], id=e$logo.id)
 				} else if (e$type=="scale_bar") {
-					grb <- plot_scale(gt, just=elem.just[1], xrange=(bb[1,2] - bb[1,1])*e$width2, crop_factor=gt$scale.width/e$width2)
+					grb <- plot_scale(gt, just=elem.just[1], xrange=(bb[3] - bb[1])*e$width2, crop_factor=gt$scale.width/e$width2)
 				} else {
 					grb <- plot_compass(gt, just=elem.just[1])
 				}
@@ -509,6 +509,9 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY, use_f
 		} else NA
 		
 		legend.frame.fill <- if (gt$design.mode) "#888888BB" else legend.bg.color
+		
+		
+		legend.frame.lwd <- gt$scale * gt$legend.frame.lwd
 		
 		if (stackV) {
 			vpLeg <- viewport(layout=grid.layout(k, 2, heights=heights, widths=c(histWidth, 1-histWidth)), name="legend_grid")
@@ -556,7 +559,7 @@ meta_plot <- function(gt, x, legend_pos, bb, metaX, metaY, frameX, frameY, use_f
 			}
 			legWidthInch <- convertWidth(unit(legWidth, "npc"), "inch", valueOnly=TRUE)
 			
-			grobLegBG <- rectGrob(x=0, width=legWidth, just=c("left", "center"), gp=gpar(lwd=gt$scale, col=gt$legend.frame, fill=legend.frame.fill))
+			grobLegBG <- rectGrob(x=0, width=legWidth, just=c("left", "center"), gp=gpar(lwd=legend.frame.lwd, col=legend.frame.color, fill=legend.frame.fill))
 			
 		} else {
 			lW <- sapply(grobListRes, "[[", 2)

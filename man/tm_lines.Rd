@@ -8,14 +8,15 @@ tm_lines(col = NA, lwd = 1, lty = "solid", alpha = NA, scale = 1,
   lwd.legend = NULL, lwd.legend.labels = NULL, n = 5,
   style = ifelse(is.null(breaks), "pretty", "fixed"), breaks = NULL,
   interval.closure = "left", palette = NULL, labels = NULL,
-  auto.palette.mapping = TRUE, contrast = NA, max.categories = 12,
-  colorNA = NA, textNA = "Missing", showNA = NA, title.col = NA,
+  midpoint = NULL, stretch.palette = TRUE, contrast = NA, colorNA = NA,
+  textNA = "Missing", showNA = NA, colorNULL = NA, title.col = NA,
   title.lwd = NA, legend.col.show = TRUE, legend.lwd.show = TRUE,
   legend.format = list(), legend.col.is.portrait = TRUE,
   legend.lwd.is.portrait = FALSE, legend.col.reverse = FALSE,
   legend.lwd.reverse = FALSE, legend.hist = FALSE, legend.hist.title = NA,
   legend.col.z = NA, legend.lwd.z = NA, legend.hist.z = NA, id = NA,
-  popup.vars = NA, popup.format = list())
+  popup.vars = NA, popup.format = list(), group = NA,
+  auto.palette.mapping = NULL, max.categories = NULL)
 }
 \arguments{
 \item{col}{color of the lines. Either a color value or a data variable name. If multiple values are specified, small multiples are drawn (see details).}
@@ -44,17 +45,19 @@ tm_lines(col = NA, lwd = 1, lty = "solid", alpha = NA, scale = 1,
 
 \item{labels}{labels of the classes}
 
-\item{auto.palette.mapping}{When diverging colour palettes are used (i.e. "RdBu") this method automatically maps colors to values such that the middle colors (mostly white or yellow) are assigned to values of 0, and the two sides of the color palette are assigned to negative respectively positive values. In this case of line widths, obviously only the positive side is used. When categorical color palettes are used, this method stretches the palette if there are more levels than colors.}
+\item{midpoint}{The value mapped to the middle color of a diverging palette. By default it is set to 0 if negative and positive values are present. In that case, the two sides of the color palette are assigned to negative respectively positive values. If all values are positive or all values are negative, then the midpoint is set to \code{NA}, which means that the value that corresponds to the middle color class (see \code{style}) is mapped to the middle color. Only applies when \code{col} is a numeric variable. If it is specified for sequential color palettes (e.g. \code{"Blues"}), then this color palette will be treated as a diverging color palette.}
+
+\item{stretch.palette}{Logical that determines whether the categorical color palette should be stretched if there are more categories than colors. If \code{TRUE} (default), interpolated colors are used (like a rainbow). If \code{FALSE}, the palette is repeated.}
 
 \item{contrast}{vector of two numbers that determine the range that is used for sequential and diverging palettes (applicable when \code{auto.palette.mapping=TRUE}). Both numbers should be between 0 and 1. The first number determines where the palette begins, and the second number where it ends. For sequential palettes, 0 means the brightest color, and 1 the darkest color. For diverging palettes, 0 means the middle color, and 1 both extremes. If only one number is provided, this number is interpreted as the endpoint (with 0 taken as the start).}
-
-\item{max.categories}{in case \code{col} is the name of a categorical variable, this value determines how many categories (levels) it can have maximally. If the number of levels is higher than \code{max.categories} and \code{auto.palette.mapping} is \code{FALSE}, then levels are combined.}
 
 \item{colorNA}{color used for missing values. Use \code{NULL} for transparency.}
 
 \item{textNA}{text used for missing values.}
 
 \item{showNA}{logical that determines whether missing values are named in the legend. By default (\code{NA}), this depends on the presence of missing values.}
+
+\item{colorNULL}{colour for polygons that are shown on the map that are out of scope}
 
 \item{title.col}{title of the legend element regarding the line colors}
 
@@ -101,6 +104,12 @@ tm_lines(col = NA, lwd = 1, lty = "solid", alpha = NA, scale = 1,
 \item{popup.vars}{names of data variables that are shown in the popups in \code{"view"} mode. If \code{NA} (default), only aesthetic variables (i.e. specified by \code{col} and \code{lwd}) are shown). If they are not specified, all variables are shown. Set popup.vars to \code{FALSE} to disable popups. When a vector of variable names is provided, the names (if specified) are printed in the popups.}
 
 \item{popup.format}{list of formatting options for the popup values. See the argument \code{legend.format} for options. Only applicable for numeric data variables. If one list of formatting options is provided, it is applied to all numeric variables of \code{popup.vars}. Also, a (named) list of lists can be provided. In that case, each list of formatting options is applied to the named variable.}
+
+\item{group}{name of the group to which this layer belongs in view mode. Each group can be selected or deselected in the layer control item. Groups can either be specified as base or overlay groups in \code{\link{tm_view}} (arguments \code{base.groups} and \code{overlay.groups}).}
+
+\item{auto.palette.mapping}{deprecated. It has been replaced by \code{midpoint} for numeric variables and \code{stretch.palette} for categorical variables.}
+
+\item{max.categories}{deprecated. It has moved to \code{\link{tmap_options}}.}
 }
 \value{
 \code{\link{tmap-element}}
@@ -112,22 +121,22 @@ Creates a \code{\link{tmap-element}} that draw spatial lines.
 Small multiples can be drawn in two ways: either by specifying the \code{by} argument in \code{\link{tm_facets}}, or by defining multiple variables in the aesthetic arguments. The aesthetic arguments of \code{tm_lines} are \code{col} and \code{lwd}. In the latter case, the arguments, except for the ones starting with \code{legend.}, can be specified for small multiples as follows. If the argument normally only takes a single value, such as \code{n}, then a vector of those values can be specified, one for each small multiple. If the argument normally can take a vector, such as \code{palette}, then a list of those vectors (or values) can be specified, one for each small multiple.
 }
 \examples{
-data(World, Europe, rivers)
+data(World, rivers)
 
 qtm(rivers)
 
 \dontrun{
-tm_shape(Europe) +
+tm_shape(World) +
     tm_fill() +
 tm_shape(rivers) +
     tm_lines(col="black", lwd="scalerank", scale=2, legend.lwd.show = FALSE) +
-tm_layout("Rivers of Europe") +
-tm_style_cobalt()
+tm_style("cobalt", title = "Rivers of the World") +
+tm_format("World")
 }
 }
 \references{
 Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \href{https://doi.org/10.18637/jss.v084.i06}{DOI}
 }
 \seealso{
-\href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
+\href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}}
 }

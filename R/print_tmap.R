@@ -4,7 +4,7 @@
 #' 
 #' @param x tmap object. A tmap object is created with \code{\link{qtm}} or by stacking \code{\link{tmap-element}}s.
 #' @param vp \code{\link[grid:viewport]{viewport}} to draw the plot in. This is particularly useful for insets.
-#' @param return.asp Logical that determines whether the aspect ratio of the map is returned. In that case, \code{\link[grid:grid.newpage]{grid.newpage()}} will be called, but without plotting of the map. This is used by \code{\link{save_tmap}} to determine the aspect ratio of the map.
+#' @param return.asp Logical that determines whether the aspect ratio of the map is returned. In that case, \code{\link[grid:grid.newpage]{grid.newpage()}} will be called, but without plotting of the map. This is used by \code{\link{tmap_save}} to determine the aspect ratio of the map.
 #' @param mode the mode of tmap: \code{"plot"} (static) or \code{"view"} (interactive). See \code{\link{tmap_mode}} for details.
 #' @param show logical that determines whether to show to map. Obviously \code{TRUE} by default, but \code{show=FALSE} can be useful for just obtaining the returned objects.
 #' @param knit should \code{\link[knitr:knit_print]{knit_print}} be enabled, or the normal \code{\link[base:print]{print}} function?
@@ -12,19 +12,20 @@
 #' @param ... not used
 #' @return If \code{mode=="plot"}, then a list is returned with the processed shapes and the metadata. If \code{mode=="view"}, a \code{\link[leaflet:leaflet]{leaflet}} object is returned (see also \code{\link{tmap_leaflet}})
 #' @import tmaptools
-#' @import sp
+#' @import sf
+#' @importFrom units set_units as_units
 #' @importFrom raster raster brick extent setValues ncell couldBeLonLat fromDisk crop projectRaster projectExtent colortable nlayers minValue maxValue getValues
 #' @importMethodsFrom raster as.vector
 #' @import RColorBrewer
+#' @importFrom viridisLite viridis
 #' @import grid
 #' @import methods
+#' @importFrom graphics par
 #' @importFrom classInt classIntervals findCols
 #' @importFrom rgeos gIntersection gIntersects gBuffer gDifference gCentroid gUnaryUnion
-#' @importFrom grDevices col2rgb colorRampPalette dev.off is.raster png rgb
+#' @importFrom grDevices col2rgb colorRampPalette dev.off dev.set dev.cur is.raster png rgb
 #' @importFrom stats na.omit dnorm fft quantile rnorm runif 
-#' @importFrom spdep poly2nb
 #' @importFrom grDevices xy.coords colors
-#' @importFrom graphics par
 #' @importFrom rgdal getPROJ4VersionInfo SGDF2PCT CRSargs
 #' @importFrom utils capture.output data download.file head setTxtProgressBar tail txtProgressBar
 #' @importMethodsFrom raster as.vector
@@ -53,36 +54,81 @@ knit_print.tmap <- function(x, ..., options=NULL) {
 #' @param x tmap object. A tmap object is created with \code{\link{qtm}} or by stacking \code{\link{tmap-element}}s.
 #' @param mode the mode of tmap, which is set to \code{"view"} in order to obtain the leaflet object. See \code{\link{tmap_mode}} for details.
 #' @param show should the leaflet map be shown? \code{FALSE} by default
+#' @param add.titles add titles to leaflet object
 #' @param ... arguments passed on to \code{\link{print.tmap}}
 #' @return \code{\link[leaflet:leaflet]{leaflet}} object
 #' @example ./examples/tmap_leaflet.R
 #' @seealso \code{\link{tmap_mode}}, \code{\link{tm_view}}, \code{\link{print.tmap}}
 #' @export
-tmap_leaflet <- function(x, mode="view", show = FALSE, ...) {
-  print.tmap(x, mode=mode, show=show, ...)
+tmap_leaflet <- function(x, mode="view", show = FALSE, add.titles = TRUE, ...) {
+  print.tmap(x, mode=mode, show=show, interactive_titles = add.titles, ...)
 }
 
 print_shortcut <- function(x, interactive, args, knit) {
 	if (getOption("tmap.mode")=="plot") {
 		stop("Either specify shp, or set mode to \"view\" with tmap_mode or ttm", call.=FALSE)	
 	} else {
-		gt <- preprocess_gt(x, interactive=interactive)
-		gt$shape.bbx <- x$tm_shortcut$bbx
-		gt$shape.center <- x$tm_shortcut$center
+		xtiles <- which(names(x) == "tm_tiles")
 		
-		view_tmap(list(tm_layout=gt))
+		gt <- preprocess_gt(x, interactive=interactive)
+		gt$shp_name <- rep("dummy", length(xtiles))
+		gt$shape.units <- list(unit = get(".tmapOptions", envir = .TMAP_CACHE)$unit)
+		if (is.null(gt$bbox)) gt$bbox <- c(-190, -90, 180, 90)
+		
+		if (any(names(x) == "tm_scale_bar")) {
+			gsbid <- which(names(x) == "tm_scale_bar")[1]
+			gsb <- x[[gsbid]]
+		} else {
+			gsb <- NULL
+		}
+		gsb <- process_meta_scale_bar(gsb, interactive = TRUE, gt)
+
+		if (any(names(x) == "tm_grid")) {
+			ggid <- which(names(x) == "tm_grid")[1]
+			gg <- x[[ggid]]
+		} else {
+			gg <- NULL
+		}		
+		gg <- process_meta_grid(gg, gt)
+
+		gmmid <- which(names(x)=="tm_minimap")[1]
+		gmm <- x[[gmmid]]
+		gmm <- process_meta_minimap(gmm, interactive = TRUE, gt)
+		
+		gt <- c(gt, gsb, gg, gmm)
+		
+		
+		#gt$scale.show <- FALSE
+		#gt$shape.bbx <- x$tm_shortcut$bbx
+		#gt$shape.center <- x$tm_shortcut$center
+		
+		x[xtiles] <- lapply(x[xtiles], function(xi) {
+			xi <- process_tiles(xi, gt)
+			xi$plot.order <- "tm_tiles"
+			xi
+		})
+		
+		if (gt$grid.show) x[[xtiles[1]]]$plot.order <- c("tm_tiles", "tm_grid")
+		
+		
+		x[names(x) == "tm_shape"] <- NULL
+		
+		x <- x[!(names(x) %in% c("tm_layout", "tm_view", "tm_style", "tm_grid", "tm_facets", "tm_credits", "tm_logo", "tm_compass", "tm_scale_bar", "tm_xlab", "tm_ylab", "tm_minimap"))]
+		
+		x$tm_layout <- gt
+		
+		view_tmap(x, shps = list(dummy = NULL))
 	}
 }
 
 supported_elem_view_mode <- function(nms) {
-	#if (any(nms=="tm_grid")) warning("Grid lines not supported in view mode.", call.=FALSE)
-	if (any(nms=="tm_credits")) warning("Credits not supported in view mode.", call.=FALSE)
-	if (any(nms=="tm_logo")) warning("Logo not supported in view mode.", call.=FALSE)
-	if (any(nms=="tm_compass")) warning("Compass not supported in view mode.", call.=FALSE)
-	if (any(nms=="tm_xlab")) warning("X-axis label not supported in view mode.", call.=FALSE)
-	if (any(nms=="tm_ylab")) warning("Y-axis label not supported in view mode.", call.=FALSE)
-	#if (any(nms=="tm_scale_bar")) warning("Scale bar not yet supported in view mode, it will be in the next version.", call.=FALSE)
-	
+	if (get(".tmapOptions", envir = .TMAP_CACHE)$show.messages) {
+		if (any(nms=="tm_credits")) message("Credits not supported in view mode.")
+		if (any(nms=="tm_logo")) message("Logo not supported in view mode.")
+		if (any(nms=="tm_compass")) message("Compass not supported in view mode.")
+		if (any(nms=="tm_xlab")) message("X-axis label not supported in view mode.")
+		if (any(nms=="tm_ylab")) message("Y-axis label not supported in view mode.")
+	}
 	which(!(nms %in% c("tm_credits", "tm_logo", "tm_compass", "tm_xlab", "tm_ylab")))
 }
 
@@ -95,30 +141,30 @@ gather_shape_info <- function(x, interactive) {
 	
 	## find "MAP_COLORING" values
 	apply_map_coloring <- if ("tm_fill" %in% names(x)) {
-		any(sapply(x[which(names(x)=="tm_fill")], function(i)identical(i$col[1],"MAP_COLORS")))
+		any(vapply(x[which(names(x)=="tm_fill")], function(i)identical(i$col[1],"MAP_COLORS"), logical(1)))
 	} else FALSE
 	
 	## find master shape
-	is_raster <- sapply(x[shape.id], function(xs) {
-		inherits(xs$shp, c("Raster", "SpatialPixels", "SpatialGrid"))	
-	})
-	is_master <- sapply(x[shape.id], "[[", "is.master")
+	is_raster <- vapply(x[shape.id], function(xs) {
+		!is.null(xs$shp) && inherits(xs$shp, c("Raster", "SpatialPixels", "SpatialGrid"))	
+	}, logical(1))
+	is_master <- vapply(x[shape.id], "[[", logical(1), "is.master")
 	any_raster <- any(is_raster)
 	masterID <- if (!length(which(is_master))) {
-		if (any_raster) which(is_raster)[1] else 1
+		if (any_raster) which(is_raster)[1] else which(is.na(is_master))[1]
 	} else which(is_master)[1]
 	
 	## find master projection (and set to longlat when in view mode)
-	master_CRS <- get_proj4(x[[shape.id[masterID]]]$projection, as.CRS = TRUE)
+	master_crs <- get_proj4(x[[shape.id[masterID]]]$projection, output = "crs")
 	mshp_raw <- x[[shape.id[masterID]]]$shp
-	if (is.null(master_CRS)) master_CRS <- get_projection(mshp_raw, as.CRS = TRUE)
-	orig_CRS <- master_CRS # needed for adjusting bbox in process_shapes
+	if (is.null(master_crs)) master_crs <- get_projection(mshp_raw, output = "crs")
+	orig_crs <- master_crs # needed for adjusting bbox in process_shapes
 	if (interactive) {
-		if (is.na(get_projection(mshp_raw, as.CRS = TRUE)) && tmaptools::is_projected(mshp_raw)) {
+		if (is.na(get_projection(mshp_raw, output = "crs")) && tmaptools::is_projected(mshp_raw)) {
 			
 			stop("The projection of the shape object ", x[[shape.id[masterID]]]$shp_name, " is not known, while it seems to be projected.", call.=FALSE)
 		}
-		master_CRS <- .CRS_longlat
+		master_crs <- .crs_longlat
 	}
 	
 	## find master bounding box (unprocessed)
@@ -148,32 +194,39 @@ gather_shape_info <- function(x, interactive) {
 	})
 	
 	## get arguments related to units (approx_areas)
-	units_args <- x[[shape.id[masterID]]][c("unit", "orig", "to", "total.area")]
-	names(units_args)[names(units_args)=="unit"] <- "target"
-	units_args <- units_args[!sapply(units_args, is.null)]
+	unit <- x[[shape.id[masterID]]]$unit
+	if (is.null(unit)) unit <- get(".tmapOptions", envir = .TMAP_CACHE)$unit
+	if (unit == "metric") unit <- "km"
+	if (unit == "imperial") unit <- "mi"
+	
+	# units_args <- x[[shape.id[masterID]]][c("unit", "orig", "to", "total.area")]
+	# names(units_args)[names(units_args)=="unit"] <- "target"
+	# units_args <- units_args[!sapply(units_args, is.null)]
 	
 	## get arguments related to bb
-	bb_args <- x[[masterID]][intersect(names(x[[masterID]]), c("ext", "cx", "cy", "width", "height", "xlim", "ylim", "relative"))]
-	bb_args$x <- x[[masterID]]$bbox
+	bb_args <- x[[shape.id[masterID]]][intersect(names(x[[shape.id[masterID]]]), c("ext", "cx", "cy", "width", "height", "xlim", "ylim", "relative"))]
+	bb_args$x <- x[[shape.id[masterID]]]$bbox
 	
 	## add other shape arguments
-	line.center.type <- x[[shape.id[masterID]]]$line.center.type
-
+	# point.per <- x[[shape.id[masterID]]]$point.per
+	# line.center <- x[[shape.id[masterID]]]$line.center
+	
 	list(shape.id=shape.id,
 		 shape.nshps=nshps,
 		 shape.apply_map_coloring=apply_map_coloring,
 		 shape.any_raster=any_raster,
 		 shape.masterID=masterID,
-		 shape.master_CRS=master_CRS,
-		 shape.orig_CRS=orig_CRS,
+		 shape.master_crs=master_crs,
+		 shape.orig_crs=orig_crs,
 		 shape.bbx_raw=bbx_raw,
-		 shape.units_args=units_args,
+		 shape.unit=unit,
 		 shape.bb_args=bb_args,
-		 shape.line.center.type=line.center.type,
+		 # shape.point.per=point.per,
+		 # shape.line.center=line.center,
 		 shape.raster_facets_vars=raster_facets_vars)
 }
 
-prepare_vp <- function(vp, gm, interactive, x) {
+prepare_vp <- function(vp, gm, interactive, gt) {
 	
 	if (interactive) {
 		devsize <- par("din")
@@ -188,9 +241,7 @@ prepare_vp <- function(vp, gm, interactive, x) {
 		}
 		
 		## calculate device aspect ratio (needed for small multiples' nrow and ncol)
-		inner.margins <- if ("tm_layout" %in% names(x)) {
-			x[[which(names(x)=="tm_layout")[1]]]$inner.margins
-		} else NA
+		inner.margins <- gt$inner.margins
 		inner.margins <- if (is.na(inner.margins[1])) {
 			if (gm$shape.any_raster) rep(0, 4) else rep(0.02, 4)
 		} else rep(inner.margins, length.out=4)
@@ -237,19 +288,56 @@ determine_asp_ratios <- function(gm, interactive) {
 
 
 
-print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode"), show=TRUE, knit=FALSE, options=NULL, ...) {
+print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode"), show=TRUE, knit=FALSE, options=NULL, interactive_titles = TRUE, ...) {
 	args <- list(...)
 	scale.extra <- NULL
 	title.snap.to.legend <- NULL
 	
 	interactive <- (mode == "view")
 	
+	tmapOptions <- get(".tmapOptions", envir = .TMAP_CACHE)
+	
+	show.messages <- tmapOptions$show.messages
+	
+	qtm_shortcut <- attr(x, "qtm_shortcut")
+	
+	if (!is.null(qtm_shortcut)) {
+		if (qtm_shortcut) {
+			if (!interactive) {
+				if (show.messages) message("Switching to view mode. Run tmap_mode(\"plot\") or simply ttm() to switch back to plot mode.")
+				options(tmap.mode="view")
+				interactive <- TRUE
+			}
+			
+			if (!("tm_minimap" %in% names(x)) && !identical(tmapOptions$qtm.minimap, FALSE)) x <- c(x, tm_minimap())
+		}
+		if (interactive && !("tm_scale_bar" %in% names(x)) && tmapOptions$qtm.scalebar) x <- c(x, tm_scale_bar())
+		if (!qtm_shortcut && interactive && !("tm_minimap" %in% names(x)) && identical(tmapOptions$qtm.minimap, TRUE)) x <- c(x, tm_minimap())
+	}
+	
+	
 	# reset symbol shape / shape just/anchor lists
 	assign(".shapeLib", list(), envir = .TMAP_CACHE)
 	assign(".justLib", list(), envir = .TMAP_CACHE)
-	
+
+	## first checks
+
+
 	# shortcut mode: enabled with qtm() or qtm("My Street 1234, Home Town")
-	if (names(x)[1]=="tm_shortcut") {
+	# (names(x)=="tm_shortcut") {
+	# 	lf <- print_shortcut(x, interactive, args, knit)
+	# 	if (knit) {
+	# 		return(do.call("knit_print", c(list(x=lf), args, list(options=options))))
+	# 		#return(knit_print(lf, ..., options=options))
+	# 	} else {
+	# 		return(print(lf))
+	# 	}
+	# } else 
+	
+	
+	x <- prearrange_element_order(x)
+	
+	if (!any(names(x) %in% c("tm_fill", "tm_borders", "tm_lines", "tm_symbols", "tm_raster", "tm_text"))) {
 		lf <- print_shortcut(x, interactive, args, knit)
 		if (knit) {
 			return(do.call("knit_print", c(list(x=lf), args, list(options=options))))
@@ -258,6 +346,7 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 			return(print(lf))
 		}
 	}
+	
 		
 	## remove non-supported elements if interactive
 	if (interactive) x <- x[supported_elem_view_mode(names(x))]
@@ -274,18 +363,26 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	## determine bounding box and aspect ratio of master shape
 	mshp <- shps[[gm$shape.masterID]]
 	gm$shape.bbx_cropped <- attr(mshp, "bbox")
+	
 	gm$shape.masp <-	get_asp_ratio(gm$shape.bbx_cropped, is.projected=attr(mshp, "projected"))
 
-	## remove shapes from and add data to tm_shape objects
-	x[gm$shape.id] <- mapply(function(y, dataset, type){
-		y$type <- type
-		y$data <- dataset
-		y$shp <- NULL
-		y
-	}, x[gm$shape.id], datasets, types, SIMPLIFY=FALSE)
+
+	# split x and datasets into multiple layers if shape(s) aer geometrycollection 
+	res <- order_x(x, shps, datasets, types, gm)
+
+	x <- res$x
+	gm <- res$gm
+	shps <- res$shps
+	
+	datasets <- lapply(x[names(x)=="tm_shape"], "[[", "data")
+	
+	#datasets <- res$datasets
 	
 	## prepare viewport (needed to determine asp_ratio for facet layout)
-	gm  <- c(gm, prepare_vp(vp, gm, interactive, x))
+	
+	gt <- preprocess_gt(x, interactive=interactive, orig_crs = gm$shape.orig_crs)
+	
+	gm  <- c(gm, prepare_vp(vp, gm, interactive, gt))
 
 	## process tm objects
 	#  - get all non-layer elements, (tm_layout, tm_grid, ...)
@@ -301,20 +398,22 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	# si$data <- NULL
 	# 
 	# s <- c(s, si)
-	result <- process_tm(x, gm, interactive)
+	
+	
+	result <- process_tm(x, gt, gm, interactive)
 	gm <- c(result$gmeta, gm)
 	gps <- result$gps
 	gal <- result$gal
 	nx <- result$nx
 	data_by <- result$data_by
 	
-	gm$shape.shps_lengths <- sapply(shps, length)
+	gm$shape.shps_lengths <- vapply(datasets, function(d) if (is.null(d)) 0L else nrow(d), integer(1))
 
 	## arranges aspect ratios, the grid layout of the map/facets, etc
 	gm <- c(gm, determine_asp_ratios(gm, interactive))
 	
 	## process shapes (bbox and crop)
-	shps <- process_shapes(shps, x[gm$shape.id], gm, data_by, allow.crop = !interactive, interactive=interactive)
+	shps <- process_shapes(shps, x[gm$shape.id], gm, data_by, allow.crop = FALSE, interactive=interactive) # allow.crop was !interactive
 	gm <- c(gm, attr(shps, "info"))
 
 	## further arranges the grid layout of the map/facets
@@ -325,9 +424,18 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	
 	## create external legend and attributes objects
 	g <- process_gps(gps, shps, x, gm, nx, interactive, return.asp)
-	
 	## return in case g is a number, i.e. the aspect ratio
 	if (is.numeric(g)) return(g)
+	
+	shps <- g$shps
+	nx <- g$nx
+	
+
+	## multiple datasets for each layer (when as.layers=TRUE in tm_facets)
+	if (interactive && gm$as.layers) {
+		datasets <- datasets[g$layerids]
+		gm$shp_name <- gm$shp_name[g$layerids]
+	}
 	
 	## adds data to gps (needed for view mode)
 	gps2 <- add_data_to_gps(g$gps, gm, datasets, g$matchIDs, interactive)
@@ -339,17 +447,18 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 					   sync.cursor=gm$sync,
 					   no.initial.sync = TRUE)
 		
-		multi_shapes <- (is.list(shps[[1]]))
+		multi_shapes <- is.list(shps[[1]]) && !inherits(shps[[1]], "sf")
 		showWarns <- c(TRUE, rep(FALSE, length(gps)-1))
+
 		if (multi_shapes) {
-			lfs <- mapply(view_tmap, gps2[1:nx], shps[1:nx], leaflet_id=1:nx, showWarns=showWarns, SIMPLIFY = FALSE)
+			lfs <- mapply(view_tmap, gps2[1:nx], shps[1:nx], leaflet_id=1:nx, showWarns=showWarns, MoreArgs = list(gal = gal), SIMPLIFY = FALSE)
 		} else {
-			lfs <- mapply(view_tmap, gps2[1:nx], leaflet_id=1:nx, showWarns=showWarns, MoreArgs = list(shps=shps), SIMPLIFY = FALSE)
+			lfs <- mapply(view_tmap, gps2[1:nx], leaflet_id=1:nx, showWarns=showWarns, MoreArgs = list(shps=shps, gal = gal), SIMPLIFY = FALSE)
 		}
 		lf <- if (nx==1) lfs[[1]] else lfmv <- do.call(mapview::latticeView, c(lfs, lVargs))
 		
-		lf2 <- add_leaflet_titles(lf)
-
+		lf2 <- if (interactive_titles) add_leaflet_titles(lf) else lf
+		
 		if (show) {
 			save_last_map()
 			if (knit) {

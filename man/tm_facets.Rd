@@ -4,8 +4,9 @@
 \alias{tm_facets}
 \title{Small multiples}
 \usage{
-tm_facets(by = NULL, along = NULL, ncol = NA, nrow = NA,
-  free.coords = TRUE, drop.units = free.coords, drop.empty.facets = TRUE,
+tm_facets(by = NULL, along = NULL, as.layers = FALSE, ncol = NA,
+  nrow = NA, free.coords = !as.layers, drop.units = free.coords ||
+  as.layers, drop.empty.facets = TRUE, drop.NA.facets = FALSE,
   sync = !free.coords, showNA = NA, textNA = "Missing",
   free.scales = is.null(by) && is.null(along),
   free.scales.fill = free.scales, free.scales.symbol.size = free.scales,
@@ -19,17 +20,21 @@ tm_facets(by = NULL, along = NULL, ncol = NA, nrow = NA,
 \arguments{
 \item{by}{data variable name by which the data is split, or a vector of two variable names to split the data by two variables (where the first is used for the rows and the second for the columns).}
 
-\item{along}{data variable name by which the data is split and plotted on separate pages. This is especially useful for animations made with \code{\link{animation_tmap}}. The \code{along} argument can be used in combination with the \code{by} argument. It is only supported in \code{"plot"} mode (so not in \code{"view"} mode).}
+\item{along}{data variable name by which the data is split and plotted on separate pages. This is especially useful for animations made with \code{\link{tmap_animation}}. The \code{along} argument can be used in combination with the \code{by} argument. It is only supported in \code{"plot"} mode (so not in \code{"view"} mode).}
+
+\item{as.layers}{logical that determines whether facets are shown as different layers in \code{"view"} mode. By default \code{FALSE}, i.e. facets are drawn as small multiples.}
 
 \item{ncol}{number of columns of the small multiples grid. Not applicable if \code{by} contains two variable names.}
 
 \item{nrow}{number of rows of the small multiples grid. Not applicable if \code{by} contains two variable names.}
 
-\item{free.coords}{logical. If the \code{by} argument is specified, should each map has its own coordinate ranges?}
+\item{free.coords}{logical. If the \code{by} argument is specified, should each map has its own coordinate ranges? By default \code{TRUE}, unless facets are shown in as different layers (\code{as.layers = TRUE})}
 
-\item{drop.units}{logical. If the \code{by} argument is specified, should non-selected spatial units be dropped? If \code{FALSE} (default), they are plotted where mapped aesthetics are regared as missing values. Not applicable for raster shapes.}
+\item{drop.units}{logical. If the \code{by} argument is specified, should non-selected spatial units be dropped? If \code{FALSE}, they are plotted where mapped aesthetics are regarded as missing values. Not applicable for raster shapes. By default \code{TRUE} when \code{as.layers} and/or \code{free.coords} is \code{TRUE}.}
 
 \item{drop.empty.facets}{logical. If the \code{by} argument is specified, should empty facets be dropped? Empty facets occur when the \code{by}-variable contains unused levels. When \code{TRUE} and two \code{by}-variables are specified, empty rows and columns are dropped.}
+
+\item{drop.NA.facets}{logical. If the \code{by} argument is specified, and all values of the defined aesthetic variables (e.g. \code{col} from \code{\link{tm_fill}}) for specific facets, should these facets be dropped? \code{FALSE} by default.}
 
 \item{sync}{logical. Should the navigation in view mode (zooming and panning) be synchronized? By default \code{TRUE}, unless \code{free.coords} is set to \code{TRUE}.}
 
@@ -70,27 +75,27 @@ tm_facets(by = NULL, along = NULL, ncol = NA, nrow = NA,
 Creates a \code{\link{tmap-element}} that specifies facets (small multiples). Small multiples can be created in two ways: 1) by specifying the \code{by} argument with one or two variable names, by which the data is grouped, 2) by specifying multiple variable names in any of the aesthetic argument of the layer functions (for instance, the argument \code{col} in \code{\link{tm_fill}}). This function further specifies the facets, for instance number of rows and columns, and whether the coordinate and scales are fixed or free (i.e. independent of each other).
 }
 \details{
-The global option \code{tmap.limits} controls the limit of the number of facets that are plotted. By default, \code{tmap_options(tmap.limits=c(facets.plot=64, facets.view=4))}. The maximum number of interactive facets is set to four since otherwise it may become very slow.
+The global option \code{limits} controls the limit of the number of facets that are plotted. By default, \code{tmap_options(limits=c(facets.plot=64, facets.view=4))}. The maximum number of interactive facets is set to four since otherwise it may become very slow.
 }
 \examples{
-data(World, Europe, NLD_muni, NLD_prov, land, metro)
+data(World, NLD_muni, NLD_prov, land, metro)
 
 current.mode <- tmap_mode("plot") # small multiples don't work in view mode
 
 # Facets defined by constant values
 tm_shape(World) +
     tm_fill(c("forestgreen", "goldenrod")) +
-tm_format_World(title=c("A green world", "A dry world"), bg.color="lightskyblue2", 
+tm_format("World", title=c("A green world", "A dry world"), bg.color="lightskyblue2", 
     title.position=c("left", "bottom"))
 
 # Facets defined by multiple variables
-tm_shape(Europe) +
-    tm_polygons(c("well_being", "life_exp"), 
-    	style=c("pretty", "fixed"), breaks=list(NULL, c(65,70,75,80,85)), 
+tm_shape(World) +
+    tm_polygons(c("well_being", "life_exp"),
+    	style=c("pretty", "fixed"), breaks=list(NULL, c(65,70,75,80,85)),
     	palette=list("Oranges", "Purples"),
     	border.col = "black",
         title=c("Well-Being Index", "Life Expectancy")) +
-tm_format_Europe()
+tm_format("World")
 
 \dontrun{
 tm_shape(NLD_muni) +
@@ -101,7 +106,7 @@ tm_shape(NLD_muni) +
             "Population 45 to 64", "Population 65 and older")) +
 tm_shape(NLD_prov) +
     tm_borders() +
-tm_format_NLD(frame = TRUE, asp=0)
+tm_format("NLD", frame = TRUE, asp=0)
 }
 
 # Facets defined by groupings
@@ -145,25 +150,6 @@ tm_dots("red", size = .5) +
 tm_layout(panel.label.rot = c(0, 90), panel.label.size = 2)
 }
 
-# example: Meuse data
-\dontrun{
-require(sp)
-require(tmaptools)
-data(meuse)
-coordinates(meuse) <- ~x+y
-proj4string(meuse) <- get_proj4("rd")
-
-meuse_osm <- read_osm(meuse, ext=1.1)
-
-qtm(meuse_osm) + 
-	tm_shape(meuse) +
-	tm_bubbles(size=c("cadmium", "copper", "lead", "zinc"),
-	    col=c("orange", "orange3", "grey40", "grey70"),
-	    border.col="black",
-        border.alpha = .75,
-        scale=.7)
-}
-
 # restore current mode
 tmap_mode(current.mode)
 }
@@ -171,5 +157,5 @@ tmap_mode(current.mode)
 Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \href{https://doi.org/10.18637/jss.v084.i06}{DOI}
 }
 \seealso{
-\href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
+\href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}}
 }

@@ -4,23 +4,24 @@
 \alias{tm_text}
 \title{Add text labels}
 \usage{
-tm_text(text, size = 1, col = NA, root = 3, size.lim = NA,
-  sizes.legend = NULL, sizes.legend.labels = NULL,
+tm_text(text, size = 1, col = NA, root = 3, clustering = FALSE,
+  size.lim = NA, sizes.legend = NULL, sizes.legend.labels = NULL,
   sizes.legend.text = "Abc", n = 5, style = ifelse(is.null(breaks),
   "pretty", "fixed"), breaks = NULL, interval.closure = "left",
-  palette = NULL, labels = NULL, labels.text = NA,
-  auto.palette.mapping = TRUE, contrast = NA, max.categories = 12,
-  colorNA = NA, textNA = "Missing", showNA = NA, fontface = NA,
+  palette = NULL, labels = NULL, labels.text = NA, midpoint = NULL,
+  stretch.palette = TRUE, contrast = NA, colorNA = NA,
+  textNA = "Missing", showNA = NA, colorNULL = NA, fontface = NA,
   fontfamily = NA, alpha = NA, case = NA, shadow = FALSE,
   bg.color = NA, bg.alpha = NA, size.lowerbound = 0.4,
   print.tiny = FALSE, scale = 1, auto.placement = FALSE,
   remove.overlap = FALSE, along.lines = FALSE, overwrite.lines = FALSE,
-  just = c("center", "center"), xmod = 0, ymod = 0, title.size = NA,
+  just = "center", xmod = 0, ymod = 0, title.size = NA,
   title.col = NA, legend.size.show = TRUE, legend.col.show = TRUE,
   legend.format = list(), legend.size.is.portrait = FALSE,
   legend.col.is.portrait = TRUE, legend.size.reverse = FALSE,
   legend.col.reverse = FALSE, legend.hist = FALSE, legend.hist.title = NA,
-  legend.size.z = NA, legend.col.z = NA, legend.hist.z = NA)
+  legend.size.z = NA, legend.col.z = NA, legend.hist.z = NA, group = NA,
+  auto.palette.mapping = NULL, max.categories = NULL)
 }
 \arguments{
 \item{text}{name of the variable in the shape object that contains the text labels}
@@ -30,6 +31,8 @@ tm_text(text, size = 1, col = NA, root = 3, size.lim = NA,
 \item{col}{color of the text labels. Either a color value or a data variable name. If multiple values are specified, small multiples are drawn (see details).}
 
 \item{root}{root number to which the font sizes are scaled. Only applicable if \code{size} is a variable name or \code{"AREA"}. If \code{root=2}, the square root is taken, if \code{root=3}, the cube root etc.}
+
+\item{clustering}{value that determines whether the text labels are clustered in \code{"view"} mode. One of: \code{TRUE}, \code{FALSE}, or the output of \code{\link[leaflet:markerClusterOptions]{markerClusterOptions}}.}
 
 \item{size.lim}{vector of two limit values of the \code{size} variable. Only text labels are drawn whose value is greater than or equal to the first value. Text labels whose values exceed the second value are drawn at the size of the second value. Only applicable when \code{size} is the name of a numeric variable of \code{shp}. See also \code{size.lowerbound} which is a threshold of the relative font size.}
 
@@ -53,17 +56,19 @@ tm_text(text, size = 1, col = NA, root = 3, size.lim = NA,
 
 \item{labels.text}{Example text to show in the legend next to the \code{labels}. When \code{NA} (default), examples from the data variable are taken and \code{"NA"} for classes where they don't exist.}
 
-\item{auto.palette.mapping}{When diverging colour palettes are used (i.e. "RdBu") this method automatically maps colors to values such that the middle colors (mostly white or yellow) are assigned to values of 0, and the two sides of the color palette are assigned to negative respectively positive values. When categorical color palettes are used, this method stretches the palette if there are more levels than colors.}
+\item{midpoint}{The value mapped to the middle color of a diverging palette. By default it is set to 0 if negative and positive values are present. In that case, the two sides of the color palette are assigned to negative respectively positive values. If all values are positive or all values are negative, then the midpoint is set to \code{NA}, which means that the value that corresponds to the middle color class (see \code{style}) is mapped to the middle color. Only applies when \code{col} is a numeric variable. If it is specified for sequential color palettes (e.g. \code{"Blues"}), then this color palette will be treated as a diverging color palette.}
+
+\item{stretch.palette}{Logical that determines whether the categorical color palette should be stretched if there are more categories than colors. If \code{TRUE} (default), interpolated colors are used (like a rainbow). If \code{FALSE}, the palette is repeated.}
 
 \item{contrast}{vector of two numbers that determine the range that is used for sequential and diverging palettes (applicable when \code{auto.palette.mapping=TRUE}). Both numbers should be between 0 and 1. The first number determines where the palette begins, and the second number where it ends. For sequential palettes, 0 means the brightest color, and 1 the darkest color. For diverging palettes, 0 means the middle color, and 1 both extremes. If only one number is provided, this number is interpreted as the endpoint (with 0 taken as the start).}
-
-\item{max.categories}{in case \code{col} is the name of a categorical variable, this value determines how many categories (levels) it can have maximally. If the number of levels is higher than \code{max.categories} and \code{auto.palette.mapping} is \code{FALSE}, then levels are combined.}
 
 \item{colorNA}{colour for missing values. Use \code{NULL} for transparency.}
 
 \item{textNA}{text used for missing values.}
 
 \item{showNA}{logical that determines whether missing values are named in the legend. By default (\code{NA}), this depends on the presence of missing values.}
+
+\item{colorNULL}{colour for polygons that are shown on the map that are out of scope}
 
 \item{fontface}{font face of the text labels. By default, determined by the fontface argument of \code{\link{tm_layout}}.}
 
@@ -89,11 +94,11 @@ tm_text(text, size = 1, col = NA, root = 3, size.lim = NA,
 
 \item{remove.overlap}{logical that determines whether the overlapping labels are removed}
 
-\item{along.lines}{logical that determines whether labels are rotated along the spatial lines. Only applicabel if a spatial lines shape is used.}
+\item{along.lines}{logical that determines whether labels are rotated along the spatial lines. Only applicable if a spatial lines shape is used.}
 
-\item{overwrite.lines}{logical that determines whether the part of the lines below the text labels is removed. Only applicabel if a spatial lines shape is used.}
+\item{overwrite.lines}{logical that determines whether the part of the lines below the text labels is removed. Only applicable if a spatial lines shape is used.}
 
-\item{just}{justification of the text relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left alignment and 1 right alignment.}
+\item{just}{justification of the text relative to the point coordinates. Either one of the following values: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}, or a vector of two values where first value specifies horizontal and the second value vertical justification. Besides the mentioned values, also numeric values between 0 and 1 can be used. 0 means left justification for the first value and bottom justification for the second value. Note that in view mode, only one value is used.}
 
 \item{xmod}{horizontal position modification of the text (relatively): 0 means no modification, and 1 corresponds to the height of one line of text. Either a single number for all polygons, or a numeric variable in the shape data specifying a number for each polygon. Together with \code{ymod}, it determines position modification of the text labels. In most coordinate systems (projections), the origin is located at the bottom left, so negative \code{xmod} move the text to the left, and negative \code{ymod} values to the bottom.}
 
@@ -116,7 +121,7 @@ tm_text(text, size = 1, col = NA, root = 3, size.lim = NA,
 \item{text.separator}{Character string to use to separate numbers in the legend (default: "to").}
 \item{text.less.than}{Character value(s) to use to translate "Less than". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
 \item{text.or.more}{Character value(s) to use to translate "or more". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
-\item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}}. By default \code{"left"} for legends in portrait format (\code{legend.is.protrait = TRUE}), and \code{"center"} otherwise.
+\item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}}. By default \code{"left"} for legends in portrait format (\code{legend.is.portrait = TRUE}), and \code{"center"} otherwise.
 \item{text.to.columns}{Logical that determines whether the text is aligned to three columns (from, text.separator, to). By default \code{FALSE}.}
 \item{...}{Other arguments passed on to \code{\link[base:formatC]{formatC}}}
 }}
@@ -138,6 +143,12 @@ tm_text(text, size = 1, col = NA, root = 3, size.lim = NA,
 \item{legend.col.z}{index value that determines the position of the legend element regarding the text colors. (See \code{legend.size.z})}
 
 \item{legend.hist.z}{index value that determines the position of the histogram legend element. (See \code{legend.size.z})}
+
+\item{group}{name of the group to which this layer belongs in view mode. Each group can be selected or deselected in the layer control item. Groups can either be specified as base or overlay groups in \code{\link{tm_view}} (arguments \code{base.groups} and \code{overlay.groups}).}
+
+\item{auto.palette.mapping}{deprecated. It has been replaced by \code{midpoint} for numeric variables and \code{stretch.palette} for categorical variables.}
+
+\item{max.categories}{deprecated. It has moved to \code{\link{tmap_options}}.}
 }
 \value{
 \code{\link{tmap-element}}
@@ -151,32 +162,30 @@ The absolute fontsize (in points) is determined by the (ROOT) viewport, which ma
 \examples{
 current.mode <- tmap_mode("plot")
 
-data(World, Europe, metro)
+data(World, metro)
 
 tm_shape(World) +
     tm_text("name", size="AREA")
-
-tm_shape(Europe) +
-    tm_polygons() +
-    tm_text("iso_a3", size="AREA", col = "grey20", root=4, shadow = TRUE, scale=2,
-        size.lowerbound = .1) +
-tm_shape(Europe) +
-    tm_text("name", size="AREA", root=4, scale=1,
-        ymod=-1 * tmaptools::approx_areas(Europe, target = "norm")^(1/4))
-
-tm_shape(Europe) +
-	tm_polygons() +
-tm_shape(metro) +
-	tm_bubbles("pop2010", size.lim = c(0, 15e6),
-			   title.size = "European metropolitan areas") +
-tm_shape(metro[metro$pop2010>=2e6, ]) +
-	tm_text("name", auto.placement = TRUE) +
-	tm_format_Europe()
 
 tm_shape(World) +
 	tm_text("name", size="pop_est", col="continent", palette="Dark2",
 			title.size = "Population", title.col="Continent") +
 	tm_legend(outside = TRUE)
+
+tmap_mode("view")
+
+require(tmaptools)
+metro_aus <- crop_shape(metro, bb("Australia"))
+
+tm_shape(metro_aus) +
+	tm_dots() +
+	tm_text("name", just = "top")
+
+# alternative
+\dontrun{
+tm_shape(metro_aus) +
+	tm_markers(text = "name")
+}
 
 # restore current mode
 tmap_mode(current.mode)
@@ -185,5 +194,5 @@ tmap_mode(current.mode)
 Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \href{https://doi.org/10.18637/jss.v084.i06}{DOI}
 }
 \seealso{
-\href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
+\href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}}
 }

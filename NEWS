@@ -1,3 +1,18 @@
+version 2.0
+- [!] tmap migrated from sp to sf. sp objects are still supported, but all internal functions are based on sf
+- [!] added tm_sf which draws sf objects
+- [!] renamed all xxx_tmap functions (e.g. save_tmap) to tmap_xxx for consistency
+- [!] added tm_basemap and tm_tiles: now, multiple (overlay) tiled maps can be shown
+- [!] rearranged tmap options, styles and formats. See tmap_options, tmap_style, tmap_format, tm_style and tm_format
+- [!] added filter argument to tm_shape and added colorNULL to layer functions
+- added tm_minimap
+- added remove.NA.facets to tm_facets
+- units data columns are supported
+- tmap_animation enhanced with loop options
+- added tmap_tips()
+- all changes are backwards compatible with 1.11-2
+- vignettes rewritten, including a vignette that describes the changes of 2.0
+
 version 1.11-2
 - added references to JSS paper (including citation)
 

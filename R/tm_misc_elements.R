@@ -2,15 +2,17 @@
 #' 
 #' Creates a \code{\link{tmap-element}} that specifies facets (small multiples). Small multiples can be created in two ways: 1) by specifying the \code{by} argument with one or two variable names, by which the data is grouped, 2) by specifying multiple variable names in any of the aesthetic argument of the layer functions (for instance, the argument \code{col} in \code{\link{tm_fill}}). This function further specifies the facets, for instance number of rows and columns, and whether the coordinate and scales are fixed or free (i.e. independent of each other).
 #' 
-#' The global option \code{tmap.limits} controls the limit of the number of facets that are plotted. By default, \code{tmap_options(tmap.limits=c(facets.plot=64, facets.view=4))}. The maximum number of interactive facets is set to four since otherwise it may become very slow.
+#' The global option \code{limits} controls the limit of the number of facets that are plotted. By default, \code{tmap_options(limits=c(facets.plot=64, facets.view=4))}. The maximum number of interactive facets is set to four since otherwise it may become very slow.
 #' 
 #' @param by data variable name by which the data is split, or a vector of two variable names to split the data by two variables (where the first is used for the rows and the second for the columns).
-#' @param along data variable name by which the data is split and plotted on separate pages. This is especially useful for animations made with \code{\link{animation_tmap}}. The \code{along} argument can be used in combination with the \code{by} argument. It is only supported in \code{"plot"} mode (so not in \code{"view"} mode).
+#' @param along data variable name by which the data is split and plotted on separate pages. This is especially useful for animations made with \code{\link{tmap_animation}}. The \code{along} argument can be used in combination with the \code{by} argument. It is only supported in \code{"plot"} mode (so not in \code{"view"} mode).
+#' @param as.layers logical that determines whether facets are shown as different layers in \code{"view"} mode. By default \code{FALSE}, i.e. facets are drawn as small multiples.
 #' @param ncol number of columns of the small multiples grid. Not applicable if \code{by} contains two variable names.
 #' @param nrow number of rows of the small multiples grid. Not applicable if \code{by} contains two variable names.
-#' @param free.coords logical. If the \code{by} argument is specified, should each map has its own coordinate ranges?
-#' @param drop.units logical. If the \code{by} argument is specified, should non-selected spatial units be dropped? If \code{FALSE} (default), they are plotted where mapped aesthetics are regared as missing values. Not applicable for raster shapes.
+#' @param free.coords logical. If the \code{by} argument is specified, should each map has its own coordinate ranges? By default \code{TRUE}, unless facets are shown in as different layers (\code{as.layers = TRUE})
+#' @param drop.units logical. If the \code{by} argument is specified, should non-selected spatial units be dropped? If \code{FALSE}, they are plotted where mapped aesthetics are regarded as missing values. Not applicable for raster shapes. By default \code{TRUE} when \code{as.layers} and/or \code{free.coords} is \code{TRUE}.
 #' @param drop.empty.facets logical. If the \code{by} argument is specified, should empty facets be dropped? Empty facets occur when the \code{by}-variable contains unused levels. When \code{TRUE} and two \code{by}-variables are specified, empty rows and columns are dropped.
+#' @param drop.NA.facets logical. If the \code{by} argument is specified, and all values of the defined aesthetic variables (e.g. \code{col} from \code{\link{tm_fill}}) for specific facets, should these facets be dropped? \code{FALSE} by default.
 #' @param sync logical. Should the navigation in view mode (zooming and panning) be synchronized? By default \code{TRUE}, unless \code{free.coords} is set to \code{TRUE}.
 #' @param showNA If the \code{by} argument is specified, should missing values of the \code{by}-variable be shown in a facet? If two \code{by}-variables are specified, should missing values be shown in an additional row and column? If \code{NA}, missing values only are shown if they exist. Similar to the \code{useNA} argument of \code{\link[base:table]{table}}, where \code{TRUE}, \code{FALSE}, and \code{NA} correspond to \code{"always"}, \code{"no"}, and \code{"ifany"} respectively.
 #' @param textNA text used for facets of missing values.
@@ -29,15 +31,17 @@
 #' @param drop.shapes deprecated: renamed to \code{drop.units}
 #' @export
 #' @example ./examples/tm_facets.R
-#' @seealso \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
+#' @seealso \href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}}
 #' @references Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \href{https://doi.org/10.18637/jss.v084.i06}{DOI}
 #' @return \code{\link{tmap-element}}
 tm_facets <- function(by=NULL, 
 					  along=NULL,
+					  as.layers = FALSE,
 					  ncol=NA, nrow=NA, 
-					  free.coords=TRUE,
-					  drop.units=free.coords,
+					  free.coords=!as.layers,
+					  drop.units=free.coords || as.layers,
 					  drop.empty.facets=TRUE,
+					  drop.NA.facets=FALSE,
 					  sync=!free.coords,
 					  showNA=NA,
 					  textNA="Missing",
@@ -126,7 +130,7 @@ tm_grid <- function(x=NA,
 #' @param bg.alpha Transparency number between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of the \code{bg.color} is used (normally 1).
 #' @param fontface font face of the text. By default, determined by the fontface argument of \code{\link{tm_layout}}.
 #' @param fontfamily font family of the text. By default, determined by the fontfamily argument of \code{\link{tm_layout}}.
-#' @param position position of the text. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the center of the text. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
+#' @param position position of the text. Vector of two values, specifying the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the center of the text. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
 #' @param just Justification of the attribute relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{position} is specified by numeric coordinates. The default value is controlled by the argument \code{"attr.just"} of \code{\link{tm_layout}}.
 #' @export
 #' @seealso \code{\link{tm_xlab}}
@@ -156,7 +160,7 @@ tm_credits <- function(text,
 #' @param height height of the logo in number of text line heights. The width is scaled based the height and the aspect ratio of the logo. If multiple logos are specified by a vector or list, the heights can be specified accordingly.
 #' @param halign if logos in one row have different heights, \code{halign} specifies the vertical alignment. Possible values are \code{"top"}, \code{"center"} and \code{"bottom"}.
 #' @param margin margin around the logo in number of text line heights.
-#' @param position position of the logo. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the center of the text. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
+#' @param position position of the logo. Vector of two values, specifying the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the center of the text. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
 #' @param just Justification of the attribute relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{position} is specified by numeric coordinates. The default value is controlled by the argument \code{"attr.just"} of \code{\link{tm_layout}}.
 #' @example ./examples/tm_logo.R
 #' @export
@@ -185,7 +189,7 @@ tm_logo <- function(file,
 #' @param color.dark color of the dark parts of the scale bar, typically (and by default) black.
 #' @param color.light color of the light parts of the scale bar, typically (and by default) white.
 #' @param lwd line width of the scale bar
-#' @param position position of the scale bar Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left bottom corner of the scale bar. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
+#' @param position position of the scale bar Vector of two values, specifying the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left bottom corner of the scale bar. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
 #' @param just Justification of the attribute relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{position} is specified by numeric coordinates. The default value is controlled by the argument \code{"attr.just"} of \code{\link{tm_layout}}.
 #' @export
 #' @example ./examples/tm_scale_bar.R
@@ -219,7 +223,7 @@ tm_scale_bar <- function(breaks=NULL,
 #' @param color.dark color of the dark parts of the compass, typically (and by default) black.
 #' @param color.light color of the light parts of the compass, typically (and by default) white.
 #' @param lwd line width of the compass
-#' @param position position of the compass. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left bottom corner of the compass. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
+#' @param position position of the compass. Vector of two values, specifying the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left bottom corner of the compass. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
 #' @param just Justification of the attribute relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{position} is specified by numeric coordinates. The default value is controlled by the argument \code{"attr.just"} of \code{\link{tm_layout}}.
 #' @export
 #' @example ./examples/tm_compass.R
@@ -276,6 +280,23 @@ tm_ylab <- function(text,
 	g
 }
 
+#' Minimap
+#' 
+#' Creates a minimap in view mode. See \code{\link[leaflet:addMiniMap]{addMiniMap}}.
+#' 
+#' @param server name of the provider or an URL (see \code{\link{tm_tiles}}). By default, it shows the same map as the basemap, and moreover, it will automatically change when the user switches basemaps. Note the latter does not happen when \code{server} is specified.
+#' @param position position of the scale bar Vector of two values, specifying the x and y coordinates. The first is either "left" or "right", the second either "top" or "bottom".
+#' @param toggle should the minimap have a button to minimise it? By default \code{TRUE}.
+#' @param ... arguments passed on to \code{\link[leaflet:addMiniMap]{addMiniMap}}.
+#' @seealso \code{\link[leaflet:addMiniMap]{addMiniMap}}
+#' @export
+tm_minimap <- function(server = NA, position= c("left", "bottom"), toggle = TRUE, ...) {
+	g <- list(tm_minimap=c(as.list(environment()), list(...)))
+	names(g$tm_minimap) <- paste("minimap", names(g$tm_minimap), sep=".")
+	class(g) <- "tmap"
+	attr(g, "call") <- names(match.call(expand.dots = TRUE)[-1])
+	g	
+}
 
 
 #' Stacking of tmap elements
@@ -284,12 +305,24 @@ tm_ylab <- function(text,
 #' 
 #' @param e1 first \code{\link{tmap-element}}
 #' @param e2 second \code{\link{tmap-element}}
-#' @seealso \code{\link{tmap-element}} and \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
+#' @seealso \code{\link{tmap-element}} and \href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}}
 #' @references Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \href{https://doi.org/10.18637/jss.v084.i06}{DOI}
 #' @export
 "+.tmap" <- function(e1, e2) {
-	g <- c(e1,e2)
-	class(g) <- "tmap"
+	qtm_shortcut1 <- attr(e1, "qtm_shortcut")
+	qtm_shortcut2 <- attr(e2, "qtm_shortcut")
+
+	if (identical(qtm_shortcut1, TRUE)) {
+		warning("qtm called without shape objects cannot be stacked", call. = FALSE)
+		g <- e2
+	} else if (identical(qtm_shortcut2, TRUE)) {
+		warning("qtm called without shape objects cannot be stacked", call. = FALSE)
+		g <- e1
+	} else {
+		g <- c(e1,e2)
+		class(g) <- "tmap"
+	}
+	
 	assign(".last_map_new", match.call(), envir = .TMAP_CACHE)
 	g
 }
@@ -301,8 +334,8 @@ tm_ylab <- function(text,
 #' 
 #' @return call
 #' @export
-#' @seealso \code{\link{save_tmap}}
-last_map <- function() {
+#' @seealso \code{\link{tmap_save}}
+tmap_last <- function() {
 	x <- get(".last_map", envir = .TMAP_CACHE)
 	if (is.null(x)) warning("A map has not been created yet")
 	eval(x)

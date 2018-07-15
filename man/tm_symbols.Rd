@@ -14,12 +14,12 @@ tm_symbols(size = 1, col = NA, shape = 21, alpha = NA,
   sizes.legend = NULL, sizes.legend.labels = NULL, n = 5,
   style = ifelse(is.null(breaks), "pretty", "fixed"), breaks = NULL,
   interval.closure = "left", palette = NULL, labels = NULL,
-  auto.palette.mapping = TRUE, contrast = NA, max.categories = 12,
-  colorNA = NA, textNA = "Missing", showNA = NA, shapes = 21:25,
+  midpoint = NULL, stretch.palette = TRUE, contrast = NA, colorNA = NA,
+  textNA = "Missing", showNA = NA, colorNULL = NA, shapes = 21:25,
   shapes.legend = NULL, shapes.legend.fill = NA, shapes.labels = NULL,
-  shapeNA = 4, shape.textNA = "Missing", shapes.n = 5,
-  shapes.style = ifelse(is.null(shapes.breaks), "pretty", "fixed"),
-  shapes.breaks = NULL, shapes.interval.closure = "left",
+  shapeNA = 4, shape.textNA = "Missing", shape.showNA = NA,
+  shapes.n = 5, shapes.style = ifelse(is.null(shapes.breaks), "pretty",
+  "fixed"), shapes.breaks = NULL, shapes.interval.closure = "left",
   legend.max.symbol.size = 0.8, just = NA, jitter = 0, xmod = 0,
   ymod = 0, icon.scale = 3, grob.dim = c(width = 48, height = 48,
   render.width = 256, render.height = 256), title.size = NA, title.col = NA,
@@ -30,7 +30,8 @@ tm_symbols(size = 1, col = NA, shape = 21, alpha = NA,
   legend.col.reverse = FALSE, legend.shape.reverse = FALSE,
   legend.hist = FALSE, legend.hist.title = NA, legend.size.z = NA,
   legend.col.z = NA, legend.shape.z = NA, legend.hist.z = NA, id = NA,
-  popup.vars = NA, popup.format = list())
+  popup.vars = NA, popup.format = list(), group = NA,
+  auto.palette.mapping = NULL, max.categories = NULL)
 
 tm_squares(size = 1, col = NA, shape = 22, scale = 4/3, ...)
 
@@ -41,8 +42,8 @@ tm_dots(col = NA, size = 0.02, shape = 16, title = NA,
   legend.show = TRUE, legend.is.portrait = TRUE, legend.z = NA, ...)
 
 tm_markers(shape = marker_icon(), col = NA, border.col = NULL,
-  clustering = TRUE, text = NULL, text.just = c("center", "top"),
-  markers.on.top.of.text = TRUE, ...)
+  clustering = TRUE, text = NULL, text.just = "top",
+  markers.on.top.of.text = TRUE, group = NA, ...)
 }
 \arguments{
 \item{size}{a single value or a \code{shp} data variable that determines the symbol sizes. The reference value \code{size=1} corresponds to the area of symbols that have the same height as one line of text. If a data variable is provided, the symbol sizes are scaled proportionally (or perceptually, see \code{perceptual}) where by default the symbol with the largest data value will get \code{size=1} (see also \code{size.max}). If multiple values are specified, small multiples are drawn (see details).}
@@ -85,17 +86,19 @@ tm_markers(shape = marker_icon(), col = NA, border.col = NULL,
 
 \item{labels}{labels of the classes}
 
-\item{auto.palette.mapping}{When diverging colour palettes are used (i.e. "RdBu") this method automatically maps colors to values such that the middle colors (mostly white or yellow) are assigned to values of 0, and the two sides of the color palette are assigned to negative respectively positive values. When categorical color palettes are used, this method stretches the palette if there are more levels than colors.}
+\item{midpoint}{The value mapped to the middle color of a diverging palette. By default it is set to 0 if negative and positive values are present. In that case, the two sides of the color palette are assigned to negative respectively positive values. If all values are positive or all values are negative, then the midpoint is set to \code{NA}, which means that the value that corresponds to the middle color class (see \code{style}) is mapped to the middle color. Only applies when \code{col} is a numeric variable. If it is specified for sequential color palettes (e.g. \code{"Blues"}), then this color palette will be treated as a diverging color palette.}
+
+\item{stretch.palette}{Logical that determines whether the categorical color palette should be stretched if there are more categories than colors. If \code{TRUE} (default), interpolated colors are used (like a rainbow). If \code{FALSE}, the palette is repeated.}
 
 \item{contrast}{vector of two numbers that determine the range that is used for sequential and diverging palettes (applicable when \code{auto.palette.mapping=TRUE}). Both numbers should be between 0 and 1. The first number determines where the palette begins, and the second number where it ends. For sequential palettes, 0 means the brightest color, and 1 the darkest color. For diverging palettes, 0 means the middle color, and 1 both extremes. If only one number is provided, this number is interpreted as the endpoint (with 0 taken as the start).}
-
-\item{max.categories}{in case \code{col} is the name of a categorical variable, this value determines how many categories (levels) it can have maximally. If the number of levels is higher than \code{max.categories} and \code{auto.palette.mapping} is \code{FALSE}, then levels are combined.}
 
 \item{colorNA}{colour for missing values. Use \code{NULL} for transparency.}
 
 \item{textNA}{text used for missing values of the color variable.}
 
 \item{showNA}{logical that determines whether missing values are named in the legend. By default (\code{NA}), this depends on the presence of missing values.}
+
+\item{colorNULL}{colour for polygons that are shown on the map that are out of scope}
 
 \item{shapes}{palette of symbol shapes. Only applicable if \code{shape} is a (vector of) categorical variable(s). See details for the shape specification. By default, the filled symbols 21 to 25 are taken.}
 
@@ -105,9 +108,11 @@ tm_markers(shape = marker_icon(), col = NA, border.col = NULL,
 
 \item{shapes.labels}{Legend labels for the symbol shapes}
 
-\item{shapeNA}{the shape (a number or grob) for missing values. By default a cross (number 4).}
+\item{shapeNA}{the shape (a number or grob) for missing values. By default a cross (number 4). Set to \code{NA} to hide symbols for missing values.}
 
 \item{shape.textNA}{text used for missing values of the shape variable.}
+
+\item{shape.showNA}{logical that determines whether missing values are named in the legend. By default (\code{NA}), this depends on the presence of missing values.}
 
 \item{shapes.n}{preferred number of shape classes. Only applicable when \code{shape} is a numeric variable name.}
 
@@ -129,7 +134,7 @@ tm_markers(shape = marker_icon(), col = NA, border.col = NULL,
 
 \item{icon.scale}{scaling number that determines how large the icons (or grobs) are in plot mode in comparison to proportional symbols (such as bubbles). In view mode, the size is determined by the icon specification (see \code{\link{tmap_icons}}) or, if grobs are specified by \code{grob.width} and \code{grob.heigth}}
 
-\item{grob.dim}{vector of four values that determine how grob objects (see details) are shown in view mode. The first and second value are the width and height of the displayed icon. The third and fourth value are the width and height of the rendered png image that is used for the icon. Generally, the third and fourth value should be large enough to render a ggplot2 graphic succesfully. Only needed for the view mode.}
+\item{grob.dim}{vector of four values that determine how grob objects (see details) are shown in view mode. The first and second value are the width and height of the displayed icon. The third and fourth value are the width and height of the rendered png image that is used for the icon. Generally, the third and fourth value should be large enough to render a ggplot2 graphic successfully. Only needed for the view mode.}
 
 \item{title.size}{title of the legend element regarding the symbol sizes}
 
@@ -187,6 +192,12 @@ tm_markers(shape = marker_icon(), col = NA, border.col = NULL,
 
 \item{popup.format}{list of formatting options for the popup values. See the argument \code{legend.format} for options. Only applicable for numeric data variables. If one list of formatting options is provided, it is applied to all numeric variables of \code{popup.vars}. Also, a (named) list of lists can be provided. In that case, each list of formatting options is applied to the named variable.}
 
+\item{group}{name of the group to which this layer belongs in view mode. Each group can be selected or deselected in the layer control item. Groups can either be specified as base or overlay groups in \code{\link{tm_view}} (arguments \code{base.groups} and \code{overlay.groups}).}
+
+\item{auto.palette.mapping}{deprecated. It has been replaced by \code{midpoint} for numeric variables and \code{stretch.palette} for categorical variables.}
+
+\item{max.categories}{deprecated. It has moved to \code{\link{tmap_options}}.}
+
 \item{...}{arguments passed on to \code{tm_symbols}. For \code{tm_markers}, arguments can also be passed on to \code{tm_text}. In that case, they have to be prefixed with \code{text.}, e.g. the \code{col} argument should be names \code{text.col}}
 
 \item{title}{shortcut for \code{title.col} for \code{tm_dots}}
@@ -212,7 +223,7 @@ Creates a \code{\link{tmap-element}} that draws symbols, including symbols and d
 \details{
 Small multiples can be drawn in two ways: either by specifying the \code{by} argument in \code{\link{tm_facets}}, or by defining multiple variables in the aesthetic arguments, which are \code{size}, \code{col}, and \code{shape}. In the latter case, the arguments, except for the ones starting with \code{legend.}, can be specified for small multiples as follows. If the argument normally only takes a single value, such as \code{n}, then a vector of those values can be specified, one for each small multiple. If the argument normally can take a vector, such as \code{palette}, then a list of those vectors (or values) can be specified, one for each small multiple.
 
-A  shape specification is one of the following three options. To specify multiple shapes (needed for the \code{shapes} argument), a vector or list of these shape specification is required. The shape specification options can also be mixed. For the \code{shapes} argument, it is possible to use a named vector or list, where the names correspond to the value of the variable speficied by the \code{shape} argument.
+A  shape specification is one of the following three options. To specify multiple shapes (needed for the \code{shapes} argument), a vector or list of these shape specification is required. The shape specification options can also be mixed. For the \code{shapes} argument, it is possible to use a named vector or list, where the names correspond to the value of the variable specified by the \code{shape} argument.
 \enumerate{
  \item{A numeric value that specifies the plotting character of the symbol. See parameter \code{pch} of \code{\link[graphics:points]{points}} and the last example to create a plot with all options.}
  \item{A \code{\link[grid:grid.grob]{grob}} object, which can be a ggplot2 plot object created with \code{\link[ggplot2:ggplotGrob]{ggplotGrob}}. To specify multiple shapes, a list of grob objects is required. See example of a proportional symbol map with ggplot2 plots}.
@@ -221,7 +232,7 @@ A  shape specification is one of the following three options. To specify multipl
  For small multiples, a list of these shape specification(s) should be provided.
 }
 \examples{
-data(World, Europe, metro)
+data(World, metro)
 metro$growth <- (metro$pop2020 - metro$pop2010) / (metro$pop2010 * 10) * 100
 
 tm_shape(World) +
@@ -233,30 +244,19 @@ tm_shape(metro) +
         palette="-RdYlBu", contrast=1, 
         title.size="Metro population", 
         title.col="Growth rate (\%)") + 
-tm_format_World()
+tm_format("World")
 
 tm_shape(metro) +
 	tm_symbols(size = "pop2010", col="pop2010", shape="pop2010",
 		legend.format = list(text.align="right", text.to.columns = TRUE)) +
-tm_layout(legend.outside = TRUE, legend.outside.position = "bottom", legend.stack = "horizontal")
-
-\dontrun{
-require(tmaptools)
-x <- sample_dots(World, vars="gdp_md_est", convert2density = TRUE, w = 100000)
-tm_shape(x) + 
-	tm_dots() + 
-tm_layout("World GDP (one dot is 100 billon dollars)", title.position = c("right", "bottom"))
-}
-
-qtm(Europe, bbox="Italy") +
-tm_shape(metro) +
-	tm_markers(text="name")
+tm_legend(outside = TRUE, outside.position = "bottom", stack = "horizontal")
 
 
-if (require(ggplot2) && require(dplyr) && require(tidyr) && require(tmaptools)) {
+if (require(ggplot2) && require(dplyr) && require(tidyr) && require(tmaptools) && require(sf)) {
 data(NLD_prov)
 
-origin_data <- NLD_prov@data \%>\% 
+origin_data <- NLD_prov \%>\% 
+	st_set_geometry(NULL) \%>\% 
 mutate(FID= factor(1:n())) \%>\% 
 select(FID, origin_native, origin_west, origin_non_west) \%>\% 
 gather(key=origin, value=perc, origin_native, origin_west, origin_non_west, factor_key=TRUE)
@@ -290,7 +290,7 @@ tm_add_legend(type="fill",
 	col=origin_cols, 
 	labels=c("Native", "Western", "Non-western"), 
 	title="Origin") +
-tm_format_NLD()	
+tm_format("NLD")
 }
 
 
@@ -301,14 +301,13 @@ tm_format_NLD()
 if (require(rnaturalearth)) {
 
 airports <- ne_download(scale=10, type="airports")
-airplane <- tmap_icons(paste0("http://cdn.mysitemyway.com/etc-mysitemyway/icons/",
-	"legacy-previews/icons-256/retro-green-floral-icons-transport-travel/",
-	"040553-retro-green-floral-icon-transport-travel-transportation-airplane22.png"))
+airplane <- tmap_icons(system.file("img/airplane.png", package = "tmap"))
 
 current.mode <- tmap_mode("view")
-tm_shape(airports, bbox="Germany") +
+tm_shape(airports) +
 	tm_symbols(shape=airplane, size="natlscale",
-		legend.size.show = FALSE, scale=2, border.col = NULL, id="name", popup.vars = TRUE)
+        legend.size.show = FALSE, scale=1, border.col = NULL, id="name", popup.vars = TRUE) +
+tm_view(set.view = c(lon = 15, lat = 48, zoom = 4))
 tmap_mode(current.mode)
 }
 }
@@ -335,7 +334,7 @@ Flannery J (1971). The Relative Effectiveness of Some Common Graduated Point Sym
 Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \href{https://doi.org/10.18637/jss.v084.i06}{DOI}
 }
 \seealso{
-\href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
+\href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}}
 }
 \keyword{map}
 \keyword{symbol}

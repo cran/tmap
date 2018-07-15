@@ -1,4 +1,5 @@
 cat2shape <- function(x, 
+					  var,
 					  shapes,
 					  legend.labels = NULL,
 					  shapeNA = NA,
@@ -6,6 +7,13 @@ cat2shape <- function(x,
 					  showNA = NA,
 					  legend.format=list(align="left"),
 					  reverse = FALSE) {
+	
+	sel <- attr(x, "sel")
+	if (is.null(sel)) sel <- rep(TRUE, length(x))
+	
+	x[!sel] <- NA
+	
+	
 	if (!is.factor(x)) x <- factor(x, levels=sort(unique(x)))
 	
 	
@@ -23,15 +31,15 @@ cat2shape <- function(x,
 		if (!setequal(xs, nms)) {
 			c1 <- setdiff(xs, nms)
 			c2 <- setdiff(nms, xs)
-			txt <- "Names of shapes argument do not match with the variable values specified for the shape aesthetic."
-			if (length(c1)>0) txt <- paste(txt, "Values not specified in shapes argument:", paste(c1, collapse=", "))
-			if (length(c2)>0) txt <- paste(txt, "Names in shapes argument for which no values exist:", paste(c2, collapse=", "))
-			stop(txt)
+			txt <- paste0("Names of shapes argument do not match with the values of the variable \"", var, "\".")
+			if (length(c1)>0) txt <- paste0(txt, " Values not specified in shapes argument: \"", paste(c1, collapse="\", \""), "\".")
+			if (length(c2)>0) txt <- paste0(txt, " Names in shapes argument for which no values exist: \"", paste(c2, collapse="\", \""), "\".")
+			stop(txt, call. = FALSE)
 		}
 		shapes <- shapes[match(xs, nms)]
 	} else {
 		if (nCol > max_levels) {
-			warning("Number of levels (unique values) larger than number of symbol shapes.")
+			warning("Number of levels (unique values) is ", nCol, ", which is larger than number of symbol shapes (", max_levels, ").", call. = FALSE)
 			mapping <- if (max_levels==1) {
 				rep(1, nCol)
 			} else as.numeric(cut(seq.int(nCol), breaks=max_levels))
@@ -64,7 +72,7 @@ cat2shape <- function(x,
 	
 	
 	if (any(shpsNA)) {
-		if (is.na(showNA)) showNA <- TRUE
+		if (is.na(showNA)) showNA <- any(shpsNA & sel)
 		shps[shpsNA] <- shapeNA
 	} else {
 		if (is.na(showNA)) showNA <- FALSE

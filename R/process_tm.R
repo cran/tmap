@@ -1,8 +1,8 @@
-process_tm <- function(x, gm, interactive) {
+process_tm <- function(x, gt, gm, interactive) {
 	fill <- NULL; xfill <- NULL; xraster <- NULL; text <- NULL
 	## fill meta info
 	
-	gt <- preprocess_gt(x, interactive=interactive, orig_CRS = gm$shape.orig_CRS)
+	#gt <- preprocess_gt(x, interactive=interactive, orig_crs = gm$shape.orig_crs)
 	
 	## get grid element
 	gridid <- which(names(x)=="tm_grid")[1]
@@ -31,7 +31,7 @@ process_tm <- function(x, gm, interactive) {
 	if (is.na(glIDs[1])) {
 		gl <- NULL
 	} else {
-		if (any(sapply(glIDs, function(i) is.null(x[[i]]$logo.file)))) stop("Logo file missing", call.=FALSE)
+		if (any(vapply(glIDs, function(i) is.null(x[[i]]$logo.file), logical(1)))) stop("Logo file missing", call.=FALSE)
 		gl <- do.call("mapply", c(x[glIDs], list(nm=names(x[glIDs][[1]]), FUN=function(..., nm) {
 			if (nm %in% c("logo.file", "logo.position", "logo.just", "logo.height")) {
 				unname(list(...))
@@ -50,11 +50,15 @@ process_tm <- function(x, gm, interactive) {
 	glab <- c(if(is.na(gxlabid)) NULL else x[[gxlabid]],
 			  if(is.na(gylabid)) NULL else x[[gylabid]])
 			  
+	# get minimap element
+	gmmid <- which(names(x)=="tm_minimap")[1]
+	gmm <- x[[gmmid]]
+
 	## get facets element
 	shape.id.orig <- which(names(x)=="tm_shape")
 	facet.id.orig <- which(names(x)=="tm_facets")
 	nshps <- length(shape.id.orig)
-	facet.shp.id <- sapply(facet.id.orig, function(i){tail(which(shape.id.orig<i), 1)})
+	facet.shp.id <- vapply(facet.id.orig, function(i){tail(which(shape.id.orig<i), 1)}, integer(1))
 	facet.ids <- rep(0, nshps)
 	if (length(facet.shp.id)) facet.ids[facet.shp.id] <- facet.id.orig
 	# create gf for each shape
@@ -95,7 +99,7 @@ process_tm <- function(x, gm, interactive) {
 
 	## find tm_grid position
 	if ("tm_grid" %in% xnames) {
-		gridID <- which(xnames=="tm_grid")
+		gridID <- which(xnames=="tm_grid")[1]
 		shapeID <- which(xnames=="tm_shape")
 		gridGrp <- tail(which(shapeID<gridID), 1)
 		gridShpPos <- shapeID[gridGrp]
@@ -113,17 +117,6 @@ process_tm <- function(x, gm, interactive) {
 	}
 	
 	
-	## find additional legends
-	# legid <- which(names(x)=="tm_add_legend")
-	# cat(legid, "\n")
-	# 
-	# if (length(legid)) {
-	# 	gal <- x[legid]
-	# } else {
-	# 	gal <- NULL
-	# }
-	
-
 	## split x into gmeta and gbody
 	x <- x[!(xnames %in% c("tm_layout", "tm_view", "tm_style", "tm_grid", "tm_facets", "tm_credits", "tm_logo", "tm_compass", "tm_scale_bar", "tm_xlab", "tm_ylab"))] #, "tm_add_legend"
 
@@ -153,7 +146,7 @@ process_tm <- function(x, gm, interactive) {
 	cluster.id <- cumsum(y)
 	gs <- split(x, cluster.id)
 	
-	nlx <- sapply(gs, length)
+	nlx <- vapply(gs, length, integer(1))
 	if (any(nlx==1)) stop("Specify at least one layer after each tm_shape", call. = FALSE)
 	
 	## convert clusters to layers
@@ -196,8 +189,9 @@ process_tm <- function(x, gm, interactive) {
 		}
 	}, data_by, is_raster, SIMPLIFY=FALSE)
 	
+	
 	## check if by is consistent among groups
-	by_counts <- sapply(data_by, nlevels)
+	by_counts <- vapply(data_by, nlevels, integer(1))
 	if (sum(by_counts>1)>1) {
 		by_counts_pos <- by_counts[by_counts>1]
 		if (any(by_counts_pos[-1]!=by_counts_pos[1])) stop("Number of facets defined by the 'by' argument of tm_facets are different for the groups.", call. = FALSE)
@@ -213,8 +207,8 @@ process_tm <- function(x, gm, interactive) {
 	
 
 	## check number of levels for two variables and override gf
-	ncols <- sapply(gp, function(i)i$ncol)
-	nrows <- sapply(gp, function(i)i$nrow)
+	ncols <- vapply(gp, function(i)i$ncol, integer(1))
+	nrows <- vapply(gp, function(i)i$nrow, integer(1))
 	if (any(!is.na(ncols))) {
 		if (!all(na.omit(ncols)==na.omit(ncols)[[1]]) | !all(na.omit(nrows)==na.omit(nrows)[[1]])) stop("Inconsistent levels of the 'by' argument of tm_facets.", call.=FALSE)
 		gf$ncol <- na.omit(ncols)[1]
@@ -223,29 +217,41 @@ process_tm <- function(x, gm, interactive) {
 	
 	
 	## determine number of small multiples
-	nx <- max(sapply(gp, function(x){
-		max(sapply(x$varnames, length))
-	}))
+	nxl <- unname(vapply(gp, function(x){
+		max(vapply(x$varnames, length, integer(1)))
+	}, integer(1)))
 	
+	nx <- max(nxl)
+	layer_vary <- unname(which(nxl==nx))
 
-	providers <- unname(sapply(gp, function(x) {
+	servers <- unname(vapply(gp, function(x) {
 		if ("raster.misc" %in% names(x)) {
-			x$raster.misc$leaflet.provider
-		} else NA
-	}))
-	if (any(!is.na(providers))) gt$basemaps <- providers[!is.na(providers)][1]
+			as.character(x$raster.misc$leaflet.server)
+		} else as.character(NA)
+	}, character(1)))
+	if (any(!is.na(servers))) gt$basemaps <- servers[!is.na(servers)][1]
 	
 
 	any.legend <- any(vapply(gp, function(x)x$any.legend, logical(1))) || (length(legids))
 
 	## get along names
-	along.names <- gp[[1]]$along.names
+	along_layer <- which(gf$shp_nr!=0)[1]
+	if (is.na(along_layer)) along_layer <- 1
+	along.names <- gp[[along_layer]]$along.names
+
+	if (interactive && gf$as.layers) {
+		if (!is.na(along.names)) warning("along argument not used when as.layers = TRUE", call. = FALSE)
+		along.names <- NA
+		nxa <- nx
+	} else {
+		nxa <- nx / length(along.names)
+		nxa <- limit_nx(nxa)
+		nx <- nxa * length(along.names)
+	}
 	
-	nxa <- nx / length(along.names)
-	nxa <- limit_nx(nxa)
-	nx <- nxa * length(along.names)
-	
-	gmeta <- process_meta(gt, gf, gg, gc, gl, gsb, gcomp, glab, nx, nxa, panel.names, along.names, gm, any.legend, interactive)
+
+
+	gmeta <- process_meta(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, nx, nxa, panel.names, along.names, layer_vary, gm, any.legend, interactive)
 	panel.mode <- if (!gmeta$panel.show) {
 		"none"
 	} else if (is.list(panel.names)) {
@@ -305,8 +311,9 @@ process_tm <- function(x, gm, interactive) {
 				
 				if (!is.null(text)) {
 					text.size <- text.size * scale
+					text.size.legend.sizes <- text.size.legend.sizes * scale
 					text.col.legend.misc$text.max.size <- text.col.legend.misc$text.max.size * scale
-					text.size.legend.misc$legend.sizes <- text.size.legend.misc$legend.sizes * scale
+					#text.size.legend.misc$legend.sizes <- text.size.legend.misc$legend.sizes * scale
 					
 				}
 

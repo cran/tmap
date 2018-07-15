@@ -1,41 +1,79 @@
-preprocess_gt <- function(x, interactive, orig_CRS) {
-	set.bounds <- bg.color <- set.zoom.limits <- legend.position <- NULL
+maybe_longlat <- function (bb) (bb[1] >= -180.1 && bb[3] <= 180.1 && bb[2] >= -90.1 && bb[4] <= 90.1)
+
+preprocess_gt <- function(x, interactive, orig_crs) {
+	set.bounds <- bg.color <- set.zoom.limits <- legend.position <- colorNA <- NULL
 	
-	style <- options("tmap.style")
-	tln <- paste("tm_style", style,sep="_" )
-	if (!exists(tln)) {
-		warning("Style ", style, " unknown; ", tln, " does not exist. Please specify another style with the option \"tmap.stype\".", call. = FALSE)
-		tln <- "tm_style_default"
-	}
-
-	# process tm_layout: merge multiple to one gt
-	gt <- do.call(tln, args = list())$tm_layout
-	gts <- x[names(x)=="tm_layout"]
+	
+	gt <- get(".tmapOptions", envir = .TMAP_CACHE)
+	
+	gts <- x[names(x) == "tm_layout"]
 	if (length(gts)) {
-		gtsn <- length(gts)
-		extraCall <- character(0)
-		for (i in 1:gtsn) {
-			gt[gts[[i]]$call] <- gts[[i]][gts[[i]]$call]
-			if ("attr.color" %in% gts[[i]]$call) gt[c("earth.boundary.color", "legend.text.color", "title.color")] <- gts[[i]]["attr.color"]
-			extraCall <- c(extraCall, gts[[i]]$call)
+		for (i in 1L:length(gts)) {
+			g <- gts[[i]]
+			
+			called <- if (is.null(attr(g, "format_args"))) {
+				names(g)
+			} else {
+				attr(g, "format_args")
+			}
+			
+			
+			if (("legend.position" %in% called) && interactive) {
+				if (gt$show.messages) message("legend.postion is used for plot mode. Use view.legend.position in tm_view to set the legend position in view mode.")
+			}
+			
+			if (!is.na(g$style)) {
+				if (i !=1 && gt$show.messages) message("Note that tm_style(\"", g$style, "\") resets all options set with tm_layout, tm_view, tm_format, or tm_legend. It is therefore recommended to place the tm_style element prior to the other tm_layout/tm_view/tm_format/tm_legend elements.")
+				gt <- .defaultTmapOptions
+				if (g$style != "white") {
+					styleOptions <- get(".tmapStyles", envir = .TMAP_CACHE)[[g$style]]
+					gt[names(styleOptions)] <- styleOptions
+				}
+			} 
+			g$style <- NULL
+			if ("aes.color" %in% names(g)) {
+				aes <- g$aes.color
+				if (!all(names(aes) %in% names(gt$aes.color))) stop("Names in aes.color unknown: ", paste(setdiff(names(aes), names(gt$aes.color)), collapse = ", "), call. = FALSE)
+				g$aes.color <- gt$aes.color
+				g$aes.color[names(aes)] <- aes
+			}
+			if ("aes.palette" %in% names(g)) {
+				aes <- g$aes.palette
+				if (!all(names(aes) %in% names(gt$aes.palette))) stop("Names in aes.color unknown: ", paste(setdiff(names(aes), names(gt$aes.palette)), collapse = ", "), call. = FALSE)
+				g$aes.palette <- gt$aes.palette
+				g$aes.palette[names(aes)] <- aes
+			}
+			if (length(g)) gt[names(g)] <- g
 		}
-		gt$call <- c(gt$call, extraCall)
 	}
 
-	# process tm_view: merge multiple to one gv
-	if (any("tm_view" %in% names(x))) {
-		vs <- which("tm_view" == names(x))
-		gv <- x[[vs[1]]]
-		if (length(vs)>1) {
-			for (i in 2:length(vs)) {
-				gv2 <- x[[vs[i]]]
-				gv[gv2$call] <- gv2[gv2$call]
-				gv$call <- unique(c(gv$call, gv2$call))
-			}
-		}
-	} else {
-		gv <- tm_view()$tm_view
-	}
+	# gt <- do.call(tln, args = list())$tm_layout
+	# gts <- x[names(x)=="tm_layout"]
+	# if (length(gts)) {
+	# 	gtsn <- length(gts)
+	# 	extraCall <- character(0)
+	# 	for (i in 1:gtsn) {
+	# 		gt[gts[[i]]$call] <- gts[[i]][gts[[i]]$call]
+	# 		if ("attr.color" %in% gts[[i]]$call) gt[c("earth.boundary.color", "legend.text.color", "title.color")] <- gts[[i]]["attr.color"]
+	# 		extraCall <- c(extraCall, gts[[i]]$call)
+	# 	}
+	# 	gt$call <- c(gt$call, extraCall)
+	# }
+
+	# # process tm_view: merge multiple to one gv
+	# if (any("tm_view" %in% names(x))) {
+	# 	vs <- which("tm_view" == names(x))
+	# 	gv <- x[[vs[1]]]
+	# 	if (length(vs)>1) {
+	# 		for (i in 2:length(vs)) {
+	# 			gv2 <- x[[vs[i]]]
+	# 			gv[gv2$call] <- gv2[gv2$call]
+	# 			gv$call <- unique(c(gv$call, gv2$call))
+	# 		}
+	# 	}
+	# } else {
+	# 	gv <- tm_view()$tm_view
+	# }
 	
 	## preprocess gt
 	gt <- within(gt, {
@@ -54,42 +92,54 @@ preprocess_gt <- function(x, interactive, orig_CRS) {
 		# put aes colors in right order and name them
 		if (length(aes.color)==1 && is.null(names(aes.color))) names(aes.color) <- "base"
 		
-		if (!is.null(names(aes.color))) {
-			aes.colors <- c(fill="grey85", borders="grey40", symbols="blueviolet", dots="black", lines="red", text="black", na="grey60")
-			aes.colors[names(aes.color)] <- aes.color
-		} else {
-			aes.colors <- rep(aes.color, length.out=7)
-			names(aes.colors) <- c("fill", "borders", "symbols", "dots", "lines", "text", "na")
+		if (!is.vector(aes.color) || !is.character(aes.color) || length(aes.color) != 8 || !setequal(names(aes.color), c("fill", "borders", "symbols", "dots", "lines", "text", "na", "null"))) {
+			stop("aes.color should the be a character vector of 8 colors named \"fill\", \"borders\", \"symbols\", \"dots\", \"lines\", \"text\", \"na\", \"null\"", call. = FALSE)
 		}
-		aes.colors <- sapply(aes.colors, function(ac) if (is.na(ac)) "#000000" else ac)
+		aes.colors <- vapply(aes.color, function(ac) if (is.na(ac)) "#000000" else ac, character(1))
 		
 		# override na
-		if (interactive) aes.colors["na"] <- if (is.null(gv$colorNA)) "#00000000" else if (is.na(gv$colorNA)) aes.colors["na"] else gv$colorNA
+		if (interactive) aes.colors["na"] <- if (is.null(colorNA)) "#00000000" else if (is.na(colorNA)) aes.colors["na"] else colorNA
 		
-		aes.colors.light <- sapply(aes.colors, is_light)
+		aes.colors.light <- vapply(aes.colors, is_light, logical(1))
 		aes.color <- NULL
 		
+		######################### tm_view
 		
+		# if (!get(".internet", envir = .TMAP_CACHE) || identical(basemaps, FALSE)) {
+		# 	basemaps <- character(0)
+		# } else {
+		# 	# with basemap tiles
+		# 	#if (is.na(basemaps.alpha)) basemaps.alpha <- gt$basemaps.alpha
+		# 	#if (identical(basemaps, NA)) basemaps <- gt$basemaps
+		# 	if (identical(basemaps, TRUE)) basemaps <- c("OpenStreetMap", "OpenStreetMap.Mapnik", "OpenTopoMap", "Stamen.Watercolor", "Esri.WorldTopoMap", "Esri.WorldImagery", "CartoDB.Positron", "CartoDB.DarkMatter")
+		# 	basemaps.alpha <- rep(basemaps.alpha, length.out=length(basemaps))
+		# 	if (is.na(alpha)) alpha <- 1
+		# }
+		if (is.na(alpha)) alpha <- 1
 		
-	})
-	
-	# process view
-	gv <- within(gv, {
-		if (!get(".internet", envir = .TMAP_CACHE) || identical(basemaps, FALSE)) {
-			basemaps <- character(0)
-		} else {
-			# with basemap tiles
-			if (is.na(basemaps.alpha)) basemaps.alpha <- gt$basemaps.alpha
-			if (identical(basemaps, NA)) basemaps <- gt$basemaps
-			if (identical(basemaps, TRUE)) basemaps <- c("OpenStreetMap", "OpenStreetMap.Mapnik", "OpenTopoMap", "Stamen.Watercolor", "Esri.WorldTopoMap", "Esri.WorldImagery", "CartoDB.Positron", "CartoDB.DarkMatter")
-			basemaps.alpha <- rep(basemaps.alpha, length.out=length(basemaps))
-			if (is.na(alpha)) alpha <- .7
-		}
 		if (!is.logical(set.bounds)) if (!length(set.bounds)==4 || !is.numeric(set.bounds)) stop("Incorrect set_bounds argument", call.=FALSE)
+		
+		if (!is.null(bbox)) {
+			if (is.character(bbox)) {
+				res <- geocode_OSM(bbox)
+				bbox <- res$bbox
+				center <- res$coords
+				res <- NULL
+			} else {
+				bbox <- bb(bbox)
+				if (is.na(attr(bbox, "crs"))) {
+					if (!maybe_longlat(bbox)) stop("bounding box specified with tm_view (or tmap_options) is projected, but the projection is unknown", call. = FALSE)
+				} else {
+					bbox <- bb(bbox, projection = .crs_longlat)
+				}
+				center <- NULL
+			}
+			set.view <- NA
+		}
 
 		if (!is.na(set.view[1])) {
 			if (!is.numeric(set.view)) stop("set.view is not numeric")
-			if (!length(set.view)==3) stop("set.view does not have length 3")
+			if (!length(set.view) %in% c(1,3)) stop("set.view does not have length 3")
 		}
 		if (!is.na(set.zoom.limits[1])) {
 			if (!is.numeric(set.zoom.limits)) stop("set.zoom.limits is not numeric")
@@ -106,18 +156,18 @@ preprocess_gt <- function(x, interactive, orig_CRS) {
 				set.view[3] <- set.zoom.limits[2]
 			}
 		}
-		view.legend.position <- if (is.na(legend.position)[1]) {
-			if (is.null(gt$legend.position)) {
+		view.legend.position <- if (is.na(view.legend.position)[1]) {
+			if (is.null(legend.position)) {
 				"topright"
-			} else if (is.character(gt$legend.position) && 
-					   tolower(gt$legend.position[1]) %in% c("left", "right") &&
-					   tolower(gt$legend.position[2]) %in% c("top", "bottom")) {
-				paste(tolower(gt$legend.position[c(2,1)]), collapse="")
+			} else if (is.character(legend.position) && 
+					   tolower(legend.position[1]) %in% c("left", "right") &&
+					   tolower(legend.position[2]) %in% c("top", "bottom")) {
+				paste(tolower(legend.position[c(2,1)]), collapse="")
 			}
-		} else if (is.character(legend.position) && 
-				   legend.position[1] %in% c("left", "right") &&
-				   legend.position[2] %in% c("top", "bottom")) {
-			paste(legend.position[c(2,1)], collapse="")
+		} else if (is.character(view.legend.position) && 
+				   view.legend.position[1] %in% c("left", "right") &&
+				   view.legend.position[2] %in% c("top", "bottom")) {
+			paste(view.legend.position[c(2,1)], collapse="")
 		} else {
 			"topright"
 		}
@@ -125,7 +175,7 @@ preprocess_gt <- function(x, interactive, orig_CRS) {
 		if (!inherits(projection, "leaflet_crs")) {
 			
 			if (projection==0) {
-				epsg <- get_epsg_number(orig_CRS)
+				epsg <- get_epsg_number(orig_crs)
 				if (is.na(epsg)) {
 					projection <- 3857
 				} else {
@@ -144,15 +194,17 @@ preprocess_gt <- function(x, interactive, orig_CRS) {
 			
 			
 		}
-		
+
+				
 	})
 	
+
 	# append view to layout
-	gt[c("basemaps", "basemaps.alpha")] <- NULL
-	gv[c("colorNA", "call", "legend.position")] <- NULL
-	gt <- c(gt, gv)
+	# gt[c("basemaps", "basemaps.alpha")] <- NULL
+	# gv[c("colorNA", "call", "legend.position")] <- NULL
+	# gt <- c(gt, gv)
 	
-	gtnull <- names(which(sapply(gt, is.null)))
+	gtnull <- names(which(vapply(gt, is.null, logical(1))))
 	gt[gtnull] <- list(NULL)
 	gt
 }

@@ -3,145 +3,37 @@
 \name{tm_layout}
 \alias{tm_layout}
 \alias{tm_legend}
-\alias{tm_format_World}
-\alias{tm_format_World_wide}
-\alias{tm_format_Europe}
-\alias{tm_format_Europe2}
-\alias{tm_format_Europe_wide}
-\alias{tm_format_NLD}
-\alias{tm_format_NLD_wide}
-\alias{tm_style_white}
-\alias{tm_style_gray}
-\alias{tm_style_natural}
-\alias{tm_style_grey}
-\alias{tm_style_cobalt}
-\alias{tm_style_col_blind}
-\alias{tm_style_albatross}
-\alias{tm_style_beaver}
-\alias{tm_style_bw}
-\alias{tm_style_classic}
+\alias{tm_style}
+\alias{tm_format}
 \title{Layout of cartographic maps}
 \usage{
-tm_layout(title = NA, scale = 1, title.size = 1.3, bg.color = "white",
-  aes.color = c(fill = "grey85", borders = "grey40", symbols = "grey60", dots
-  = "black", lines = "red", text = "black", na = "grey75"),
-  aes.palette = list(seq = "YlOrBr", div = "RdYlGn", cat = "Set3"),
-  attr.color = "black", sepia.intensity = 0, saturation = 1,
-  frame = TRUE, frame.lwd = 1, frame.double.line = FALSE, asp = NA,
-  outer.margins = rep(0.02, 4), inner.margins = NA, between.margin = 0.5,
-  outer.bg.color = NULL, fontface = "plain", fontfamily = "",
-  compass.type = "arrow", earth.boundary = FALSE,
-  earth.boundary.color = attr.color, earth.boundary.lwd = 1,
-  earth.datum = "WGS84", space.color = NULL, legend.show = TRUE,
-  legend.only = FALSE, legend.outside = NA,
-  legend.outside.position = "right", legend.outside.size = 0.3,
-  legend.position = NULL, legend.stack = c("vertical", "horizontal"),
-  legend.just = c("left", "bottom"), legend.width = 0.4,
-  legend.height = 0.9, legend.hist.height = 0.3,
-  legend.hist.width = legend.width, legend.title.size = 1.1,
-  legend.text.size = 0.7, legend.hist.size = 0.7, legend.format = list(fun
-  = NULL, scientific = FALSE, digits = NA, text.separator = "to", text.less.than
-  = c("Less", "than"), text.or.more = c("or", "more"), text.align = NA,
-  text.to.columns = FALSE), legend.frame = FALSE,
-  legend.text.color = attr.color, legend.bg.color = NA,
-  legend.bg.alpha = 1, legend.hist.bg.color = NA,
-  legend.hist.bg.alpha = 1, title.snap.to.legend = NA,
-  title.position = c("left", "top"), title.color = attr.color,
-  title.bg.color = NA, title.bg.alpha = 1, panel.show = NA,
-  panel.labels = NA, panel.label.size = 1, panel.label.color = "black",
-  panel.label.bg.color = "grey80", panel.label.height = 1.25,
-  panel.label.rot = c(90, 0), main.title = NA, main.title.size = 1.5,
-  main.title.color = "black", main.title.position = "left",
-  attr.outside = FALSE, attr.outside.position = "bottom",
-  attr.outside.size = NA, attr.position = c("right", "bottom"),
-  attr.just = c("left", "bottom"), design.mode = FALSE,
-  basemaps = c("CartoDB.Positron", "OpenStreetMap", "Esri.WorldTopoMap"),
-  basemaps.alpha = c(1, 1, 1), bg.overlay = NULL, bg.overlay.alpha = 0)
+tm_layout(title, scale, title.size, bg.color, aes.color, aes.palette,
+  attr.color, sepia.intensity, saturation, frame, frame.lwd, frame.double.line,
+  asp, outer.margins, inner.margins, between.margin, outer.bg.color, fontface,
+  fontfamily, compass.type, earth.boundary, earth.boundary.color,
+  earth.boundary.lwd, earth.datum, space.color, legend.show, legend.only,
+  legend.outside, legend.outside.position, legend.outside.size, legend.position,
+  legend.stack, legend.just, legend.width, legend.height, legend.hist.height,
+  legend.hist.width, legend.title.size, legend.text.size, legend.hist.size,
+  legend.format, legend.frame, legend.frame.lwd, legend.text.color,
+  legend.bg.color, legend.bg.alpha, legend.hist.bg.color, legend.hist.bg.alpha,
+  title.snap.to.legend, title.position, title.color, title.bg.color,
+  title.bg.alpha, panel.show, panel.labels, panel.label.size, panel.label.color,
+  panel.label.bg.color, panel.label.height, panel.label.rot, main.title,
+  main.title.size, main.title.color, main.title.position, attr.outside,
+  attr.outside.position, attr.outside.size, attr.position, attr.just,
+  design.mode, basemaps, basemaps.alpha, bg.overlay, bg.overlay.alpha)
 
 tm_legend(...)
 
-tm_format_World(title = NA, inner.margins = c(0, 0.05, 0.025, 0.01),
-  legend.position = c("left", "bottom"), attr.position = c("right",
-  "bottom"), scale = 0.8, ...)
+tm_style(style, ...)
 
-tm_format_World_wide(title = NA, inner.margins = c(0, 0.2, 0.025, 0.01),
-  legend.position = c("left", "bottom"), attr.position = c("right",
-  "bottom"), scale = 0.8, ...)
-
-tm_format_Europe(title = NA, title.position = c("left", "top"),
-  legend.position = c("right", "top"), legend.just = c("right", "top"),
-  attr.position = c("right", "bottom"), legend.frame = TRUE,
-  inner.margins = c(0, 0, 0, 0), ...)
-
-tm_format_Europe2(title = NA, title.position = c("left", "top"),
-  legend.position = c("left", "top"), legend.outside = TRUE,
-  legend.outside.size = 0.2, legend.just = c("right", "top"),
-  attr.position = c("right", "bottom"), inner.margins = c(0, 0, 0, 0), ...)
-
-tm_format_Europe_wide(title = NA, title.position = c("left", 0.85),
-  title.snap.to.legend = TRUE, legend.position = c("left", 0.85),
-  legend.just = c("left", "top"), attr.position = c("left", "bottom"),
-  inner.margins = c(0, 0.25, 0, 0), ...)
-
-tm_format_NLD(title = NA, frame = FALSE, inner.margins = c(0.02, 0.2,
-  0.06, 0.02), legend.position = c("left", "top"), attr.position = c("left",
-  "bottom"), ...)
-
-tm_format_NLD_wide(title = NA, frame = FALSE, inner.margins = c(0.02, 0.3,
-  0.06, 0.02), legend.position = c("left", "top"), attr.position = c("left",
-  "bottom"), ...)
-
-tm_style_white(...)
-
-tm_style_gray(bg.color = "grey85", aes.color = c(fill = "grey70", borders =
-  "grey20", symbols = "grey50", dots = "black", lines = "red", text = "black",
-  na = "grey60"), ...)
-
-tm_style_natural(bg.color = "lightskyblue1", aes.color = c(fill =
-  "darkolivegreen3", borders = "black", symbols = "tomato2", dots = "firebrick",
-  lines = "steelblue", text = "black", na = "white"), aes.palette = list(seq =
-  "YlGn", div = "RdYlGn", cat = "Set3"), attr.color = "black",
-  space.color = "white", legend.frame = TRUE, legend.bg.color = "grey90",
-  earth.boundary = TRUE, basemaps = "Esri.NatGeoWorldMap",
-  basemaps.alpha = 1, ...)
-
-tm_style_grey(bg.color = "grey85", aes.color = c(fill = "grey70", borders =
-  "grey20", symbols = "grey50", dots = "black", lines = "red", text = "black",
-  na = "grey60"), ...)
-
-tm_style_cobalt(bg.color = "#002240", aes.color = c(fill = "#0088FF",
-  borders = "#002240", symbols = "#FF9D00", dots = "#FF9D00", lines = "#FFEE80",
-  text = "white", na = "grey60"), aes.palette = list(seq = "YlGn", div =
-  "RdYlGn", cat = "Set3"), attr.color = "white",
-  basemaps = "CartoDB.DarkMatter", basemaps.alpha = 0.5, ...)
-
-tm_style_col_blind(bg.color = "white", aes.color = c(fill = "grey85",
-  borders = "black", symbols = "#D55E00", dots = "#0072B2", lines = "#009E73",
-  text = "black", na = "white"), aes.palette = list(seq = "Blues", div =
-  "RdBu", cat = c("#D55E00", "#56B4E9", "#E69F00", "#009E73", "#F0E442",
-  "#0072B2", "#CC79A7")), attr.color = "black", ...)
-
-tm_style_albatross(bg.color = "#00007F", aes.color = c(fill = "#4C4C88",
-  borders = "#00004C", symbols = "#BFBFFF", dots = "#BFBFFF", lines = "#BFBFFF",
-  text = "#FFE700", na = "grey60"), aes.palette = list(seq = "YlOrRd", div =
-  "RdYlGn", cat = "Set3"), attr.color = "#BFBFFF",
-  basemaps = "CartoDB.DarkMatter", basemaps.alpha = 0.5, ...)
-
-tm_style_beaver(bg.color = "#FFFFFF", aes.color = c(fill = "#FFE200",
-  borders = "#000000", symbols = "#A30000", dots = "#A30000", lines = "#A30000",
-  text = "#000000", na = "#E0E0E0"), aes.palette = list(seq = "YlOrBr", div =
-  "RdYlGn", cat = "Dark2"), attr.color = "black", ...)
-
-tm_style_bw(saturation = 0, ...)
-
-tm_style_classic(sepia.intensity = 0.7, fontfamily = "serif",
-  frame.double.line = TRUE, compass.type = "rose",
-  basemaps = "Esri.WorldTopoMap", basemaps.alpha = 0.5, ...)
+tm_format(format, ...)
 }
 \arguments{
 \item{title}{Global title of the map. For small multiples, multiple titles can be specified. The title is drawn inside the map. Alternatively, use \code{panel.labels} to print the map as a panel, with the title inside the panel header (especially useful for small multiples). Another alternative is the \code{main.title} which prints a title above the map. Titles for the legend items are specified at the layer functions (e.g. \code{\link{tm_fill}}).}
 
-\item{scale}{numeric value that serves as the global scale parameter. All font sizes, symbol sizes, border widths, and line widths are controled by this value. Each of these elements can be scaled independently with the \code{scale}, \code{lwd}, or \code{size} arguments provided by the \code{\link{tmap-element}s}.}
+\item{scale}{numeric value that serves as the global scale parameter. All font sizes, symbol sizes, border widths, and line widths are controlled by this value. Each of these elements can be scaled independently with the \code{scale}, \code{lwd}, or \code{size} arguments provided by the \code{\link{tmap-element}s}.}
 
 \item{title.size}{Relative size of the title}
 
@@ -179,7 +71,7 @@ tm_style_classic(sepia.intensity = 0.7, fontfamily = "serif",
 
 \item{compass.type}{type of compass, one of: \code{"arrow"}, \code{"4star"}, \code{"8star"}, \code{"radar"}, \code{"rose"}. Of course, only applicable if a compass is shown. The compass type can also be set within \code{\link{tm_compass}}.}
 
-\item{earth.boundary}{Logical that determines whether the boundaries of the earth are shown or an object that specifies the boundaries. This object can be a vector of size four, a 2 by 2 matrix (bounding box), or an \code{\link[raster:extent]{extent}} object. By default, the boundaries are \code{c(-180, 180, -90, 90)}. Useful for projected world maps. Often, it is useful to crop both poles (e.g., with \code{c(-180, 180, -88, 88)}).}
+\item{earth.boundary}{Logical that determines whether the boundaries of the earth are shown or an object that specifies the boundaries. This object can be a vector of size four, a 2 by 2 matrix (bounding box), or an \code{\link[raster:extent]{extent}} object. By default, the boundaries are \code{c(-180, -90, 180, 90)}. Useful for projected world maps. Often, it is useful to crop both poles (e.g., with \code{c(-180, -88, 180, 88)}).}
 
 \item{earth.boundary.color}{Color of the earth boundary.}
 
@@ -199,7 +91,7 @@ tm_style_classic(sepia.intensity = 0.7, fontfamily = "serif",
 
 \item{legend.outside.size}{Numeric value that determines the relative size of the legend, when \code{legend.outside=TRUE}. If the first value of \code{legend.outside.position} is \code{"top"} or \code{"bottom"}, then it is the width of the legend, else it is the height of the legend.}
 
-\item{legend.position}{Position of the legend. Vector of two values, specifing the x and y coordinates. Either this vector contains \code{"left"}, \code{"LEFT"}, \code{"center"}, \code{"right"}, or \code{"RIGHT"} for the first value and \code{"top"}, \code{"TOP"}, \code{"center"}, \code{"bottom"}, or \code{"BOTTOM"} for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y coordinates of the left bottom corner of the legend. The uppercase values correspond to the position without margins (so tighter to the frame). By default, it is automatically placed in the corner with most space based on the (first) shape object. If \code{legend.outside=TRUE}, this argument specifies the legend position within the outside panel.}
+\item{legend.position}{Position of the legend. Vector of two values, specifying the x and y coordinates. Either this vector contains \code{"left"}, \code{"LEFT"}, \code{"center"}, \code{"right"}, or \code{"RIGHT"} for the first value and \code{"top"}, \code{"TOP"}, \code{"center"}, \code{"bottom"}, or \code{"BOTTOM"} for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y coordinates of the left bottom corner of the legend. The uppercase values correspond to the position without margins (so tighter to the frame). By default, it is automatically placed in the corner with most space based on the (first) shape object. If \code{legend.outside=TRUE}, this argument specifies the legend position within the outside panel.}
 
 \item{legend.stack}{Value that determines how the legend items are stacked: \code{"vertical"} or \code{"horizontal"}.}
 
@@ -235,7 +127,9 @@ tm_style_classic(sepia.intensity = 0.7, fontfamily = "serif",
 \item{...}{Other arguments passed on to \code{\link[base:formatC]{formatC}}}
 }}
 
-\item{legend.frame}{either a logical that determines whether the legend is placed inside a frame, or a color that directly specifies the frame border color. The width of the frame is automatically determined, but is upper-bounded by \code{legend.width}.}
+\item{legend.frame}{either a logical that determines whether the legend is placed inside a frame, or a color that directly specifies the frame border color.}
+
+\item{legend.frame.lwd}{line width of the legend frame (applicable if \code{legend.frame} is \code{TRUE} or a color)}
 
 \item{legend.text.color}{color of the legend text}
 
@@ -249,7 +143,7 @@ tm_style_classic(sepia.intensity = 0.7, fontfamily = "serif",
 
 \item{title.snap.to.legend}{Logical that determines whether the title is part of the legend. By default \code{FALSE}, unless the legend is drawn outside the map (see \code{legend.outside}).}
 
-\item{title.position}{Position of the title. Vector of two values, specifing the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y coordinates of the tile. The uppercase values correspond to the position without margins (so tighter to the frame). 
+\item{title.position}{Position of the title. Vector of two values, specifying the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y coordinates of the tile. The uppercase values correspond to the position without margins (so tighter to the frame). 
 By default the title is placed on top of the legend (determined by \code{legend.position}).}
 
 \item{title.color}{color of the title}
@@ -286,47 +180,49 @@ By default the title is placed on top of the legend (determined by \code{legend.
 
 \item{attr.outside.size}{Numeric value that determines the relative height of the attribute viewport, when \code{attr.outside=TRUE}.}
 
-\item{attr.position}{Position of the map attributes, which are \code{\link{tm_credits}}, \code{\link{tm_scale_bar}} and \code{\link{tm_compass}}. Vector of two values, specifing the x and y coordinates. The first value is \code{"left"}, \code{"LEFT"}, \code{"center"}, \code{"right"}, or \code{"RIGHT"}, and the second value \code{"top"}, \code{"TOP"}, \code{"center"}, \code{"bottom"}, or \code{"BOTTOM"}. The uppercase values correspond to the position without margins (so tighter to the frame). Positions can also be set separately in the map attribute fuctions. If \code{attr.outside=TRUE}, this argument specifies the position of the attributes within the outside panel.}
+\item{attr.position}{Position of the map attributes, which are \code{\link{tm_credits}}, \code{\link{tm_scale_bar}}, \code{\link{tm_compass}}, and \code{\link{tm_minimap}}. Vector of two values, specifying the x and y coordinates. The first value is \code{"left"}, \code{"LEFT"}, \code{"center"}, \code{"right"}, or \code{"RIGHT"}, and the second value \code{"top"}, \code{"TOP"}, \code{"center"}, \code{"bottom"}, or \code{"BOTTOM"}. The uppercase values correspond to the position without margins (so tighter to the frame). Positions can also be set separately in the map attribute functions. If \code{attr.outside=TRUE}, this argument specifies the position of the attributes within the outside panel.}
 
 \item{attr.just}{Justification of the attributes relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{attr.position} is specified by numeric coordinates. It can also be specified per attribute function.}
 
 \item{design.mode}{Logical that enables the design mode. If \code{TRUE}, inner and outer margins, legend position, aspect ratio are explicitly shown. Also, feedback text in the console is given.}
 
-\item{basemaps}{vector of one or more names of baselayer maps used in the interactive view mode. See \code{\link{tm_view}}.}
+\item{basemaps}{Migrated to \code{\link{tm_view}}. vector of one or more names of baselayer maps used in the interactive view mode. See \code{\link{tm_view}}.}
 
-\item{basemaps.alpha}{alpha transparency (opacity) of the basemaps. See \code{\link{tm_view}}.}
+\item{basemaps.alpha}{Migrated to \code{\link{tm_view}}. alpha transparency (opacity) of the basemaps. See \code{\link{tm_view}}.}
 
 \item{bg.overlay}{Not used anymore. See \code{\link{tm_view}}.}
 
 \item{bg.overlay.alpha}{Not used anymore. See \code{\link{tm_view}}.}
 
 \item{...}{other arguments from \code{tm_layout}}
+
+\item{style}{name of the style}
+
+\item{format}{name of the format}
 }
 \description{
-This element specifies the map layout. The main function \code{tm_layout} controls title, margins, aspect ratio, colors, frame, legend, among many other things. The function \code{tm_legend} is a shortcut to access all \code{legend.} arguments without this prefix. The other functions are wrappers for two purposes: the \code{tm_format_} functions specify position related layout settings such as margins, and the \code{tm_style_} functions specify general styling related layout settings such as colors and font. Typically, the former functions are shape dependent, and the latter functions are shape independent. See details for predefined styles and formats. With the global option \code{tmap.style}, a default style can be specified. Multiple \code{tm_layout} elements (or wrapper functions) can be stacked: called arguments will be overwritten.
+This element specifies the map layout. The main function \code{tm_layout} controls title, margins, aspect ratio, colors, frame, legend, among many other things. The function \code{tm_legend} is a shortcut to access all \code{legend.} arguments without this prefix. The other functions are wrappers for two purposes: \code{tm_format} specifies position related layout settings such as margins, and \code{tm_style} specifies general styling related layout settings such as colors and font. Typically, the former functions are shape dependent, and the latter functions are shape independent. See details for predefined styles and formats. With \code{tmap.style}, a default style can be specified. Multiple \code{tm_layout} elements (or wrapper functions) can be stacked: called arguments will be overwritten.
 }
 \details{
 Predefined styles:
 \tabular{ll}{
-\code{tm_style_white}\tab White background, commonly used colors (default) \cr
-\code{tm_style_gray}/\code{_grey}\tab Grey background, useful to highlight sequential palettes (e.g. in choropleths) \cr
-\code{tm_style_natural}\tab Emulation of natural view: blue waters and green land \cr
-\code{tm_style_bw}\tab Greyscale, obviously useful for greyscale printing \cr
-\code{tm_style_classic}\tab Classic styled maps (recommended) \cr
-\code{tm_style_cobalt}\tab Inspired by latex beamer style cobalt \cr
-\code{tm_style_albatross}\tab Inspired by latex beamer style albatross \cr
-\code{tm_style_beaver}\tab Inspired by latex beamer style beaver \cr
+\code{"white"}\tab White background, commonly used colors (default) \cr
+\code{"gray"}/\code{"grey"}\tab Grey background, useful to highlight sequential palettes (e.g. in choropleths) \cr
+\code{"natural"}\tab Emulation of natural view: blue waters and green land \cr
+\code{"bw"}\tab Greyscale, obviously useful for greyscale printing \cr
+\code{"classic"}\tab Classic styled maps (recommended) \cr
+\code{"cobalt"}\tab Inspired by latex beamer style cobalt \cr
+\code{"albatross"}\tab Inspired by latex beamer style albatross \cr
+\code{"beaver"}\tab Inspired by latex beamer style beaver \cr
 --------------------------- \tab --------------------------------------------------------------------------------------------------- \cr
 }
 
 Predefined formats
 \tabular{ll}{
-\code{tm_format_World}\tab Format specified for world maps \cr
-\code{tm_format_World_wide}\tab Format specified for world maps with more space for the legend \cr
-\code{tm_format_Europe}\tab Format specified for maps of Europe \cr
-\code{tm_format_Europe_wide}\tab Format specified for maps of Europe with more space for the legend \cr
-\code{tm_format_NLD}\tab Format specified for maps of the Netherlands \cr
-\code{tm_format_NLD_wide}\tab Format specified for maps of the Netherlands with more space for the legend \cr
+\code{"World"}\tab Format specified for world maps \cr
+\code{"World_wide"}\tab Format specified for world maps with more space for the legend \cr
+\code{"NLD"}\tab Format specified for maps of the Netherlands \cr
+\code{"NLD_wide"}\tab Format specified for maps of the Netherlands with more space for the legend \cr
 --------------------------- \tab --------------------------------------------------------------------------------------------------- \cr
 }
 }
@@ -335,36 +231,33 @@ data(World, land)
 
 tm_shape(World) + 
     tm_fill("pop_est_dens", style="kmeans", title="Population density") +
-tm_format_World(title="The World") + tm_style_albatross(frame.lwd=10)
+tm_style("albatross", frame.lwd=10) + tm_format("World", title="The World")
 
 \dontrun{
 tm_shape(land) +
 	tm_raster("elevation", breaks=c(-Inf, 250, 500, 1000, 1500, 2000, 2500, 3000, 4000, Inf),  
-		palette = terrain.colors(9), title="Elevation", auto.palette.mapping = FALSE) +
+		palette = terrain.colors(9), title="Elevation", midpoint = NA) +
 tm_shape(World, is.master=TRUE) +
 	tm_borders("grey20") +
 	tm_grid(projection="longlat", labels.size = .5) +
 	tm_text("name", size="AREA") +
 tm_compass(position = c(.65, .15), color.light = "grey90") +
 tm_credits("Eckert IV projection", position = c("right", "BOTTOM")) +
-tm_layout(inner.margins=c(.04,.03, .02, .01), 
+tm_style("classic") +
+tm_layout(bg.color="lightblue",
+	inner.margins=c(.04,.03, .02, .01), 
 	earth.boundary = TRUE, 
 	space.color="grey90") +
-tm_style_classic(bg.color="lightblue") +
 tm_legend(position = c("left", "bottom"), 
 	frame = TRUE,
 	bg.color="lightblue")
 }
 	
-WorldOne <- rgeos::gUnaryUnion(World)
-tm_shape(World, projection="wintri") +
-	tm_fill("HPI", palette="div", auto.palette.mapping = FALSE, n=7, 
+tm_shape(World, projection="robin") +
+	tm_polygons("HPI", palette="div", n=7, 
 			title = "Happy Planet Index") +
-tm_shape(WorldOne) + 
-	tm_borders() +
-	tm_grid(projection = "longlat") +
 tm_credits("Winkel Tripel projection", position = c("right", "BOTTOM")) +
-tm_style_natural(earth.boundary = c(-180,180,-87,87), inner.margins = .05) +
+tm_style("natural", earth.boundary = c(-180, -87, 180, 87), inner.margins = .05) +
 tm_legend(position=c("left", "bottom"), bg.color="grey95", frame=TRUE)
 
 \dontrun{
@@ -373,13 +266,13 @@ tm_legend(position=c("left", "bottom"), bg.color="grey95", frame=TRUE)
 # get current style
 current.style <- tmap_style() 
 	
-qtm(World, fill="economy", format="World")
+qtm(World, fill = "economy", format = "World")
 
 tmap_style("col_blind")
-qtm(World, fill="economy", format="World")
+qtm(World, fill = "economy", format = "World")
 
 tmap_style("cobalt")
-qtm(World, fill="economy", format="World")
+qtm(World, fill = "economy", format = "World")
 
 # set to current style
 tmap_style(current.style)
@@ -391,5 +284,5 @@ tmap_style(current.style)
 Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \href{https://doi.org/10.18637/jss.v084.i06}{DOI}
 }
 \seealso{
-\href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
+\href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}}
 }

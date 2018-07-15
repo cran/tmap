@@ -1,4 +1,5 @@
 plot_all <- function(i, gp, gal, shps, dasp, sasp, inner.margins.new, legend_pos, use_facets) {
+	
 	gt <- gp$tm_layout
 	
 	## in case of small multiples, get i'th shape
@@ -6,12 +7,12 @@ plot_all <- function(i, gp, gal, shps, dasp, sasp, inner.margins.new, legend_pos
 		shps <- shps[[i]]
 	}
 
-	emptyShp <- is.null(shps[[1]])
+	emptyShp <- is.null(shps[[gt$shape.masterID]]) || (nrow(shps[[gt$shape.masterID]]) == 0)
 	
-	if (emptyShp && gt$legend.only) return(NULL)
+	#if (emptyShp && gt$legend.only) return(NULL)
 	if (!emptyShp) {
-		bbx <- attr(shps[[1]], "bbox")
-		proj <- get_projection(shps[[1]])
+		bbx <- attr(shps[[gt$shape.masterID]], "bbox")
+		proj <- get_projection(shps[[gt$shape.masterID]])
 		
 		if (gt$grid.show) {
 			# non inverse projection avaiable PROJ.4 4.8.0 for Winkel Tripel projection
@@ -78,9 +79,14 @@ plot_all <- function(i, gp, gal, shps, dasp, sasp, inner.margins.new, legend_pos
 		} else NULL
 		
 		#treeMapX <- gTree(children=gList(grobBG, gTree(children=gList(treeMap, treeFrame), vp=gridLayoutMap, name="outer_map")), name="BG")
-		treeMapX <- gTree(children=gList(treeMap, treeFrame), name="BG")
-		
-		if (emptyShp) return(treeMapX)
+
+		if (emptyShp) {
+			treeMapX <- gTree(children=gList(treeMap, treeFrame), name="BG")
+			return(treeMapX)	
+		}  else {
+			treeMapX <- gTree(children=gList(treeMap, treeFrame), name="BG", vp = viewport(xscale = bbx[c(1,3)], yscale = bbx[c(2,4)]))
+			
+		}
 		
 		#upViewport()
 	} else {
@@ -93,7 +99,9 @@ plot_all <- function(i, gp, gal, shps, dasp, sasp, inner.margins.new, legend_pos
 
 	## prepare legend items
 	leg <- legend_prepare(gp, gal, gt, lineInch)
-	
+
+		
+
 	## legend, title, and other thinks such as compass
 	if (!is.null(leg) || nonempty_text(gt$title) || gt$credits.show || gt$logo.show || gt$scale.show || gt$compass.show) {
 		if (!is.na(gt$frame)) {

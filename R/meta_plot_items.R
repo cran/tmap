@@ -95,7 +95,6 @@ legend_portr <- function(x, gt, lineHeight, m) {
 		brks <- attr(legend.labels, "brks")
 		align <- attr(legend.labels, "align")
 		
-		
 		if (legend.type=="symbol.size") {
 			nitems <- length(legend.labels)
 			hs <- convertHeight(unit(legend.sizes, "inch"), "npc", valueOnly=TRUE) / s2
@@ -149,6 +148,17 @@ legend_portr <- function(x, gt, lineHeight, m) {
 		wstext <- text_width_npc(legend.labels, space = TRUE)
 		newsize <- pmin(size, (1-wsmax-4*mx) / wstext)
 		
+		if (gt$show.messages) {
+			numstring <- format(floor(newsize * 100) / 100)
+			if (all((newsize / size) < .95)) {
+				message("Legend labels were too wide. The labels have been resized to ", paste(numstring, collapse = ", "), ". Increase legend.width (argument of tm_layout) to make the legend wider and therefore the labels larger.")
+			} else if (any((newsize / size) < .95)) {
+				message("Some legend labels were too wide. These labels have been resized to ", paste(numstring[(newsize / size) < .95], collapse = ", "), ". Increase legend.width (argument of tm_layout) to make the legend wider and therefore the labels larger.")
+			}
+		}
+		
+		
+		
 		
 		grobLegendItem <- if (is.cont) {
 			fill <- legend.palette
@@ -160,7 +170,7 @@ legend_portr <- function(x, gt, lineHeight, m) {
 				i[i=="NA"] <- NA
 				i
 			})
-			fill_len <- sapply(fill_list, length)
+			fill_len <- vapply(fill_list, length, integer(1))
 			fill2 <- unlist(fill_list)
 			
 			# process x,y,w,h
@@ -298,6 +308,7 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 	with(x, {
 		is.cont <- (nchar(legend.palette[1])>20)
 		#grid.rect()
+		s <- 1.25 ## for text only
 		s2 <- 4/3
 		
 		if (lineHeight*legend.text.size * 3.25 > 1) {
@@ -308,6 +319,7 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 		mx <- convertWidth(convertHeight(unit(my, "npc"), "inch"), "npc", TRUE)
 		rx <- 1-2*mx
 		ry <- 1-2*my
+		
 		
 		nitems <- length(legend.labels)
 		# delete too high 
@@ -343,7 +355,7 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 		
 		
 		if (legend.type=="text.col" && !is.cont) {
-			cex <- pmin(convertHeight(unit(hs/s, "npc"), "lines", valueOnly = TRUE), text.max.size)
+			cex <- pmin(convertHeight(unit(hs/s, "npc"), "lines", valueOnly = TRUE), legend.sizes)
 			textws <- text_width_npc(legend.text, space=FALSE) * cex
 			labelsws <- pmax(labelsws, textws)
 		} else if  (legend.type=="text.size") {
@@ -359,6 +371,10 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 			ratio <- (sum(ws)/rx)
 			ws <- ws / ratio
 			legend.text.size <- legend.text.size / ratio
+			
+			numstring <- format(floor(legend.text.size * 100) / 100)
+			
+			if (gt$show.messages) message("Legend labels were too wide. Therefore, legend.text.size has been set to ", numstring, ". Increase legend.width (argument of tm_layout) to make the legend wider and therefore the labels larger.")
 		}
 		
 		wsmax <- rx/nitems
@@ -378,7 +394,7 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 				legend.sizes <- legend.sizes[1:nitems]
 				hs <- hs[1:nitems]
 				ws <- ws[1:nitems]
-				warning("The legend is too narrow to place all symbol sizes.", call.=FALSE)
+				if (gt$show.messages) message("The legend is too narrow to place all symbol sizes.")
 			}
 		} else if (legend.type=="text.size") {
 			#textws <- convertWidth(unit(legend.sizes, "lines"), "npc", valueOnly=TRUE)
@@ -399,10 +415,11 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 		xs <- mx + cumsum(ws) - ws/2
 		
 		if (legend.type %in% c("symbol.col", "symbol.shape")) {
-			bmax <- convertHeight(unit(symbol.max.size, "inch"), "npc", valueOnly=TRUE) / s2
-			hs <- pmin(hs, bmax)
+			bmax <- convertHeight(unit(legend.sizes, "inch"), "npc", valueOnly=TRUE) / s2
+			hs <- pmin(hs/s*symbol.normal.size, bmax)
+
 		} else if (legend.type=="text.col") {
-			bmax <- convertHeight(unit(text.max.size, "lines"), "npc", valueOnly=TRUE)
+			bmax <- convertHeight(unit(legend.sizes, "lines"), "npc", valueOnly=TRUE)
 			hs <- pmin(hs, bmax)
 		}
 		
@@ -420,7 +437,7 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 				i[i=="NA"] <- NA
 				i
 			})
-			fill_len <- sapply(fill_list, length)
+			fill_len <- vapply(fill_list, length, integer(1))
 			fill2 <- unlist(fill_list)
 			
 			# process x,y,w,h
@@ -443,7 +460,8 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 			col <- ifelse(legend.type =="fill", border.col, NA)
 			if (legend.type=="raster") lwd <- NA
 			rectGrob(x=xs, 
-					 y=1-my-hs/2, 
+					 #y=1-my-hs/2, 
+					 y=1 * lineHeight*legend.text.size + 2*my + hs/2,
 					 width= ws, 
 					 height= hs,
 					 gp=gpar(fill=fill, col=col, lwd=lwd))
@@ -478,7 +496,7 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 																					 height=unit(symbolR[i], "inch")*(2/3)))
 					} else {
 						pointsGrob(x=xs[i], 
-								   y=1-my-hsmax/2+symbol_legend_y_correction(shapes[i]),
+								   y=1 * lineHeight*legend.text.size + 1.5*my + hsmax/2+symbol_legend_y_correction(shapes[i]),
 								   size=unit(symbolR[i], "inch"),
 								   pch=shapes[i],
 								   gp=gpars[[i]])
@@ -486,7 +504,10 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 				})
 				gTree(children=do.call(gList, grobs))				
 			} else {
-				pointsGrob(x=xs, y=1-my-hsmax/2+symbol_legend_y_correction(shapes), size=symbolR,
+				#rectGrob(gp=gpar(fill="pink"))
+				pointsGrob(x=xs,
+						   y=1 * lineHeight*legend.text.size + 1.5*my + hsmax/2+symbol_legend_y_correction(shapes),
+						   size=symbolR,
 						   pch=shapes,
 						   gp=get_symbol_gpar(x=shapes,
 						   					fill=cols,
@@ -528,13 +549,18 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 			x2 <- xs - ws/2
 			just <- c("left", "top")
 		}
+		if (gt$design.mode) {
+			grobLegendTextBg <- rectGrob(x = .5, y = .5*(my+lineHeight*legend.text.size), height = my+lineHeight*legend.text.size, width = 1, gp = gpar(fill = "orange"))
+		} else {
+			grobLegendTextBg <- NULL
+		}
 		
 		grobLegendText <- textGrob(legend.labels, x=x2,
-								   y=my+lineHeight*legend.text.size, just=just, gp=gpar(col=gt$legend.text.color, cex=legend.text.size, fontface=gt$fontface, fontfamily=gt$fontfamily))
+								   y=.5*my+lineHeight*legend.text.size, just=just, gp=gpar(col=gt$legend.text.color, cex=legend.text.size, fontface=gt$fontface, fontfamily=gt$fontfamily))
 		
 		legWidth <- mx*2+xs[length(xs)]+max(xtraWidth, labelsws[nitems]*legend.text.size/2)
 		
-		list(gList(grobLegendItem, grobLegendText), legWidth=legWidth)
+		list(gList(grobLegendItem, grobLegendTextBg, grobLegendText), legWidth=legWidth)
 	})
 }
 
@@ -543,13 +569,13 @@ plot_scale <- function(gt, just, xrange, crop_factor) {
 	light <- do.call("process_color", c(list(gt$scale.color.light, alpha=1), gt$pc))
 	dark <- do.call("process_color", c(list(gt$scale.color.dark, alpha=1), gt$pc))
 
-	unit <- gt$shape.units$target
+	unit <- gt$shape.units$unit
 	unit.size <- 1/gt$shape.units$to
 	
 	if (is.na(unit.size)) {
 		warning("Unable to determine shape coordinate units. Please check if the \"+units\" part of the projection is present. Otherwise, specify coords.unit or unit.size")
 	} else if (!gt$shape.units$projected && ((gt$shape.bbx[4]-gt$shape.bbx[2]) > 30)) {
-		warning("Scale bar set for latitude ", gsub("long@lat(.+)$", "\\1", gt$shape.units$unit), " and will be different at the top and bottom of the map.")
+		if (gt$show.messages) message("Scale bar set for latitude ", gsub("long@lat(.+)$", "\\1", unit), " and will be different at the top and bottom of the map.")
 	}
 	
 	xrange2 <- xrange/unit.size

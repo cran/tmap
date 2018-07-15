@@ -8,42 +8,37 @@ qtm(shp, fill = NA, symbols.size = NULL, symbols.col = NULL,
   symbols.shape = NULL, dots.col = NULL, text = NULL, text.size = 1,
   text.col = NA, lines.lwd = NULL, lines.col = NULL, raster = NA,
   borders = NA, by = NULL, scale = NA, title = NA, projection = NULL,
-  format = NULL, style = NULL, basemaps = NA, bubble.size = NULL,
-  bubble.col = NULL, ...)
+  basemaps = NA, overlays = NA, style = NULL, format = NULL, ...)
 }
 \arguments{
-\item{shp}{shape object, which is one of
-\enumerate{
- \item{\code{\link[sp:SpatialPolygonsDataFrame]{SpatialPolygons(DataFrame)}}}
- \item{\code{\link[sp:SpatialPointsDataFrame]{SpatialPoints(DataFrame)}}}
- \item{\code{\link[sp:SpatialLinesDataFrame]{SpatialLines(DataFrame)}}}
- \item{\code{\link[sp:SpatialGridDataFrame]{SpatialGrid(DataFrame)}}}
- \item{\code{\link[sp:SpatialPixelsDataFrame]{SpatialPixels(DataFrame)}}}
- \item{\code{\link[raster:Raster-class]{RasterLayer, RasterStack, or RasterBrick}}}
-}
-In \code{"view"} mode (see \code{\link{tmap_mode}}) there are two other options. 1) If omitted, an interactive map without thematic layers is opened. 2) In addition, if a character is provided, this character is used as a search query for OpenStreetMap nominatim. This will position the interactive map accordingly. Arguments of \code{\link{tm_view}}, such as \code{set.view} can be passed on directly.tm_}
+\item{shp}{One of
+\itemize{
+\item shape object, which is an object from a class defined by the \code{\link[sf:sf]{sf}}, \code{\link[sp:sp]{sp}}, or \code{\link[raster:raster-package]{raster}} package. For instance, an \code{\link[sf:sf]{sf}} object, an \code{\link[sp:SpatialPolygonsDataFrame]{SpatialPolygons(DataFrame)}}, or a \code{\link[raster:Raster-class]{RasterBrick}}.
+\item Not specified, i.e. \code{qtm()} is executed. In this case a plain interactive map is shown.
+\item A OSM search string, e.g. \code{qtm("Amsterdam")}. In this case a plain interactive map is shown positioned according to the results of the search query (from OpenStreetMap nominatim)
+}}
 
-\item{fill}{either a color to fill the polygons, or name of the data variable in \code{shp} to draw a choropleth. Only applicable when \code{shp} is type 1 (see above).  Set \code{fill=NULL} to draw only polygon borders. See also argument \code{borders}.}
+\item{fill}{either a color to fill the polygons, or name of the data variable in \code{shp} to draw a choropleth. Only applicable when \code{shp} contains polygons.  Set \code{fill = NULL} to draw only polygon borders. See also argument \code{borders}.}
 
-\item{symbols.size}{either the size of the symbols or a name of the data variable in \code{shp} that specifies the sizes of the symbols.  See also the \code{size} argument of \code{\link{tm_symbols}}. Only applicable when \code{shp} is type 1, 2, or 3 (see above).}
+\item{symbols.size}{either the size of the symbols or a name of the data variable in \code{shp} that specifies the sizes of the symbols.  See also the \code{size} argument of \code{\link{tm_symbols}}. Only applicable when \code{shp} contains spatial points, lines, or polygons.}
 
-\item{symbols.col}{either the color of the symbols or a name of the data variable in \code{shp} that specifies the colors of the symbols. See also the \code{col} arugment of \code{\link{tm_symbols}}. Only applicable when \code{shp} is type 1, 2, or 3 (see above).}
+\item{symbols.col}{either the color of the symbols or a name of the data variable in \code{shp} that specifies the colors of the symbols. See also the \code{col} arugment of \code{\link{tm_symbols}}. Only applicable when \code{shp} contains spatial points, lines, or polygons.}
 
-\item{symbols.shape}{either the shape of the symbols or a name of the data variable in \code{shp} that specifies the shapes of the symbols. See also the \code{shape} arugment of \code{\link{tm_symbols}}. Only applicable when \code{shp} is type 1, 2, or 3 (see above).}
+\item{symbols.shape}{either the shape of the symbols or a name of the data variable in \code{shp} that specifies the shapes of the symbols. See also the \code{shape} arugment of \code{\link{tm_symbols}}. Only applicable when \code{shp} contains spatial points, lines, or polygons.}
 
 \item{dots.col}{name of the data variable in \code{shp} for the dot map that specifies the colors of the dots. If \code{dots.col} is specified instead \code{symbols.col}, dots instead of bubbles are drawn (unless \code{symbols.shape} is specified).}
 
-\item{text}{Name of the data variable that contains the text labels. Only applicable when \code{shp} is type 1, 2, or 3 (see above).}
+\item{text}{Name of the data variable that contains the text labels. Only applicable when \code{shp} contains spatial points, lines, or polygons.}
 
-\item{text.size}{Font size of the text labels. Either a constant value, or the name of a numeric data variable. Only applicable when \code{shp} is type 1, 2, or 3 (see above).}
+\item{text.size}{Font size of the text labels. Either a constant value, or the name of a numeric data variable. Only applicable when \code{shp} contains spatial points, lines, or polygons.}
 
-\item{text.col}{name of the data variable in \code{shp} for the that specifies the colors of the text labels. Only applicable when \code{shp} is type 1, 2, or 3 (see above).}
+\item{text.col}{name of the data variable in \code{shp} for the that specifies the colors of the text labels. Only applicable when \code{shp} contains spatial points, lines, or polygons.}
 
-\item{lines.lwd}{either a line width or a name of the data variable that specifies the line width. Only applicable when \code{shp} is type 3 (see above).}
+\item{lines.lwd}{either a line width or a name of the data variable that specifies the line width. Only applicable when \code{shp} contains spatial lines.}
 
-\item{lines.col}{either a line color or a name of the data variable that specifies the line colors. Only applicable when \code{shp} is type 3 (see above).}
+\item{lines.col}{either a line color or a name of the data variable that specifies the line colors. Only applicable when \code{shp} contains spatial lines.}
 
-\item{raster}{either a color or a name of the data variable that specifices the raster colors. Only applicable when \code{shp} is type 4, 5, or 6 (see above).}
+\item{raster}{either a color or a name of the data variable that specifices the raster colors. Only applicable when \code{shp} is a spatial raster.}
 
 \item{borders}{color of the polygon borders. Use \code{NULL} to omit the borders.}
 
@@ -53,17 +48,15 @@ In \code{"view"} mode (see \code{\link{tmap_mode}}) there are two other options.
 
 \item{title}{main title. For legend titles, use \code{X.style}, where X is the layer name (see \code{...}).}
 
-\item{projection}{Either a \code{\link[sp:CRS]{CRS}} object or a character value. If it is a character, it can either be a \code{PROJ.4} character string or a shortcut. See \code{\link[tmaptools:get_proj4]{get_proj4}} for a list of shortcut values. By default, the projection is used that is defined in the \code{shp} object itself, which can be obtained with \code{\link[tmaptools:get_projection]{get_projection}}.}
+\item{projection}{Either a \code{\link[sf:st_crs]{crs}} object or a character value. If it is a character, it can either be a \code{PROJ.4} character string or a shortcut. See \code{\link[tmaptools:get_proj4]{get_proj4}} for a list of shortcut values. By default, the projection is used that is defined in the \code{shp} object itself, which can be obtained with \code{\link[tmaptools:get_projection]{get_projection}}.}
 
-\item{format}{\code{\link{tm_layout}} wrapper used for format. Currently available in tmap: "World", "Europe", "NLD", "World_wide", "Europe_wide", "NLD_wide". Own wrappers can be used as well (see details).}
+\item{basemaps}{name(s) of the provider or an URL of a tiled basemap. It is a shortcut to \code{\link{tm_basemap}}. Set to \code{NULL} to disable basemaps. By default, it is set to the tmap option \code{basemaps}.}
 
-\item{style}{\code{\link{tm_layout}} wrapper used for style. Available in tmap: "bw", "classic". Own wrappers can be used as well (see details).}
+\item{overlays}{name(s) of the provider or an URL of a tiled overlay map. It is a shortcut to \code{\link{tm_tiles}}.}
 
-\item{basemaps}{basemaps for the view mode. See \code{\link{tm_view}}}
+\item{style}{Layout options (see \code{\link{tm_layout}}) that define the style. See \code{\link{tmap_style}} for details.}
 
-\item{bubble.size}{deprecated. Please use symbols.size.}
-
-\item{bubble.col}{deprecated. Please use symbols.col.}
+\item{format}{Layout options (see \code{\link{tm_layout}}) that define the format. See \code{\link{tmap_format}} for details.}
 
 \item{...}{arguments passed on to the \code{tm_*} functions. The prefix of these arguments should be with the layer function name without \code{"tm_"} and a period. For instance, the palette for polygon fill color is called \code{fill.palette}. The following prefixes are supported: \code{shape.}, \code{fill.}, \code{borders.}, \code{polygons.}, \code{symbols.}, \code{dots.}, \code{lines.}, \code{raster.}, \code{text.}, \code{layout.}, \code{grid.}, \code{facets.}, and \code{view.}. Arguments that have a unique name, i.e. that does not exist in any other layer function, e.g. \code{convert2density}, can also be called without prefix.}
 }
@@ -71,12 +64,12 @@ In \code{"view"} mode (see \code{\link{tmap_mode}}) there are two other options.
 \code{\link{tmap-element}}
 }
 \description{
-Draw a thematic map quickly.
+Draw a thematic map quickly. This function is a convenient wrapper of the main plotting method of stacking \code{\link{tmap-element}}s. Without arguments or with a search term, this functions draws an interactive map.
 }
 \details{
-This function is a convenient wrapper of the main plotting method of stacking \code{\link{tmap-element}}s. The first argument is a shape object (normally specified by \code{\link{tm_shape}}). The next arguments, from \code{fill} to \code{raster}, are the aesthetics from the main layers. The remaining arguments are related to the map layout. Any argument from any main layer can be specified (see \code{...}). It is also possible to stack \code{\link{tmap-element}}s on a \code{qtm} plot. See examples.
+The first argument is a shape object (normally specified by \code{\link{tm_shape}}). The next arguments, from \code{fill} to \code{raster}, are the aesthetics from the main layers. The remaining arguments are related to the map layout. Any argument from any main layer function, such as \code{\link{tm_polygons}}, can be specified (see \code{...}). It is also possible to stack \code{\link{tmap-element}}s on a \code{qtm} plot. See examples.
 
-For \code{format}, any character value, say "xxx" can be used if the wrapper function \code{"tm_format_xxx"} exists. The same applies for the argument \code{style}.
+By default, a scale bar is shown. This option can be set with \code{\link{tmap_options}} (argument \code{qtm.scalebar}). A minimap is shown by default when \code{qtm} is called without arguments of with a search term. This option can be set with \code{\link{tmap_options}} (argument \code{qtm.minimap}).
 }
 \examples{
 data(World, rivers, metro)
@@ -85,10 +78,21 @@ data(World, rivers, metro)
 qtm(World)
 
 # choropleth
-qtm(World, fill = "economy", format="World", style="col_blind")
+qtm(World, fill = "economy", format = "World", style = "col_blind")
 
-qtm(World, fill="HPI", fill.n=9, fill.palette="div", fill.auto.palette.mapping=FALSE, 
-	fill.title="Happy Planet Index", fill.id="name", format="World", style="gray")
+# choropleth with more specifications
+qtm(World, fill="HPI", fill.n = 9, fill.palette = "div",
+    fill.title = "Happy Planet Index", fill.id = "name", 
+    style = "gray", format = "World")
+# this map can also be created with the main plotting method,
+# which is recommended in this case.
+\dontrun{
+tm_shape(World) +
+    tm_polygons("HPI", n = 9, palette = "div",
+        title = "Happy Planet Index", id = "name") +
+tm_style("gray") +
+tm_format("World")
+}
 
 # bubble map
 \dontrun{
@@ -100,10 +104,18 @@ qtm(metro, symbols.size = "pop2010",
 }
 
 # TIP: check out these examples in view mode, enabled with tmap_mode("view")
+
+\dontrun{
+# without arguments, a plain interactive map is shown (the mode is set to view)
+qtm()
+
+# search query for OpenStreetMap nominatim
+qtm("Amsterdam")
+}
 }
 \references{
 Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \href{https://doi.org/10.18637/jss.v084.i06}{DOI}
 }
 \seealso{
-\href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
+\href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}}
 }

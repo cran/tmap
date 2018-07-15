@@ -30,7 +30,9 @@ legend_prepare <- function(gp, gal, gt, scaleFactor) {
 			
 			legend.labels <- revfun(if (is.null(g$labels)) rep("", nitems) else rep(g$labels, length.out=nitems))
 			attr(legend.labels, "align") <- legend.format$text.align
-
+			
+			size_ext <- ifelse(type == "text.size", 1, scaleFactor)
+			
 			list(legend.type=type,
 				 legend.title=g$title,
 				 legend.is.portrait=g$is.portrait,
@@ -38,7 +40,7 @@ legend_prepare <- function(gp, gal, gt, scaleFactor) {
 				 legend.labels=legend.labels,
 				 legend.text=revfun(if (is.null(g$text)) NULL else rep(g$text, length.out=nitems)),
 				 legend.palette=revfun(if (is.null(g$col)) rep("grey50", nitems) else rep(g$col, length.out=nitems)),
-				 legend.sizes=revfun(if (is.null(g$size)) rep(1, nitems) else rep(g$size, length.out=nitems)), # * scaleFactor,
+				 legend.sizes=revfun(if (is.null(g$size)) 1 else rep(g$size, length.out=nitems) * size_ext),
 				 legend.shapes=revfun(if (is.null(g$shape)) rep(21, nitems) else rep(g$shape, length.out=nitems)),
 				 border.col=g$border.col,
 				 lwd=g$border.lwd,
@@ -66,6 +68,8 @@ legend_prepare <- function(gp, gal, gt, scaleFactor) {
 						list_misc <- gpl[[legend.misc]]
 						if (v %in% c("symbol.col", "symbol.shape")) list_misc$symbol.max.size <- list_misc$symbol.max.size * scaleFactor
 
+						size_ext <- ifelse(v == "text.size", 1, scaleFactor)
+						
 						c(list(legend.type=v,
 							   legend.title=gpl[[legend.title]],
 							   legend.is.portrait=gpl[[legend.is.portrait]],
@@ -73,7 +77,7 @@ legend_prepare <- function(gp, gal, gt, scaleFactor) {
 							   legend.labels=gpl[[legend.labels]],
 							   legend.text=gpl[[legend.text]],
 							   legend.palette=gpl[[legend.palette]],
-							   legend.sizes=gpl[[legend.sizes]] * scaleFactor,
+							   legend.sizes=gpl[[legend.sizes]] * size_ext,
 							   legend.shapes=gpl[[legend.shapes]]),
 						  list_misc)
 					}
@@ -106,14 +110,14 @@ legend_prepare <- function(gp, gal, gt, scaleFactor) {
 					} else NULL
 				} else NULL
 			})
-			c(y[!sapply(y, is.null)], yhist[!sapply(yhist, is.null)])
+			c(y[!vapply(y, is.null, logical(1))], yhist[!vapply(yhist, is.null, logical(1))])
 		})
 		#x <- c(x, xadd)
+	
 		legelem <- c(do.call("c", x), xadd)
 	} else legelem <- list(NULL)
 	
-
-	if (all(sapply(legelem, is.null))) {
+	if (all(vapply(legelem, is.null, logical(1)))) {
 		return(NULL)
 	} else {
 		legelem

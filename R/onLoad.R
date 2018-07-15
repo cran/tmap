@@ -1,17 +1,25 @@
 .onLoad <- function(...) {
-	options(tmap.unit="metric", tmap.style="white", tmap.mode="plot", tmap.limits=c(facets.plot=64, facets.view=4))
+	options(tmap.style="white", tmap.mode="plot")
 	internet <- working_internet()
 	assign(".internet", internet, envir = .TMAP_CACHE)
 	assign(".underCoverage", NULL, envir = .TMAP_CACHE)
 	assign(".overCoverage", NULL, envir = .TMAP_CACHE)
 	assign(".last_map", NULL, envir = .TMAP_CACHE)
 	assign(".last_map_new", NULL, envir = .TMAP_CACHE)
+	assign(".tmapOptions", .defaultTmapOptions, envir = .TMAP_CACHE)
+	assign(".tmapStyles", .defaultTmapStyles, envir = .TMAP_CACHE)
+	assign(".tmapFormats", .defaultTmapFormats, envir = .TMAP_CACHE)
+	tips_order <- determine_tips_order()
+	
+	assign(".tmapTipsIds", tips_order, envir = .TMAP_CACHE)
+	assign(".tmapTipsId", 1, envir = .TMAP_CACHE)
+	
 } 
 
 .TMAP_CACHE <- new.env(FALSE, parent=globalenv())
 
-.CRS_longlat <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0", doCheckCRSArgs = FALSE)
-.CRS_merc <- CRS("+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs", doCheckCRSArgs = FALSE)
+.crs_longlat <- sf::st_crs(4326)
+.crs_merc <- sf::st_crs(3857)
 
 get_proj4_version <- function() {
 	PROJ4_version <- rgdal::getPROJ4VersionInfo()

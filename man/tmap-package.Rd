@@ -9,7 +9,7 @@
 Thematic maps are geographical maps in which spatial data distributions are visualized. This package offers a flexible, layer-based, and easy to use approach to create thematic maps, such as choropleths and bubble maps. It is based on the grammar of graphics, and resembles the syntax of ggplot2.
 }
 \details{
-This page provides a brief overview of all package functions. See \href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}} for a short introduction with examples. See \href{../doc/tmap-modes.html}{\code{vignette("tmap-modes")}} for a short demo of the two output modes: plot and interactive view.
+This page provides a brief overview of all package functions. See \href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}} for a short introduction with examples.
 }
 \section{Quick plotting method}{
 
@@ -34,6 +34,8 @@ Aesthetics base layers:
 \code{\link{tm_lines}}\tab Create a layer of lines \cr
 \code{\link{tm_raster}}\tab Create a raster layer \cr
 \code{\link{tm_text}}\tab Create a layer of text labels \cr
+\code{\link{tm_basemap}}\tab Create a layer of basemap tiles \cr
+\code{\link{tm_tiles}}\tab Create a layer of overlay tiles \cr
 }
 
 Aesthetics derived layers:
@@ -44,11 +46,12 @@ Aesthetics derived layers:
 \code{\link{tm_squares}}\tab Create a layer of squares \cr
 \code{\link{tm_dots}}\tab Create a layer of dots \cr
 \code{\link{tm_markers}}\tab Create a layer of markers \cr
-\code{\link{tm_iso}}\tab Create a iso/contour lines \cr
+\code{\link{tm_iso}}\tab Create a layer of iso/contour lines \cr
+\code{\link{tm_rgb}}\tab Create a raster layer of an image \cr
 --------------------------- \tab --------------------------------------------------------------------------------------------------- \cr
 }
 
-Facetting (small multiples)
+Faceting (small multiples)
 \tabular{ll}{
 \code{\link{tm_facets}}\tab Define facets \cr
 --------------------------- \tab --------------------------------------------------------------------------------------------------- \cr
@@ -62,6 +65,7 @@ Attributes:
 \code{\link{tm_credits}}\tab Create a text for credits \cr
 \code{\link{tm_logo}}\tab Create a logo \cr
 \code{\link{tm_xlab} and \link{tm_ylab}}\tab Create axis labels \cr
+\code{\link{tm_minimap}}\tab Create a minimap (view mode only) \cr
 --------------------------- \tab --------------------------------------------------------------------------------------------------- \cr
 }
 
@@ -70,13 +74,16 @@ Layout element:
 \code{\link{tm_layout}}\tab Adjust the layout (main function)\cr
 \code{\link{tm_legend}}\tab Adjust the legend \cr
 \code{\link{tm_view}}\tab Configure the interactive view mode \cr
+\code{\link{tm_style}}\tab Apply a predefined style \cr
+\code{\link{tm_format}}\tab Apply a predefined format \cr
 --------------------------- \tab --------------------------------------------------------------------------------------------------- \cr
 }
 
 Change options:
 \tabular{ll}{
 \code{\link{tmap_mode}}\tab Set the tmap mode: \code{"plot"} or \code{"view"}\cr
-\code{\link{ttm}}\tab Toggle between the modes\cr
+\code{\link{ttm}}\tab Toggle between the modes \cr
+\code{\link{tmap_options}}\tab Set global tmap options (from \code{\link{tm_layout}}, \code{\link{tm_view}}, and a couple of others) \cr
 \code{\link{tmap_style}}\tab Set the default style \cr
 --------------------------- \tab --------------------------------------------------------------------------------------------------- \cr
 }
@@ -92,10 +99,11 @@ Create icons:
  
 \tabular{ll}{
 \code{\link{print}}\tab Plot in graphics device or view interactively in web browser or RStudio's viewer pane \cr
-\code{\link{last_map}}\tab Redraw the last map \cr
+\code{\link{tmap_last}}\tab Redraw the last map \cr
 \code{\link{tmap_leaflet}}\tab Obtain a leaflet widget object \cr
-\code{\link{animation_tmap}}\tab Create an animation \cr
-\code{\link{save_tmap}}\tab Save thematic maps (both in plot and view mode) \cr
+\code{\link{tmap_animation}}\tab Create an animation \cr
+\code{\link{tmap_arrange}}\tab Create small multiples of separate maps \cr
+\code{\link{tmap_save}}\tab Save thematic maps (either as image or HTML file) \cr
 --------------------------- \tab --------------------------------------------------------------------------------------------------- \cr
 }
 }
@@ -103,13 +111,12 @@ Create icons:
 \section{Spatial datasets}{
  
 \tabular{ll}{
-\code{\link{World}}\tab World country data (spatial polygons) \cr
-\code{\link{Europe}}\tab European country data (spatial polygons) \cr
-\code{\link{NLD_prov}}\tab Netherlands province data (spatial polygons) \cr
-\code{\link{NLD_muni}}\tab Netherlands municipal data (spatial polygons) \cr
-\code{\link{metro}}\tab Metropolitan areas (spatial points) \cr
-\code{\link{rivers}}\tab Rivers (spatial lines) \cr
-\code{\link{land}}\tab Global land cover (spatial grid)\cr
+\code{\link{World}}\tab World country data (\code{\link[sf:sf]{sf}} object of polygons) \cr
+\code{\link{NLD_prov}}\tab Netherlands province data (\code{\link[sf:sf]{sf}} object of  polygons) \cr
+\code{\link{NLD_muni}}\tab Netherlands municipal data (\code{\link[sf:sf]{sf}} object of  polygons) \cr
+\code{\link{metro}}\tab Metropolitan areas (\code{\link[sf:sf]{sf}} object of points) \cr
+\code{\link{rivers}}\tab Rivers (\code{\link[sf:sf]{sf}} object of lines) \cr
+\code{\link{land}}\tab Global land cover (\code{\link[raster:brick]{RasterBrick}} object)\cr
 --------------------------- \tab --------------------------------------------------------------------------------------------------- \cr
 }
 }
@@ -118,9 +125,7 @@ Create icons:
 Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \href{https://doi.org/10.18637/jss.v084.i06}{DOI}
 }
 \seealso{
-\href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
-
-\href{../doc/tmap-modes.html}{\code{vignette("tmap-modes")}}
+\href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}}
 }
 \author{
 Martijn Tennekes \email{mtennekes@gmail.com}

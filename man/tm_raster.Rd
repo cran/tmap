@@ -7,18 +7,19 @@
 \usage{
 tm_raster(col = NA, alpha = NA, palette = NULL, n = 5,
   style = ifelse(is.null(breaks), "pretty", "fixed"), breaks = NULL,
-  interval.closure = "left", labels = NULL, auto.palette.mapping = TRUE,
-  contrast = NA, max.categories = 12, colorNA = NULL, saturation = 1,
-  interpolate = FALSE, textNA = "Missing", showNA = NA, title = NA,
-  legend.show = TRUE, legend.format = list(), legend.is.portrait = TRUE,
+  interval.closure = "left", labels = NULL, midpoint = NULL,
+  stretch.palette = TRUE, contrast = NA, saturation = 1,
+  interpolate = NA, colorNA = NULL, textNA = "Missing", showNA = NA,
+  colorNULL = NULL, title = NA, legend.show = TRUE,
+  legend.format = list(), legend.is.portrait = TRUE,
   legend.reverse = FALSE, legend.hist = FALSE, legend.hist.title = NA,
-  legend.z = NA, legend.hist.z = NA)
+  legend.z = NA, legend.hist.z = NA, group = NA,
+  auto.palette.mapping = NULL, max.categories = NULL)
 
 tm_rgb(alpha = NA, saturation = 1, interpolate = TRUE, ...)
 }
 \arguments{
-\item{col}{three options: a single color value, the name of a data variable that is contained in \code{shp}, or the name of a variable in \code{shp} that contain color values. In the second case the values (numeric or categorical) that will be depicted by a color palette (see \code{palette}. If omitted, and if \code{shp} contains three numeric layers that range between 0 and 255, these are interpreted as RGB values, else, the first data variable is selected.
-If multiple values are specified, small multiples are drawn (see details). By default, it is the name of the first data variable.}
+\item{col}{three options: a single color value, the name of a data variable that is contained in \code{shp}, or the name of a variable in \code{shp} that contain color values. In the second case the values (numeric or categorical) that will be depicted by a color palette (see \code{palette}. If multiple values are specified, small multiples are drawn (see details). By default, it is a vector of the names of all data variables unless the \code{by} argument of \code{\link{tm_facets}} is defined (in that case, the default color of dots is taken from the tmap option \code{aes.color}). Note that the number of small multiples is limited by \code{tmap_options("limits")}).}
 
 \item{alpha}{transparency number between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of the \code{col} is used (normally 1).}
 
@@ -34,21 +35,23 @@ If multiple values are specified, small multiples are drawn (see details). By de
 
 \item{labels}{labels of the classes}
 
-\item{auto.palette.mapping}{When diverging colour palettes are used (i.e. "RdBu") this method automatically maps colors to values such that the middle colors (mostly white or yellow) are assigned to values of 0, and the two sides of the color palette are assigned to negative respectively positive values. When categorical color palettes are used, this method stretches the palette if there are more levels than colors.}
+\item{midpoint}{The value mapped to the middle color of a diverging palette. By default it is set to 0 if negative and positive values are present. In that case, the two sides of the color palette are assigned to negative respectively positive values. If all values are positive or all values are negative, then the midpoint is set to \code{NA}, which means that the value that corresponds to the middle color class (see \code{style}) is mapped to the middle color. Only applies when \code{col} is a numeric variable. If it is specified for sequential color palettes (e.g. \code{"Blues"}), then this color palette will be treated as a diverging color palette.}
+
+\item{stretch.palette}{Logical that determines whether the categorical color palette should be stretched if there are more categories than colors. If \code{TRUE} (default), interpolated colors are used (like a rainbow). If \code{FALSE}, the palette is repeated.}
 
 \item{contrast}{vector of two numbers that determine the range that is used for sequential and diverging palettes (applicable when \code{auto.palette.mapping=TRUE}). Both numbers should be between 0 and 1. The first number determines where the palette begins, and the second number where it ends. For sequential palettes, 0 means the brightest color, and 1 the darkest color. For diverging palettes, 0 means the middle color, and 1 both extremes. If only one number is provided, this number is interpreted as the endpoint (with 0 taken as the start).}
-
-\item{max.categories}{in case \code{col} is the name of a categorical variable, this value determines how many categories (levels) it can have maximally. If the number of levels is higher than \code{max.categories} and \code{auto.palette.mapping} is \code{FALSE}, then levels are combined.}
-
-\item{colorNA}{color used for missing values. Use \code{NULL} for transparency.}
 
 \item{saturation}{Number that determines how much saturation (also known as chroma) is used: \code{saturation=0} is greyscale and \code{saturation=1} is normal. This saturation value is multiplied by the overall saturation of the map (see \code{\link{tm_layout}}).}
 
 \item{interpolate}{Should the raster image be interpolated? By default \code{FALSE} for \code{tm_raster} and \code{TRUE} for \code{tm_rgb}.}
 
+\item{colorNA}{color used for missing values. Use \code{NULL} for transparency.}
+
 \item{textNA}{text used for missing values.}
 
 \item{showNA}{logical that determines whether missing values are named in the legend. By default (\code{NA}), this depends on the presence of missing values.}
+
+\item{colorNULL}{colour for polygons that are shown on the map that are out of scope}
 
 \item{title}{title of the legend element}
 
@@ -80,13 +83,19 @@ If multiple values are specified, small multiples are drawn (see details). By de
 
 \item{legend.hist.z}{index value that determines the position of the histogram legend element}
 
+\item{group}{name of the group to which this layer belongs in view mode. Each group can be selected or deselected in the layer control item. Groups can either be specified as base or overlay groups in \code{\link{tm_view}} (arguments \code{base.groups} and \code{overlay.groups}).}
+
+\item{auto.palette.mapping}{deprecated. It has been replaced by \code{midpoint} for numeric variables and \code{stretch.palette} for categorical variables.}
+
+\item{max.categories}{deprecated. It has moved to \code{\link{tmap_options}}.}
+
 \item{...}{arguments passed on from \code{tm_raster} to \code{tm_rgb}}
 }
 \value{
 \code{\link{tmap-element}}
 }
 \description{
-Creates a \code{\link{tmap-element}} that draws a raster. For coloring, there are three options: 1) a fixed color is used, 2) a color palette is mapped to a data variable, 3) RGB values are used. The function \code{tm_raster} is designed for option 2, while \code{tm_rgb} is used for option 3.
+Creates a \code{\link{tmap-element}} that draws a raster. For coloring, there are three options: 1) a fixed color is used, 2) a color palette is mapped to a data variable, 3) RGB values are used. The function \code{tm_raster} is designed for options 1 and 2, while \code{tm_rgb} is used for option 3.
 }
 \details{
 Small multiples can be drawn in two ways: either by specifying the \code{by} argument in \code{\link{tm_facets}}, or by defining multiple variables in the aesthetic arguments. The aesthetic argument of \code{tm_raster} is \code{col}. In the latter case, the arguments, except for the ones starting with \code{legend.}, can be specified for small multiples as follows. If the argument normally only takes a single value, such as \code{n}, then a vector of those values can be specified, one for each small multiple. If the argument normally can take a vector, such as \code{palette}, then a list of those vectors (or values) can be specified, one for each small multiple.
@@ -111,7 +120,7 @@ pal20 <- c("#003200", "#3C9600", "#006E00", "#556E19", "#00C800", "#8CBE8C",
 		   "#E664E6", "#9B82E6", "#B4FEF0", "#646464", "#C8C8C8", "#FF0000",
 		   "#FFFFFF", "#5ADCDC")
 tm_shape(land) +
-	tm_raster("cover", max.categories = 20, palette = pal20, title = "Global Land Cover") + 
+	tm_raster("cover", palette = pal20, title = "Global Land Cover") + 
 	tm_layout(scale=.8, legend.position = c("left","bottom"))
 }
 
@@ -122,18 +131,17 @@ tm_shape(World) +
     tm_borders() +
 tm_layout(legend.position = c("left", "bottom"), bg.color = "lightblue")
 
-# TIP: check out these examples in view mode, enabled with tmap_mode("view")
-
 \dontrun{
-# doesn't work in view mode, since it does not support small multiples
 tm_shape(land) +
 	tm_raster("black") +
 	tm_facets(by="cover_cls")
 }
+
+# TIP: check out these examples in view mode, enabled with tmap_mode("view")
 }
 \references{
 Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \href{https://doi.org/10.18637/jss.v084.i06}{DOI}
 }
 \seealso{
-\href{../doc/tmap-nutshell.html}{\code{vignette("tmap-nutshell")}}
+\href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}}
 }
