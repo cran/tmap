@@ -1,3 +1,10 @@
+version 2.1
+- added option max.raster (maximum raster size)
+- made rasters in view mode faster
+- bug fixed for geometry collection objects without data in view mode
+- improved handling of manual palettes
+- tmap_arrange can take a list of tmap objects
+
 version 2.0
 - [!] tmap migrated from sp to sf. sp objects are still supported, but all internal functions are based on sf
 - [!] added tm_sf which draws sf objects

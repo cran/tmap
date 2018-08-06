@@ -3,6 +3,7 @@
 		unit = "metric",
 		limits = c(facets.plot = 64, facets.view = 4),
 		max.categories = 30,
+		max.raster = c(plot = 1e7, view = 1e6),
 		show.messages = TRUE,
 		title = NA,
 		scale = 1,
@@ -301,6 +302,7 @@
 #' @param unit this is the default value for the \code{unit} argument of \code{\link{tm_shape}}. It specifies the unit of measurement, which is used in the scale bar and the calculation of density values. By default (when loading the package), it is \code{"metric"}. Other valid values are \code{"imperial"}, \code{"km"}, \code{"m"}, \code{"mi"}, and \code{"ft"}.
 #' @param limits this option determines how many facets (small multiples) are allowed for per mode. It should be a vector of two numeric values named \code{facets.view} and \code{facets.plot}. By default (i.e. when loading the package), it is set to \code{c(facets.view = 4, facets.plot = 64)}
 #' @param max.categories in case \code{col} is the name of a categorical variable in the layer functions (e.g. \code{\link{tm_polygons}}), this value determines how many categories (levels) it can have maximally. If the number of levels is higher than \code{max.categories}, then levels are combined.
+#' @param max.raster the maximum size of rasters, in terms of number of raster cells. It should be a vector of two numeric values named \code{plot} and \code{view}, which determines the size in plotting and viewing mode. The default values are \code{c(plot = 1e7, view = 1e6)}. Rasters that are larger will be shown at a decreased resolution.
 #' @param basemaps default basemaps. Basemaps are normally configured with \code{\link{tm_basemap}}. When this is not done, the basemaps specified by this option are shown (in view mode). Vector of one or more names of baselayer maps, or \code{NULL} if basemaps should be omitted. For options see the list \code{leaflet::providers}, which can be previewed at \url{http://leaflet-extras.github.io/leaflet-providers/preview}. Also supports URL's for tile servers, such as \code{"http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}. If a named vector is provided, the names are used in the layer control legend (similar to the \code{group} argument of \code{\link{tm_basemap}}. See also \code{overlays}, which is the default option for overlay tiles.
 #' @param basemaps.alpha default transparency (opacity) value for the basemaps. Can be a vector of values, one for each basemap.
 #' @param overlays default overlay tilemaps. Overlays tilemaps are shown as front layer (in contrast to basemaps, which are background layers), so they are only useful when they are semi-transparent. Like basemaps, a vector of tilemaps is expected, or \code{NULL} is overlays should be omitted.
@@ -314,7 +316,7 @@
 #' @name tmap_options
 #' @export
 #' @seealso \code{\link{tm_layout}}, \code{\link{tm_view}}, and \code{\link{tmap_style}}
-tmap_options <- function(..., unit, limits, max.categories, basemaps, basemaps.alpha, overlays, overlays.alpha, qtm.scalebar, qtm.minimap, show.messages) {
+tmap_options <- function(..., unit, limits, max.categories, max.raster, basemaps, basemaps.alpha, overlays, overlays.alpha, qtm.scalebar, qtm.minimap, show.messages) {
 
 	.tmapOptions <- get(".tmapOptions", envir = .TMAP_CACHE)	
 	current.style <- getOption("tmap.style")
@@ -333,6 +335,7 @@ tmap_options <- function(..., unit, limits, max.categories, basemaps, basemaps.a
 	if (length(lst) >= 1 && is.null(names(lst))) {
 		arg <- lst[[1]]
 		if (is.list(arg)) {
+			## case 1: option list is given
 			args <- arg
 			
 			style_attr <- attr(args, "style")
@@ -343,12 +346,15 @@ tmap_options <- function(..., unit, limits, max.categories, basemaps, basemaps.a
 			
 			if (length(lst) > 1) warning("The first argument is used, but the other arguments are ignored.")
 		} else {
+			## case 2: option name is given
 			args <- sapply(lst, "[", 1)
 			if (!all(args %in% optnames)) warning("the following options do not exist: ", paste(setdiff(args, optnames), collapse = ", "))
 			args <- intersect(args, optnames)
 			return(.tmapOptions[args])
 		}
 	} else {
+		## case 3: named options are set
+		## case 4: tmap_options is called without arguments
 		args <- lapply(as.list(match.call()[-1]), eval, envir = e1)	
 	}
 
@@ -361,10 +367,12 @@ tmap_options <- function(..., unit, limits, max.categories, basemaps, basemaps.a
 	
 	
 	if (!length(args)) {
+		# case 4
 		return(.tmapOptions)	
 	} else {
+		# case 1 and 3
 		backup <- .tmapOptions[names(args)]
-		.tmapOptions[names(args)] <- args
+		.tmapOptions[names(args)] <- check_named_items(args, backup)
 		
 		options(tmap.style=newstyle)
 		attr(.tmapOptions, "style") <- newstyle
@@ -379,6 +387,28 @@ tmap_options <- function(..., unit, limits, max.categories, basemaps, basemaps.a
 		
 		invisible(backup)
 	}
+}
+
+
+## function to check named items (such as max.raster and legend.format)
+check_named_items <- function(a, b) {
+	named_items <- which(vapply(b, FUN = function(i) !is.null(names(i)), FUN.VALUE = logical(1)))
+	
+	if (length(named_items) != 0L) {
+		a[named_items] <- mapply(function(an, bn, nm) {
+			res <- bn
+			cls <- ifelse(is.list(bn), "list", "vector")
+			if (is.null(names(an))) {
+				warning("tmap option ", nm, " requires a named ", cls, call. = FALSE)
+			} else if (!all(names(an) %in% names(bn))) {
+				invalid <- setdiff(names(an), names(bn))
+				warning("invalid ", cls, " names of tmap option ", nm, ": ", paste(invalid, collapse = ", "), call. = FALSE)
+			}
+			res[names(an)] <- an
+			res
+		},a[named_items], b[named_items], names(b[named_items]), SIMPLIFY = FALSE)
+	}
+	a
 }
 
 

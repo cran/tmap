@@ -1,19 +1,19 @@
 view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL) {
 	
-	# determine view
-
-	# take first small multiple
-	#gp <- gps[[1]]
 	gt <- gp$tm_layout
 	gp$tm_layout <- NULL
 	
 	lf <- leaflet(options = leaflet::leafletOptions(crs=gt$projection))
-	# basemaps <- gt$basemaps
-	# basemaps.alpha <- gt$basemaps.alpha
-	
+
 	pOptions <- function(cw) {
 		if (is.null(cw)) cw <- 20
-		leaflet::popupOptions(minWidth = 100, maxWidth = max(100, cw * 20))
+		
+		width <- max(500, cw * 4.5)
+		leaflet::popupOptions(minWidth = 100, maxWidth = width)
+		
+		# minWidth and maxWidth apply to every popup
+		# setting leaflet::popupOptions(minWidth = width, maxWidth = width) makes every popup wide
+		# horizontal scrollbars still occur
 	}
 		
 	
@@ -168,7 +168,7 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL) {
 				labels <- NULL
 			}
 
-			if (!is.null(labels)) shp$tmapID <- labels
+			if (!is.null(labels)) shp$tmapID <- as.character(labels)
 			
 			stroke <- gpl$lwd>0 && !is.na(bcol) && bopacity!=0
 			
@@ -463,15 +463,30 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL) {
 				gpl$raster.legend.values <- 1
 			}
 			
-			shp@data@values <- match(gpl$raster, gpl$raster.legend.palette)
 
-			
 			group_name <- if (is.na(gpl$raster.group)) shp_name else gpl$raster.group
 			addOverlayGroup(group_name)
 			
-			res_leg <- add_legend(map=NULL, gpl, gt, aes="raster", alpha = alpha, group = if (gt$free.scales.raster) group_name else NULL, list.only=TRUE)
+			#res_leg <- add_legend(map=NULL, gpl, gt, aes="raster", alpha = alpha, group = if (gt$free.scales.raster) group_name else NULL, list.only=TRUE)
+
+			pal <- na.omit(unique(gpl$raster))
+			pal <- pal[substr(pal, 8,10)!="00"] ## remove transparant colors
 			
-			lf <- lf %>% addRasterImage(x=shp, colors=res_leg$col, opacity = res_leg$opacity, group=group_name, project = FALSE)
+			shp@data@values <- match(gpl$raster, pal)
+			
+			res <- split_alpha_channel(pal, alpha)
+			pal_col <- res$col
+			pal_opacity <- max(res$opacity)
+			
+			mappal <- function(x) {
+				if (all(is.na(shp@data@values))) return(rep("#00000000", length(x)))
+				
+				y <- pal_col[x]
+				y[is.na(y)] <- "#00000000"
+				y
+			}
+			
+			lf <- lf %>% addRasterImage(x=shp, colors=mappal, opacity = pal_opacity, group=group_name, project = FALSE)
 			
 			if (!is.na(gpl$xraster[1])) {
 				if (gpl$raster.legend.show) lf <- lf %>% add_legend(gpl, gt, aes="raster", alpha=alpha, group = if (gt$free.scales.raster) group_name else NULL)
@@ -772,7 +787,12 @@ format_popups <- function(id=NULL, titles, format, values) {
 	x <- paste("<div style=\"max-height:10em;overflow:auto;\"><table>
 			   <thead><tr><th colspan=\"2\">", labels, "</th></thead></tr>", labels3, "</table></div>", sep="")
 	
-	charwidth <- max(nchar(labels)) + max(nchar(labels3))
+	nc_labels <- nchar(labels)
+	nc_titles <- max(nchar(titles_format))
+	nc_values_format <- do.call(pmax, lapply(values_format, nchar)) + 2 # which space between title and value
+	
+	charwidth <- max(nc_labels + nc_titles + nc_values_format)
+	# print(which.max(nc_labels + nc_titles + nc_values_format))
 	attr(x, "charwidth") <- charwidth
 	x
 }
@@ -849,6 +869,13 @@ add_legend <- function(map, gpl, gt, aes, alpha, group, list.only=FALSE) {
 		style <- attr(pal, "style")
 		is.cont <- TRUE
 		incl.na <- nchar(pal[length(pal)]) < 10
+		
+		orig <- unlist(lapply(pal, function(x) {
+			p <- strsplit(x, split = "-", fixed=TRUE)[[1]]
+			if (length(p) == 1) NULL else p[p!="NA"]
+		}))
+		
+		
 		pal <- vapply(pal, function(x) {
 			p <- strsplit(x, split = "-", fixed=TRUE)[[1]]
 			if (length(p)==1) p[1] else if (p[6]=="NA") p[5] else p[6]
@@ -872,6 +899,7 @@ add_legend <- function(map, gpl, gt, aes, alpha, group, list.only=FALSE) {
 			colNA <- NA
 			textNA <- NA
 		}
+		orig <- pal
 	}
 
 	allNAs <- (length(pal) == 0)
@@ -891,8 +919,8 @@ add_legend <- function(map, gpl, gt, aes, alpha, group, list.only=FALSE) {
 	}
 	
 	if (list.only) {
-		if (!is.na(colNA)) col <- c(col, colNA)
-		return(list(col=pal, opacity=opacity))
+		if (!is.na(colNA)) orig <- c(orig, colNA)
+		return(list(col=orig, opacity=opacity))
 	}
 	
 	title_name <- paste(aes, "legend.title", sep=".")
