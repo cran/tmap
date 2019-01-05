@@ -28,6 +28,7 @@
 #' @param scale numeric value that serves as the global scale parameter. All font sizes, symbol sizes, border widths, and line widths are controlled by this value. The parameters \code{symbols.size}, \code{text.size}, and \code{lines.lwd} can be scaled seperately with respectively \code{symbols.scale}, \code{text.scale}, and \code{lines.scale}. See also \code{...}.
 #' @param title main title. For legend titles, use \code{X.style}, where X is the layer name (see \code{...}).
 #' @param projection Either a \code{\link[sf:st_crs]{crs}} object or a character value. If it is a character, it can either be a \code{PROJ.4} character string or a shortcut. See \code{\link[tmaptools:get_proj4]{get_proj4}} for a list of shortcut values. By default, the projection is used that is defined in the \code{shp} object itself, which can be obtained with \code{\link[tmaptools:get_projection]{get_projection}}.
+#' @param bbox bounding box. Arugment passed on to \code{\link{tm_shape}}
 #' @param basemaps name(s) of the provider or an URL of a tiled basemap. It is a shortcut to \code{\link{tm_basemap}}. Set to \code{NULL} to disable basemaps. By default, it is set to the tmap option \code{basemaps}.
 #' @param overlays name(s) of the provider or an URL of a tiled overlay map. It is a shortcut to \code{\link{tm_tiles}}.
 #' @param style Layout options (see \code{\link{tm_layout}}) that define the style. See \code{\link{tmap_style}} for details.
@@ -55,6 +56,7 @@ qtm <- function(shp,
 				scale=NA,
 				title=NA,
 				projection=NULL,
+				bbox = NULL,
 				basemaps = NA,
 				overlays = NA,
 				style=NULL,
@@ -93,12 +95,21 @@ qtm <- function(shp,
 		borders <- NULL
 		showPoints <- FALSE
 	} else {
+		
+		
+		if (any(st_geometry_type(shp) == "GEOMETRYCOLLECTION")) {
+			geom <- split_geometry_collection(st_geometry(shp))
+			shp <- shp[attr(geom, "ids"), ]
+			shp <- st_set_geometry(shp, geom)
+		}
+		
+		types <- get_types(st_geometry(shp))
+		
 		raster <- NULL
-		hasPolys <- inherits(st_geometry(shp), c("sfc_POLYGON", "sfc_MULTIPOLYGON")) || (inherits(st_geometry(shp), "sfc_GEOMETRY") && any(st_is(shp, c("MULTIPOLYGON", "POLYGON"))))
-		hasLines <- inherits(st_geometry(shp), c("sfc_LINESTRING", "sfc_MULTILINESTRING")) || (inherits(st_geometry(shp), "sfc_GEOMETRY") && any(st_is(shp, c("MULTILINESTRING", "LINESTRING"))))
-		hasPoints <- inherits(st_geometry(shp), c("sfc_POINT", "sfc_MULTIPOINT")) || (inherits(st_geometry(shp), "sfc_GEOMETRY") && any(st_is(shp, c("MULTIPOINT", "POINT"))))
-
-
+		hasPolys <- any(types == "polygons")
+		hasLines <- any(types == "lines")
+		hasPoints <- any(types == "points")
+		
 		showPoints <- (hasPoints || !missing(symbols.size) || !missing(symbols.shape) || !missing(symbols.col) || !missing(dots.col))
 
 
@@ -142,7 +153,7 @@ qtm <- function(shp,
 	argnames <- unlist(lapply(fns, function(f) names(formals(f))))
 	dupl <- setdiff(unique(argnames[duplicated(argnames)]), "...")
 	
-	skips <- list(tm_shape=c("shp", "projection"), tm_fill="col", tm_borders="col", tm_polygons="col", tm_symbols=c("size", "col", "shape"), tm_dots=c("size", "col", "shape"), tm_lines=c("col", "lwd"), tm_raster="raster", tm_text=c("text", "size", "col"), tm_layout="scale", tm_grid=NULL, tm_facets="by", tm_view = NULL)
+	skips <- list(tm_shape=c("shp", "projection", "bbox"), tm_fill="col", tm_borders="col", tm_polygons="col", tm_symbols=c("size", "col", "shape"), tm_dots=c("size", "col", "shape"), tm_lines=c("col", "lwd"), tm_raster="raster", tm_text=c("text", "size", "col"), tm_layout="scale", tm_grid=NULL, tm_facets="by", tm_view = NULL)
 	
 	args2 <- mapply(function(f, pre, sk, args, dupl){
 		
@@ -172,7 +183,7 @@ qtm <- function(shp,
 		arg
 	}, fns, fns_prefix, skips, MoreArgs = list(args=args, dupl=dupl), SIMPLIFY=FALSE)
 
-	g <- do.call("tm_shape", c(list(shp=shp, projection=projection), args2[["tm_shape"]]))
+	g <- do.call("tm_shape", c(list(shp=shp, projection=projection, bbox = bbox), args2[["tm_shape"]]))
 	g$tm_shape$shp_name <- shp_name
 	
 

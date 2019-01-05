@@ -1,6 +1,6 @@
 #' Small multiples
 #' 
-#' Creates a \code{\link{tmap-element}} that specifies facets (small multiples). Small multiples can be created in two ways: 1) by specifying the \code{by} argument with one or two variable names, by which the data is grouped, 2) by specifying multiple variable names in any of the aesthetic argument of the layer functions (for instance, the argument \code{col} in \code{\link{tm_fill}}). This function further specifies the facets, for instance number of rows and columns, and whether the coordinate and scales are fixed or free (i.e. independent of each other).
+#' Creates a \code{\link{tmap-element}} that specifies facets (small multiples). Small multiples can be created in two ways: 1) by specifying the \code{by} argument with one or two variable names, by which the data is grouped, 2) by specifying multiple variable names in any of the aesthetic argument of the layer functions (for instance, the argument \code{col} in \code{\link{tm_fill}}). This function further specifies the facets, for instance number of rows and columns, and whether the coordinate and scales are fixed or free (i.e. independent of each other). An overview of the different approaches to create facets is provided in the examples.
 #' 
 #' The global option \code{limits} controls the limit of the number of facets that are plotted. By default, \code{tmap_options(limits=c(facets.plot=64, facets.view=4))}. The maximum number of interactive facets is set to four since otherwise it may become very slow.
 #' 
@@ -10,7 +10,7 @@
 #' @param ncol number of columns of the small multiples grid. Not applicable if \code{by} contains two variable names.
 #' @param nrow number of rows of the small multiples grid. Not applicable if \code{by} contains two variable names.
 #' @param free.coords logical. If the \code{by} argument is specified, should each map has its own coordinate ranges? By default \code{TRUE}, unless facets are shown in as different layers (\code{as.layers = TRUE})
-#' @param drop.units logical. If the \code{by} argument is specified, should non-selected spatial units be dropped? If \code{FALSE}, they are plotted where mapped aesthetics are regarded as missing values. Not applicable for raster shapes. By default \code{TRUE} when \code{as.layers} and/or \code{free.coords} is \code{TRUE}.
+#' @param drop.units logical. If the \code{by} argument is specified, should non-selected spatial units be dropped? If \code{FALSE}, they are plotted where mapped aesthetics are regarded as missing values. Not applicable for raster shapes. By default \code{TRUE}.
 #' @param drop.empty.facets logical. If the \code{by} argument is specified, should empty facets be dropped? Empty facets occur when the \code{by}-variable contains unused levels. When \code{TRUE} and two \code{by}-variables are specified, empty rows and columns are dropped.
 #' @param drop.NA.facets logical. If the \code{by} argument is specified, and all values of the defined aesthetic variables (e.g. \code{col} from \code{\link{tm_fill}}) for specific facets, should these facets be dropped? \code{FALSE} by default.
 #' @param sync logical. Should the navigation in view mode (zooming and panning) be synchronized? By default \code{TRUE} if the facets have the same bounding box. This is generally the case when \code{\link[raster:raster-package]{raster}}s are plotted, or when free.coords is \code{FALSE}.
@@ -39,7 +39,7 @@ tm_facets <- function(by=NULL,
 					  as.layers = FALSE,
 					  ncol=NA, nrow=NA, 
 					  free.coords=!as.layers,
-					  drop.units=free.coords || as.layers,
+					  drop.units=TRUE,
 					  drop.empty.facets=TRUE,
 					  drop.NA.facets=FALSE,
 					  sync=NA,
@@ -253,13 +253,15 @@ tm_compass <- function(north=0,
 #' @param text text for the axis
 #' @param size fontsize, by default 0.8
 #' @param rotation rotation angle in degrees. By default, 0 for the x axis label and 90 for the y axis label.
+#' @param space space between labels and the map in numbers of line heights. By default, it is 0, unless grid labels are plotted outside the frame (i.e., \code{\link{tm_grid}} is called with \code{labels.inside.frame = FALSE}). In that case, \code{space} corresponds to the height of one line, taking the grid label size into account.
 #' @export
 #' @name tm_xlab
 #' @rdname axis_labels
 #' @example  ./examples/tm_lab.R
 tm_xlab <- function(text,
 					size=.8,
-					rotation=0) {
+					rotation=0,
+					space = NA) {
 	g <- list(tm_xlab=as.list(environment()))
 	names(g$tm_xlab) <- paste("xlab", names(g$tm_xlab), sep=".")
 	class(g) <- "tmap"
@@ -272,7 +274,8 @@ tm_xlab <- function(text,
 #' @export
 tm_ylab <- function(text,
 					size=.8,
-					rotation=90) {
+					rotation=90,
+					space = NA) {
 	g <- list(tm_ylab=as.list(environment()))
 	names(g$tm_ylab) <- paste("ylab", names(g$tm_ylab), sep=".")
 	class(g) <- "tmap"

@@ -39,7 +39,12 @@ print.tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 }
 
 #' @rdname print.tmap
-#' @export
+#' @rawNamespace
+#' if(getRversion() >= "3.6.0") {
+#'   S3method(knitr::knit_print, tmap)
+#' } else {
+#'   export(knit_print.tmap)
+#' }
 knit_print.tmap <- function(x, ..., options=NULL) {
 	# @importFrom knitr knit_print
 	print_tmap(x, knit=TRUE, options=options, ...)
@@ -365,7 +370,7 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	gm$shape.masp <-	get_asp_ratio(gm$shape.bbx_cropped, is.projected=attr(mshp, "projected"))
 
 
-	# split x and datasets into multiple layers if shape(s) aer geometrycollection 
+	# split x and datasets into multiple layers if shape(s) are geometrycollection 
 	res <- order_x(x, shps, datasets, types, gm)
 
 	x <- res$x

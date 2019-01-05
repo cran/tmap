@@ -36,7 +36,6 @@
 		compass.type = "arrow",
 		earth.boundary = FALSE,
 		earth.boundary.color = NULL,
-		#attr.color,
 		earth.boundary.lwd = 1,
 		earth.datum = "WGS84",
 		space.color = NULL,
@@ -54,7 +53,11 @@
 		legend.hist.width = 0.4,
 		#legend.width,
 		legend.title.size = 1.1,
+		legend.title.fontface = NULL,
+		legend.title.fontfamily = NULL,
 		legend.text.size = 0.7,
+		legend.text.fontface = NULL,
+		legend.text.fontfamily = NULL,
 		legend.hist.size = 0.7,
 		legend.format = list(
 			fun = NULL,
@@ -69,7 +72,6 @@
 		legend.frame = FALSE,
 		legend.frame.lwd = 1,
 		legend.text.color = NULL,
-		#attr.color,
 		legend.bg.color = NA,
 		legend.bg.alpha = 1,
 		legend.hist.bg.color = NA,
@@ -77,19 +79,24 @@
 		title.snap.to.legend = NA,
 		title.position = c("left", "top"),
 		title.color = NULL,
-		#attr.color,
+		title.fontface = NULL,
+		title.fontfamily = NULL,
 		title.bg.color = NA,
 		title.bg.alpha = 1,
 		panel.show = NA,
 		panel.labels = NA,
 		panel.label.size = 1,
 		panel.label.color = "black",
+		panel.label.fontface = NULL,
+		panel.label.fontfamily = NULL,
 		panel.label.bg.color = "grey80",
 		panel.label.height = 1.25,
 		panel.label.rot = c(90, 0),
 		main.title = NA,
 		main.title.size = 1.5,
 		main.title.color = "black",
+		main.title.fontface = NULL,
+		main.title.fontfamily = NULL,
 		main.title.position = "left",
 		attr.outside = FALSE,
 		attr.outside.position = "bottom",
@@ -278,11 +285,19 @@
 							  legend.position=c("left", "bottom"), 
 							  attr.position=c("right", "bottom"),
 							  scale=.8),
-				 NLD = list(frame=FALSE, 
+				 NLD = list(basemaps = c(Standard = "//geodata.nationaalgeoregister.nl/tiles/service/wmts/brtachtergrondkaart/EPSG:3857/{z}/{x}/{y}.png",
+				 						Aerial = "//geodata.nationaalgeoregister.nl/luchtfoto/rgb/wmts/Actueel_ortho25/EPSG:3857/{z}/{x}/{y}.jpeg",
+				 						Pastel = "//geodata.nationaalgeoregister.nl/tiles/service/wmts/brtachtergrondkaartpastel/EPSG:3857/{z}/{x}/{y}.png",
+				 						Gray   = "//geodata.nationaalgeoregister.nl/tiles/service/wmts/brtachtergrondkaartgrijs/EPSG:3857/{z}/{x}/{y}.png"),
+				 			frame=FALSE, 
 				 		   inner.margins=c(.02, .2, .06, .02),
 				 		   legend.position=c("left", "top"), 
 				 		   attr.position=c("left", "bottom")),
-				 NLD_wide = list(frame=FALSE, 
+				 NLD_wide = list(basemaps = c(Standard = "//geodata.nationaalgeoregister.nl/tiles/service/wmts/brtachtergrondkaart/EPSG:3857/{z}/{x}/{y}.png",
+				 							 Aerial = "//geodata.nationaalgeoregister.nl/luchtfoto/rgb/wmts/Actueel_ortho25/EPSG:3857/{z}/{x}/{y}.jpeg",
+				 							 Pastel = "//geodata.nationaalgeoregister.nl/tiles/service/wmts/brtachtergrondkaartpastel/EPSG:3857/{z}/{x}/{y}.png",
+				 							 Gray   = "//geodata.nationaalgeoregister.nl/tiles/service/wmts/brtachtergrondkaartgrijs/EPSG:3857/{z}/{x}/{y}.png"),
+				 				frame=FALSE, 
 				 				inner.margins=c(.02, .3, .06, .02),
 				 				legend.position=c("left", "top"), 
 				 				attr.position=c("left", "bottom")))
@@ -394,18 +409,24 @@ tmap_options <- function(..., unit, limits, max.categories, max.raster, basemaps
 check_named_items <- function(a, b) {
 	named_items <- which(vapply(b, FUN = function(i) !is.null(names(i)), FUN.VALUE = logical(1)))
 	
+	dynamic_vec_names <- c("basemaps", "overlays")
+	
 	if (length(named_items) != 0L) {
 		a[named_items] <- mapply(function(an, bn, nm) {
-			res <- bn
-			cls <- ifelse(is.list(bn), "list", "vector")
-			if (is.null(names(an))) {
-				warning("tmap option ", nm, " requires a named ", cls, call. = FALSE)
-			} else if (!all(names(an) %in% names(bn))) {
-				invalid <- setdiff(names(an), names(bn))
-				warning("invalid ", cls, " names of tmap option ", nm, ": ", paste(invalid, collapse = ", "), call. = FALSE)
+			if (nm %in% dynamic_vec_names) {
+				an
+			} else {
+				res <- bn
+				cls <- ifelse(is.list(bn), "list", "vector")
+				if (is.null(names(an))) {
+					warning("tmap option ", nm, " requires a named ", cls, call. = FALSE)
+				} else if (!all(names(an) %in% names(bn))) {
+					invalid <- setdiff(names(an), names(bn))
+					warning("invalid ", cls, " names of tmap option ", nm, ": ", paste(invalid, collapse = ", "), call. = FALSE)
+				}
+				res[names(an)] <- an
+				res
 			}
-			res[names(an)] <- an
-			res
 		},a[named_items], b[named_items], names(b[named_items]), SIMPLIFY = FALSE)
 	}
 	a

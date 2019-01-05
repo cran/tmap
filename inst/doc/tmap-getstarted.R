@@ -54,11 +54,11 @@ tm2 <- tm_shape(NLD_muni) + tm_bubbles(size = "population")
 
 tmap_arrange(tm1, tm2)
 
-## ------------------------------------------------------------------------
-tmap_mode("view")
-tm_basemap("Stamen.Watercolor") +
-tm_shape(metro) + tm_bubbles(size = "pop2020", col = "red") +
-tm_tiles("Stamen.TonerLabels")
+## ---- eval = FALSE-------------------------------------------------------
+#  tmap_mode("view")
+#  tm_basemap("Stamen.Watercolor") +
+#  tm_shape(metro) + tm_bubbles(size = "pop2020", col = "red") +
+#  tm_tiles("Stamen.TonerLabels")
 
 ## ------------------------------------------------------------------------
 tmap_mode("plot")

@@ -31,6 +31,7 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 	
 	show.messages <- get(".tmapOptions", envir = .TMAP_CACHE)$show.messages
 
+	
 	if (is.null(shp)) return(list(shp=NULL, data=NULL, type="tiles"))
 
 	shp.unit <- gm$shape.unit
@@ -93,7 +94,7 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 				nlayers(shp)>=3 && nlayers(shp)<=4 && all(minValue(shp)>=0) && all(maxValue(shp)<= 255)
 			
 			
-			if (is.na(is.RGB) && convert.RGB && get(".tmapOptions", envir = .TMAP_CACHE)$show.messages) {
+			if (is.na(is.RGB) && convert.RGB && show.messages) {
 				message("Numeric values of ", y$shp_name, " interpreted as RGB(A) values. Run tm_shape(", y$shp_name, ") + tm_raster() to visualize the data.")
 			}
 			
@@ -204,7 +205,7 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 		}, data, lvls, SIMPLIFY=FALSE))
 		
 		if (convert.RGB) {
-			data <- data.frame(PIXEL__COLOR = raster_colors(as.matrix(data)))
+			data <- data.frame(PIXEL__COLOR = raster_colors(as.matrix(data), use.colortable = FALSE))
 		}
 		
 
@@ -256,12 +257,14 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 		## get data.frame from shapes, and store ID numbers in shape objects (needed for cropping)
 		if (inherits(shp, "sfc")) {
 			data <- data.frame(tmapID = seq_len(length(shp)))
+			if (!is.null(names(shp))) names(shp) <- NULL
 			shp <- st_sf(data, geometry=shp)
 		} else {
 			data <- shp
 			st_geometry(data) <- NULL
-			shp <- shp[, attr(shp, "sf_column")]
-			shp$tmapID <- seq_len(nrow(shp))
+			shp <- st_geometry(shp)
+			if (!is.null(names(shp))) names(shp) <- NULL
+			shp <- st_sf(tmapID = seq_len(length(shp)), geometry = shp)
 		}
 		
 		data$tmapfilter <- if (is.null(y$filter)) rep(TRUE, nrow(shp)) else rep(y$filter, length.out = nrow(shp))
@@ -298,16 +301,15 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 		} else if (inherits(st_geometry(shp2), c("sfc_POINT", "sfc_MULTIPOINT"))){
 			type <- "points"
 		} else {
-			
-			types <- factor(rep(NA, nrow(shp2)), levels=c("polygons", "lines", "points"))
-			types[st_is(shp2, c("MULTIPOLYGON", "POLYGON"))] <- "polygons"
-			types[st_is(shp2, c("MULTILINESTRING", "LINESTRING"))] <- "lines"
-			types[st_is(shp2, c("MULTIPOINT", "POINT"))] <- "points"
-			
+			if (any(st_geometry_type(shp2) == "GEOMETRYCOLLECTION")) {
+				gnew <- split_geometry_collection(st_geometry(shp2))
+				ids <- attr(gnew, "ids")
+				data <- data[ids, , drop = FALSE]
+				shp2 <- st_sf(tmapID = 1L:nrow(data), geometry = gnew)
+			}
 			type <- "geometrycollection"
 			attr(data, "kernel_density") <- FALSE
-			attr(type, "types") <- types
-			
+			attr(type, "types") <- get_types(st_geometry(shp2))
 		}
 		
 		# simplify shape
@@ -341,4 +343,39 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 	attr(shp2, "line.center") <- y$line.center
 	attr(shp2, "projected") <- tmaptools::is_projected(shp2)
 	list(shp=shp2, data=data, type=type)
+}
+
+get_types <- function(sfc) {
+	tp <- st_geometry_type(sfc)
+	types <- factor(rep(NA, length(sfc)), levels=c("polygons", "lines", "points", "collection"))
+	types[tp %in% c("MULTIPOLYGON", "POLYGON")] <- "polygons"
+	types[tp %in% c("MULTILINESTRING", "LINESTRING")] <- "lines"
+	types[tp %in% c("MULTIPOINT", "POINT")] <- "points"
+	types[tp == "GEOMETRYCOLLECTION"] <- "collection"
+	if (any(is.na(types))) stop("The following geometry types are not supported: ", paste(unique(tp[is.na(types)]), collapse = ", "), call. = FALSE)
+	types
+}
+
+split_geometry_collection <- function(sfc) {
+	types <- get_types(sfc)
+	res <- mapply(function(g, tp, id) {
+		if (tp == "collection") {
+			g2 <- suppressWarnings(list(st_collection_extract(g, "POLYGON"),
+										st_collection_extract(g, "POINT"),
+										st_collection_extract(g, "LINESTRING")))
+			# tp2 <- factor(c("polygons", "points", "lines"), levels=c("polygons", "lines", "points"))
+			sel <- !vapply(g2, st_is_empty, logical(1))
+			
+			g2 <- g2[sel]
+			# tp2 <- tp2[sel]
+			id2 <- rep(id, length(g2))
+			list(g2, id2)
+		} else {
+			list(list(g), id)
+		}
+	}, sfc, types, 1:length(sfc), SIMPLIFY = FALSE)			
+	gnew <- st_sfc(do.call(c, lapply(res, "[[", 1)), crs = st_crs(sfc))
+	ids <- do.call(c, lapply(res, "[[", 2))
+	attr(gnew, "ids") <- ids
+	gnew
 }

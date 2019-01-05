@@ -1,5 +1,7 @@
 process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, nx, nxa, panel.names, along.names, layer_vary, gm, any.legend, interactive) {
 	attr.color <- aes.colors <- aes.color <- pc <- NULL
+	xlab.rotation <- xlab.text <- ylab.rotation <- ylab.text <- NULL
+	fontface <- fontfamily <- NULL
 	
 	credit.show <- !is.null(gc)
 	logo.show <- !is.null(gl)
@@ -195,15 +197,23 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, nx, nxa, pan
 		
 		if (is.na(attr.outside.size)) attr.outside.size <- (credit.show*.1 + logo.show*.15 + scale.show*.1 + compass.show * .15) * scale
 		
-		# if (is.na(attr.outside.size)) attr.outside.size <- if (!credit.show && !scale.show && !compass.show) {
-		# 	0
-		# } else if (credit.show && scale.show && compass.show) {
-		# 	.25 * scale
-		# } else if ((credit.show && scale.show && !compass.show) || (!credit.show && !scale.show && compass.show)) {
-		# 	.15 * scale
-		# } else if (compass.show) {
-		# 	.2 * scale
-		# } else .1 * scale
+		# set font face and family
+		
+		if (is.null(legend.title.fontface)) legend.title.fontface <- fontface
+		if (is.null(legend.title.fontfamily)) legend.title.fontfamily <- fontfamily
+
+		if (is.null(legend.text.fontface)) legend.text.fontface <- fontface
+		if (is.null(legend.text.fontfamily)) legend.text.fontfamily <- fontfamily
+		
+		if (is.null(title.fontface)) title.fontface <- fontface
+		if (is.null(title.fontfamily)) title.fontfamily <- fontfamily
+		
+		if (is.null(main.title.fontface)) main.title.fontface <- fontface
+		if (is.null(main.title.fontfamily)) main.title.fontfamily <- fontfamily
+		
+		if (is.null(panel.label.fontface)) panel.label.fontface <- fontface
+		if (is.null(panel.label.fontfamily)) panel.label.fontfamily <- fontfamily
+		
 		
 		## overrule margins if interactive
 		if (interactive) {
@@ -319,12 +329,20 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, nx, nxa, pan
 	if (!is.null(glab)) {
 		glab <- within(glab, {
 			if (exists("xlab.text")) {
+				xlab.nlines <- if (xlab.rotation %in% c(90, 270)) {
+					convertHeight(stringWidth(xlab.text), "lines", valueOnly = TRUE)	
+				} else number_text_lines(xlab.text)
+				if (is.na(xlab.space)) xlab.space <- ifelse(gg$grid.show && !gg$grid.labels.inside.frame, gg$grid.labels.size / xlab.size, 0)
 				xlab.size <- xlab.size * gt$scale
 				xlab.show <- TRUE
 			} else {
 				xlab.show <- FALSE
 			}
 			if (exists("ylab.text")) {
+				ylab.nlines <- if (ylab.rotation %in% c(0, 180)) {
+					convertWidth(stringWidth(ylab.text), "lines", valueOnly = TRUE)	
+				} else number_text_lines(ylab.text)
+				if (is.na(ylab.space)) ylab.space <- ifelse(gg$grid.show && !gg$grid.labels.inside.frame, gg$grid.labels.size / ylab.size, 0)
 				ylab.size <- ylab.size * gt$scale
 				ylab.show <- TRUE
 			} else {
