@@ -1,4 +1,6 @@
-raster_colors <- function(x, use.colortable = FALSE) {
+raster_colors <- function(x, use.colortable = FALSE, max.value = 255) {
+	
+	x[is.na(x)] <- 0
 	
 	n <- nrow(x)
 
@@ -6,15 +8,16 @@ raster_colors <- function(x, use.colortable = FALSE) {
 	if (ncol(x)==4) {
 		a <- x[,4]
 		x <- x[,1:3]
+		x[x]
 	} else {
 		a <- NULL
 	}
 
 	if (!use.colortable) {
 		if (is.null(a)) {
-			cols <- rgb(x[,1], x[,2], x[,3], maxColorValue = 255)
+			cols <- rgb(x[,1], x[,2], x[,3], maxColorValue = max.value)
 		} else {
-			cols <- rgb(x[,1], x[,2], x[,3], x[,4], maxColorValue = 255)
+			cols <- rgb(x[,1], x[,2], x[,3], a, maxColorValue = max.value)
 		}
 		return(factor(cols))
 	}
@@ -92,9 +95,21 @@ get_raster_layer_data <- function(rl) {
 	extract_raster_data(nm = rl@data@names, isf = rl@data@isfactor, d = rl@data@values, a = rl@data@attributes)
 }
 
+fromDisk2 <- function(x) {
+	if (inherits(x, "RasterStack")) {
+		y <- FALSE
+		for (i in 1L:nlayers(x)) {
+			if (fromDisk(x[[i]])) y <- TRUE
+		} # stackApply doens't work
+	} else {
+		y <- fromDisk(x)
+	}
+	y
+}
+
 get_raster_data <- function(shp, show.warnings = TRUE) {
 	cls <- class(shp)
-	if (fromDisk(shp)) {
+	if (fromDisk2(shp)) {
 		data <- raster::as.data.frame(shp)
 		layerID <- 1L:ncol(data)
 	} else if (inherits(shp, "RasterLayer")) {

@@ -1,4 +1,4 @@
-process_gps <- function(gps, shps, x, gm, nx, interactive, return.asp) {
+process_gps <- function(gps, shps, x, gm, nx, nxl, interactive, return.asp) {
 	title.snap.to.legend <- NULL
 	scale.extra <- NULL
 
@@ -133,25 +133,27 @@ process_gps <- function(gps, shps, x, gm, nx, interactive, return.asp) {
 		if (nx>=2 && gm$as.layers) {
 			nLayers <- length(gps[[1]]) - 1L
 			
-			layerids <- unlist(lapply(1:nLayers, function(i) {
-				rep(i, ifelse(i %in% gm$layer_vary, nx, 1))
-			}))
+
+			layerids <- unlist(mapply(function(i, n) {
+				rep(i, n)
+				#rep(i, ifelse(i %in% gm$layer_vary, nx, 1))
+			}, 1:nLayers, nxl, SIMPLIFY = FALSE))
 			
-			layers <- lapply(1:nLayers, function(i) {
-				if (i %in% gm$layer_vary) {
+			layers <- mapply(function(i, n) {
+				if (n > 1) {
 					mapply(function(gpsi, showLeg) {
 						gpsii <- gpsi[[i]]
 						if (!showLeg) {
 							nms <- names(gpsii)
 							legend.show.items <- nms[substr(nms, nchar(nms)-10, nchar(nms)) == "legend.show"]
 
-							if (length(legend.show.items)) {
-								fs <- paste0("free.scales.", substr(legend.show.items, 1, nchar(legend.show.items)-12))
-								gpsii[legend.show.items] <- gm[fs] #as.list(rep(FALSE, length(legend.show.items)))
-							}
+							# if (length(legend.show.items)) {
+							# 	fs <- paste0("free.scales.", substr(legend.show.items, 1, nchar(legend.show.items)-12))
+							# 	gpsii[legend.show.items] <- mapply('==', gpsii[legend.show.items], gm[fs], SIMPLIFY = FALSE) # gm[fs] #as.list(rep(FALSE, length(legend.show.items)))
+							# }
 						}
 						gpsii
-					}, gps, c(TRUE, rep(FALSE, nx-1)), SIMPLIFY = FALSE)
+					}, gps[1:n], c(TRUE, rep(FALSE, n-1)), SIMPLIFY = FALSE)
 					
 					# lapply(gps, function(gpsi) {
 					# 	gpsi[[i]]
@@ -159,7 +161,7 @@ process_gps <- function(gps, shps, x, gm, nx, interactive, return.asp) {
 				} else {
 					gps[[1]][i]
 				}
-			})
+			}, 1:nLayers, nxl, SIMPLIFY = FALSE)
 			layers <- do.call(c, layers)
 			names(layers) <- paste0("tmLayer", 1L:length(layers))
 			
@@ -168,27 +170,23 @@ process_gps <- function(gps, shps, x, gm, nx, interactive, return.asp) {
 			
 			
 			gpsL <- gps[[1]]["tm_layout"]
-			gpsL[[1]]$shp_name <- unlist(lapply(1:nLayers, function(i) {
+			gpsL[[1]]$shp_name <- unlist(mapply(function(i, n) {
 				if (i %in% gm$layer_vary) {
 					if (is.null(gpsL$tm_layout$panel.names)) {
 						nms <- unname(vapply(gps, function(gpsi) {
 							gpsii <- gpsi[[i]]
-							if (gpsii$any.legend) {
-								nm <- names(which(vapply(gpsii$varnames, function(vn)!is.na(vn[1]), logical(1))))[1]
-								gpsii[[paste0(nm, ".legend.title")]]
-							} else {
-								as.character(NA)
-							}
+							nm <- names(which(vapply(gpsii$varnames, function(vn)!is.na(vn[1]), logical(1))))[1]
+							gpsii[[paste0(nm, ".legend.title")]]
 						}, character(1)))
 						if (any(is.na(nms))) nms <- gm$title
-						nms
+						nms[1:n]
 					} else {
-						gpsL$tm_layout$panel.names	
+						gpsL$tm_layout$panel.names[1:n]
 					}
 				} else {
 					gpsL[[1]]$shp_name[i]
 				}
-			})) # gpsL[[1]]$shp_name[layerids]
+			}, 1:nLayers, nxl, SIMPLIFY = FALSE)) # gpsL[[1]]$shp_name[layerids]
 			
 			gps <- list(plot1 = c(layers, gpsL))
 			
@@ -211,7 +209,11 @@ process_gps <- function(gps, shps, x, gm, nx, interactive, return.asp) {
 			
 			gm$shape.nshps <- length(shps)
 			gm$shape.diff_shapes <- FALSE
-			gm$shape.shps_lengths <- append(gm$shape.shps_lengths, rep(gm$shape.shps_lengths[gm$layer_vary], nx - 1), after = gm$layer_vary)
+			
+			gm$shape.shps_lengths <- unlist(mapply(rep, gm$shape.shps_lengths, nxl, SIMPLIFY = FALSE))
+				
+				
+			#	append(gm$shape.shps_lengths, rep(gm$shape.shps_lengths[gm$layer_vary], nx - 1), after = gm$layer_vary)
 			
 			nx <- 1
 		}
@@ -237,7 +239,7 @@ process_gps <- function(gps, shps, x, gm, nx, interactive, return.asp) {
 			npol_old <- gpl$npol
 			gpl$npol <- length(indices)
 			lapply(gpl, function(gplx) {
-				if ((is.vector(gplx) || is.factor(gplx)) && length(gplx)==npol_old) {
+				if ((is.vector(gplx) || is.factor(gplx)) && length(gplx)==npol_old && (!gm$as.layers)) {
 					gplx[indices]	
 				} else {
 					gplx

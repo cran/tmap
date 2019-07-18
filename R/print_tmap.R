@@ -22,7 +22,7 @@
 #' @import methods
 #' @importFrom graphics par
 #' @importFrom classInt classIntervals findCols
-#' @importFrom grDevices col2rgb colorRampPalette dev.off dev.set dev.cur is.raster png rgb
+#' @importFrom grDevices col2rgb colorRampPalette dev.off dev.set dev.cur is.raster png rgb dev.size
 #' @importFrom stats na.omit dnorm fft quantile rnorm runif 
 #' @importFrom grDevices xy.coords colors
 #' @importFrom utils capture.output data download.file head setTxtProgressBar tail txtProgressBar
@@ -30,7 +30,7 @@
 #' @import leaflet
 #' @importFrom htmlwidgets appendContent onRender
 #' @importFrom htmltools tags HTML htmlEscape
-#' @importFrom mapview latticeView
+#' @import leafsync
 #' @importFrom utils packageVersion
 #' @export
 #' @method print tmap
@@ -58,16 +58,17 @@ knit_print.tmap <- function(x, ..., options=NULL) {
 #' @param mode the mode of tmap, which is set to \code{"view"} in order to obtain the leaflet object. See \code{\link{tmap_mode}} for details.
 #' @param show should the leaflet map be shown? \code{FALSE} by default
 #' @param add.titles add titles to leaflet object
+#' @param in.shiny is the leaflet output going to be used in shiny? If so, two features are not supported and therefore disabled: facets and colored backgrounds.
 #' @param ... arguments passed on to \code{\link{print.tmap}}
 #' @return \code{\link[leaflet:leaflet]{leaflet}} object
 #' @example ./examples/tmap_leaflet.R
-#' @seealso \code{\link{tmap_mode}}, \code{\link{tm_view}}, \code{\link{print.tmap}}
+#' @seealso \code{\link{tmapOutput}} for tmap in Shiny, \code{\link{tmap_mode}}, \code{\link{tm_view}}, \code{\link{print.tmap}}
 #' @export
-tmap_leaflet <- function(x, mode="view", show = FALSE, add.titles = TRUE, ...) {
-  print.tmap(x, mode=mode, show=show, interactive_titles = add.titles, ...)
+tmap_leaflet <- function(x, mode="view", show = FALSE, add.titles = TRUE, in.shiny = FALSE, ...) {
+  print.tmap(x, mode=mode, show=show, interactive_titles = add.titles, in.shiny = in.shiny, ...)
 }
 
-print_shortcut <- function(x, interactive, args, knit) {
+print_shortcut <- function(x, interactive, in.shiny, args, knit) {
 	if (getOption("tmap.mode")=="plot") {
 		stop("Either specify shp, or set mode to \"view\" with tmap_mode or ttm", call.=FALSE)	
 	} else {
@@ -120,7 +121,7 @@ print_shortcut <- function(x, interactive, args, knit) {
 		
 		x$tm_layout <- gt
 		
-		view_tmap(x, shps = list(dummy = NULL))
+		view_tmap(x, shps = list(dummy = NULL), in.shiny = in.shiny)
 	}
 }
 
@@ -181,17 +182,23 @@ gather_shape_info <- function(x, interactive) {
 		rid <- which(names(x)[from:to]=="tm_raster")
 		
 		if (length(rid)) {
-			is.RGB <- x[[from-1+rid[1]]]$is.RGB 
+			max.value <- x[[from-1+rid[1]]]$max.value
+			is.RGB <- x[[from-1+rid[1]]]$is.RGB
+			rgb.vars <- x[[from-1+rid[1]]]$rgb.vars
 			to.Cat <- x[[from-1+rid[1]]]$style == "cat"
 		} else {
+			max.value <- NA
 			is.RGB <- FALSE
+			rgb.vars <- NULL
 			to.Cat <- FALSE
 		}
 
 		res <- c(if (length(fid)) x[[from-1+fid[1]]]$by else NULL,
 				 if (length(rid)) x[[from-1+rid[1]]]$col else NULL)
 		if (is.null(res)) res <- NA
+		attr(res, "max.value") <- max.value
 		attr(res, "is.RGB") <- is.RGB
+		attr(res, "rgb.vars") <- rgb.vars
 		attr(res, "to.Cat") <- to.Cat
 		res
 	})
@@ -232,7 +239,7 @@ gather_shape_info <- function(x, interactive) {
 prepare_vp <- function(vp, gm, interactive, gt) {
 	
 	if (interactive) {
-		devsize <- par("din")
+		devsize <- dev.size()
 		dasp <- devsize[1] / devsize[2]
 		iasp <- gm$shape.masp
 		asp_ratio <- iasp / dasp
@@ -280,7 +287,9 @@ determine_asp_ratios <- function(gm, interactive) {
 		fasp <- fpi$dsw / fpi$dsh #-  fpi$pSH - fpi$between.margin.in)
 		
 		# aspect ratio per facet minus extern legend
-		lasp <- fasp * (1-fpi$legmarx) / (1-fpi$legmary-fpi$attrmary-fpi$attrmary)
+		#lasp <- fasp * (1-fpi$legmarx) / (1-fpi$legmary-fpi$attrmary-fpi$attrmary)
+		# !! extern legend already calculated in dsw and dsh in preprocess_facet_layout (see #287)
+		lasp <- fasp
 	}
 	list(shape.dw = dw,
 		 shape.dh = dh,
@@ -291,12 +300,15 @@ determine_asp_ratios <- function(gm, interactive) {
 
 
 
-print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode"), show=TRUE, knit=FALSE, options=NULL, interactive_titles = TRUE, ...) {
+print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode"), show=TRUE, knit=FALSE, options=NULL, interactive_titles = TRUE, in.shiny = FALSE, lf = NULL, ...) {
 	args <- list(...)
 	scale.extra <- NULL
 	title.snap.to.legend <- NULL
 	
-	interactive <- (mode == "view")
+	proxy <- !is.null(lf)
+	in.shiny <- in.shiny || proxy
+	
+	interactive <- (mode == "view") || proxy
 	
 	tmapOptions <- get(".tmapOptions", envir = .TMAP_CACHE)
 	
@@ -304,7 +316,7 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	
 	qtm_shortcut <- attr(x, "qtm_shortcut")
 	
-	if (!is.null(qtm_shortcut)) {
+	if (!is.null(qtm_shortcut) && !proxy) {
 		if (qtm_shortcut) {
 			if (!interactive) {
 				if (show.messages) message("Switching to view mode. Run tmap_mode(\"plot\") or simply ttm() to switch back to plot mode.")
@@ -318,30 +330,49 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 		if (!qtm_shortcut && interactive && !("tm_minimap" %in% names(x)) && identical(tmapOptions$qtm.minimap, TRUE)) x <- c(x, tm_minimap())
 	}
 	
-	
 	# reset symbol shape / shape just/anchor lists
 	assign(".shapeLib", list(), envir = .TMAP_CACHE)
 	assign(".justLib", list(), envir = .TMAP_CACHE)
 
-	## first checks
 
-
-	# shortcut mode: enabled with qtm() or qtm("My Street 1234, Home Town")
-	# (names(x)=="tm_shortcut") {
-	# 	lf <- print_shortcut(x, interactive, args, knit)
-	# 	if (knit) {
-	# 		return(do.call("knit_print", c(list(x=lf), args, list(options=options))))
-	# 		#return(knit_print(lf, ..., options=options))
-	# 	} else {
-	# 		return(print(lf))
-	# 	}
-	# } else 
+	## process proxy
+	if (proxy) {
+		layerIds <- if (".layerIdsNew" %in% ls(envir = .TMAP_CACHE)) {
+			get(".layerIdsNew", envir = .TMAP_CACHE)
+		} else {
+			get(".layerIds", envir = .TMAP_CACHE)
+		}
+		assign(".layerIds", layerIds, envir = .TMAP_CACHE)
+		
+		typesList <- as.list(attr(layerIds, "types"))
+		names(typesList) <- names(layerIds)
+		
+		rem_lay_id <- which(names(x) == "tm_remove_layer")
+		if (length(rem_lay_id) > 0L) {
+			for (id in rem_lay_id) {
+				z <- x[[id]]$zindex
+				name <- paneName(z)
+				legend <- legendName(z)
+				lf <- lf %>% leaflet::removeShape(sort(unname(layerIds[[name]]))) %>% 
+					leaflet::removeControl(legend)
+				layerIds[[name]] <- NULL
+				typesList[[name]] <- NULL
+			}
+			attr(layerIds, "types") <- unlist(typesList)
+			assign(".layerIdsNew", layerIds, envir = .TMAP_CACHE)
+		}
+		x <- x[!(names(x) %in% c("tm_remove_layer"))]
+		if (length(x) == 0) {
+			return(lf)
+		}
+	}
 	
+		
 	
-	x <- prearrange_element_order(x)
+	x <- prearrange_element_order(x, add.basemap = !(is.null(tmapOptions$basemaps) || proxy), add.overlay = !(is.null(tmapOptions$overlays) || proxy))
 	
 	if (!any(names(x) %in% c("tm_fill", "tm_borders", "tm_lines", "tm_symbols", "tm_raster", "tm_text"))) {
-		lf <- print_shortcut(x, interactive, args, knit)
+		lf <- print_shortcut(x, interactive, in.shiny, args, knit)
 		if (knit) {
 			return(do.call("knit_print", c(list(x=lf), args, list(options=options))))
 			#return(knit_print(lf, ..., options=options))
@@ -353,6 +384,7 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 		
 	## remove non-supported elements if interactive
 	if (interactive) x <- x[supported_elem_view_mode(names(x))]
+	
 	
 	## gather shape info
 	gm <- gather_shape_info(x, interactive)
@@ -408,6 +440,7 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	gps <- result$gps
 	gal <- result$gal
 	nx <- result$nx
+	nxl <- result$nxl
 	data_by <- result$data_by
 	
 	gm$shape.shps_lengths <- vapply(datasets, function(d) if (is.null(d)) 0L else nrow(d), integer(1))
@@ -422,11 +455,16 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	## further arranges the grid layout of the map/facets
 	if (!interactive) gm <- process_facet_layout(gm)
 
-	#browser()
-	#gm$units <- s$shape.units
-	
+	## check whether small multiples are split to layers
+	as.layers <- (nx >= 2) && gm$as.layers && interactive
+
+	if (in.shiny && !as.layers && nx > 1) {
+		stop("Small multiples (facets) are not supported in Shiny. Workarounds: create multiple independent maps or specify as.layers = TRUE in tm_facets", call. = FALSE)
+	}
+		
+		
 	## create external legend and attributes objects
-	g <- process_gps(gps, shps, x, gm, nx, interactive, return.asp)
+	g <- process_gps(gps, shps, x, gm, nx, nxl, interactive, return.asp)
 	## return in case g is a number, i.e. the aspect ratio
 	if (is.numeric(g)) return(g)
 	
@@ -435,7 +473,7 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	
 
 	## multiple datasets for each layer (when as.layers=TRUE in tm_facets)
-	if (interactive && gm$as.layers) {
+	if (as.layers) {
 		datasets <- datasets[g$layerids]
 		gm$shp_name <- gm$shp_name[g$layerids]
 	}
@@ -457,11 +495,11 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 		showWarns <- c(TRUE, rep(FALSE, length(gps)-1))
 
 		if (multi_shapes) {
-			lfs <- mapply(view_tmap, gps2[1:nx], shps[1:nx], leaflet_id=1:nx, showWarns=showWarns, MoreArgs = list(gal = gal), SIMPLIFY = FALSE)
+			lfs <- mapply(view_tmap, gps2[1:nx], shps[1:nx], leaflet_id=1:nx, showWarns=showWarns, MoreArgs = list(gal = gal, in.shiny = in.shiny, lf = lf), SIMPLIFY = FALSE)
 		} else {
-			lfs <- mapply(view_tmap, gps2[1:nx], leaflet_id=1:nx, showWarns=showWarns, MoreArgs = list(shps=shps, gal = gal), SIMPLIFY = FALSE)
+			lfs <- mapply(view_tmap, gps2[1:nx], leaflet_id=1:nx, showWarns=showWarns, MoreArgs = list(shps=shps, gal = gal, in.shiny = in.shiny, lf = lf), SIMPLIFY = FALSE)
 		}
-		lf <- if (nx==1) lfs[[1]] else lfmv <- do.call(mapview::latticeView, c(lfs, lVargs))
+		lf <- if (nx==1) lfs[[1]] else lfmv <- do.call(leafsync::latticeView, c(lfs, lVargs))
 		
 		lf2 <- if (interactive_titles) add_leaflet_titles(lf) else lf
 		

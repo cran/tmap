@@ -5,7 +5,8 @@
 \title{Create animation}
 \usage{
 tmap_animation(tm, filename = "animation.gif", width = NA,
-  height = NA, delay = 40, loop = TRUE, restart.delay = 0)
+  height = NA, dpi = NA, delay = 40, loop = TRUE,
+  restart.delay = 0)
 }
 \arguments{
 \item{tm}{tmap object. In order to create a series of tmap plots, which will be the frames of the animation, it is important to set nrow and ncol in \code{\link{tm_facets}}, for otherwise a small multiples plot is generated. Commonly, where one map is shown at a time, both nrow and ncol are set to 1.}
@@ -15,6 +16,8 @@ tmap_animation(tm, filename = "animation.gif", width = NA,
 \item{width}{width of the animation file (in pixels)}
 
 \item{height}{height of the animation file (in pixels)}
+
+\item{dpi}{dots per inch. Only applicable for raster graphics. By default 300, but this can be set with the option \code{output.dpi} in \code{\link{tmap_options}}.}
 
 \item{delay}{delay time between images (in 1/100th of a second)}
 
@@ -53,4 +56,4 @@ m2 <- tm_shape(World, simplify = 0.5) +
 tmap_animation(m2, filename="World population.gif", width=1200, delay=100)
 }
 }
-\keyword{animation}
+\concept{animation}

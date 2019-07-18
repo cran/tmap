@@ -6,7 +6,7 @@ are_breaks_diverging <- function(brks) {
     negb && posb
 }
 
-fancy_breaks <- function(vec, intervals=FALSE, interval.closure="left", fun=NULL, scientific=FALSE, text.separator="to", text.less.than=c("less", "than"), text.or.more=c("or", "more"), text.align="left", text.to.columns=FALSE, digits=NA, ...) {
+fancy_breaks <- function(vec, intervals=FALSE, interval.closure="left", fun=NULL, scientific=FALSE, big.num.abbr = c("mln" = 6, "bln" = 9), prefix = "", suffix = "", text.separator="to", text.less.than=c("less", "than"), text.or.more=c("or", "more"), text.align="left", text.to.columns=FALSE, digits=NA, ...) {
     args <- list(...)
     n <- length(vec)
 
@@ -42,21 +42,40 @@ fancy_breaks <- function(vec, intervals=FALSE, interval.closure="left", fun=NULL
     		}
     		
     		if (!scientific) {
-    			if (mag>11 || (mag > 9 && all(vec - floor(vec/1e9)*1e9 < 1))) {
-    				vec <- vec / 1e9
-    				ext <- " bln"
-    			} else if (mag > 8 || (mag > 6 && all(vec - floor(vec/1e6)*1e6 < 1))) {
-    				vec <- vec / 1e6
-    				ext <- " mln"
-    			} else {
-    				ext <- ""
+    			
+    			# check whether big number abbrevations should be used
+    			ext <- ""
+    			if (!is.na(big.num.abbr[1])) {
+    				big.num.abbr <- sort(big.num.abbr, decreasing = TRUE)
+    				for (i in 1:length(big.num.abbr)) {
+    					o <- unname(big.num.abbr[i])
+    					if (mag>(o+2) || (mag > o && all(vec - floor(vec/(10^o))*(10^o) < 1))) {
+    						vec <- vec / (10^o)
+    						ext <- paste0(" ", names(big.num.abbr)[i])
+    						break
+    					}
+    				}
     			}
+    			
+    			
+    			
+    			
+    			# if (mag>11 || (mag > 9 && all(vec - floor(vec/1e9)*1e9 < 1))) {
+    			# 	vec <- vec / 1e9
+    			# 	ext <- " bln"
+    			# } else if (mag > 8 || (mag > 6 && all(vec - floor(vec/1e6)*1e6 < 1))) {
+    			# 	vec <- vec / 1e6
+    			# 	ext <- " mln"
+    			# } else {
+    			#	ext <- ""
+    			# }
     			
     			# set default values
     			if (!("big.mark" %in% names(args))) args$big.mark <- ","
     			if (!("format" %in% names(args))) args$format <- "f"
     			if (!("preserve.width" %in% names(args))) args$preserve.width <- "none"
     			x <- paste(do.call("formatC", c(list(x=vec, digits=digits), args)), ext, sep="")
+    			x <- paste0(prefix, x, suffix)
     		} else {
     			if (!("format" %in% names(args))) args$format <- "g"
     			x <- do.call("formatC", c(list(x=vec, digits=digits), args))
@@ -117,11 +136,19 @@ fancy_breaks <- function(vec, intervals=FALSE, interval.closure="left", fun=NULL
 
 
 num2breaks <- function(x, n, style, breaks, approx=FALSE, interval.closure="left", var = NULL) {
+	
+	# if (style %in% c("log10", "log10_pretty")) {
+	# 	x <- log10(x)
+	# 	style <- ifelse(style == "log10", "fixed", "pretty")
+	# }
+	
 	nobs <- sum(!is.na(x))
 	# create intervals and assign colors
 	if (style=="fixed") {
 		q <- list(var=x,
 				  brks=breaks)
+		if (any(na.omit(x) < min(breaks))) warning("Values have found that are less than the lowest break", call. = FALSE)
+		if (any(na.omit(x) > max(breaks))) warning("Values have found that are higher than the highest break", call. = FALSE)
 		attr(q, "style") <- "fixed"
 		attr(q, "nobs") <- nobs
 		attr(q, "intervalClosure") <- interval.closure

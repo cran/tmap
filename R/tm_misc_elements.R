@@ -68,14 +68,14 @@ tm_facets <- function(by=NULL,
 	g
 }
 
-#' Coordinate grid lines
+#' Coordinate grid / graticule lines
 #' 
-#' Creates a \code{\link{tmap-element}} that draws coordinate grid lines. It serves as a layer that can be drawn anywhere between other layers. By default the coordinate system of the (master) shape object is used, which results in horizontal and vertical lines. Alternatively, grid lines can be reprojected, for instance to latitude longitude coordinates, and hence be curved.
+#' Creates a \code{\link{tmap-element}} that draws coordinate grid lines. It serves as a layer that can be drawn anywhere between other layers. By default, \code{tm_grid} draws horizontal and vertical lines acording to the coordinate system of the (master) shape object. Latitude and longitude graticules are drawn with \code{tm_graticules}.
 #' 
 #' @param x x coordinates for vertical grid lines. If \code{NA}, it is specified with a pretty scale and \code{n.x}.
 #' @param y y coordinates for horizontal grid lines. If \code{NA}, it is specified with a pretty scale and \code{n.y}.
-#' @param n.x preferred number of grid lines for the x axis.
-#' @param n.y preferred number of grid lines for the y axis.
+#' @param n.x preferred number of grid lines for the x axis. For the labels, a \code{\link{pretty}} sequence is used, so the number of actual labels may be different than \code{n.x}.
+#' @param n.y preferred number of grid lines for the y axis. For the labels, a \code{\link{pretty}} sequence is used, so the number of actual labels may be different than \code{n.y}.
 #' @param projection projection character. If specified, the grid lines are projected accordingly. See \code{\link[tmaptools:set_projection]{set_projection}} for projection details. Many world maps are projected, but still have latitude longitude (\code{"longlat"}) grid lines.
 #' @param col color of the grid lines.
 #' @param lwd line width of the grid lines
@@ -91,10 +91,18 @@ tm_facets <- function(by=NULL,
 #' \item{digits}{Number of digits after the decimal point if \code{format="f"}, and the number of significant digits otherwise.}
 #' \item{...}{Other arguments passed on to \code{\link[base:formatC]{formatC}}}
 #' }
-#' @param labels.margin.x margin between tick labels of x axis and the frame
-#' @param labels.margin.y margin between tick labels of y axis and the frame
-#' @param labels.inside.frame Show labels inside the frame?
+#' @param labels.cardinal add the four cardinal directions (N, E, S, W) to the labels, instead of using negative coordiantes for west and south (so it assumes that the coordinates are positive in the north-east direction).
+#' @param labels.margin.x margin between tick labels of x axis and the frame. Note that when \code{labels.inside.frame == FALSE} and \code{ticks == TRUE}, the ticks will be adjusted accordingly.
+#' @param labels.margin.y margin between tick labels of y axis and the frame. Note that when \code{labels.inside.frame == FALSE} and \code{ticks == TRUE}, the ticks will be adjusted accordingly.
+#' @param labels.space.x space that is used for the labels and ticks for the x-axis when \code{labels.inside.frame == FALSE}. By default, it is determined automatically using the widths and heights of the tick labels. The unit of this parameter is text line height.
+#' @param labels.space.y space that is used for the labels and ticks for the y-axis when \code{labels.inside.frame == FALSE}. By default, it is determined automatically using the widths and heights of the tick labels. The unit of this parameter is text line height.
+#' @param labels.inside.frame Show labels inside the frame? By default \code{FALSE}
+#' @param ticks If \code{labels.inside.frame = FALSE}, should ticks can be drawn between the labels and the frame?
+#' @param lines If \code{labels.inside.frame = FALSE}, should grid lines can be drawn?
+#' @param zindex zindex of the pane in view mode. By default, it is set to the layer number plus 400. By default, the tmap layers will therefore be placed in the custom panes \code{"tmap401"}, \code{"tmap402"}, etc., except for the base tile layers, which are placed in the standard \code{"tile"}. This parameter determines both the name of the pane and the z-index, which determines the pane order from bottom to top. For instance, if \code{zindex} is set to 500, the pane will be named \code{"tmap500"}.
+#' @param ... arguments passed on to \code{tm_grid}
 #' @export
+#' @example ./examples/tm_grid.R
 tm_grid <- function(x=NA,
 					y=NA,
 					n.x=NA,
@@ -107,15 +115,36 @@ tm_grid <- function(x=NA,
 					labels.col=NA,
 					labels.rot = c(0, 0),
 					labels.format = list(big.mark = ","),
+					labels.cardinal = FALSE,
 					labels.margin.x=0,
 					labels.margin.y=0,
-					labels.inside.frame=TRUE) {
+					labels.space.x=NA,
+					labels.space.y=NA,
+					labels.inside.frame=FALSE,
+					ticks = !labels.inside.frame,
+					lines = TRUE,
+					zindex = NA) {
 	g <- list(tm_grid=as.list(environment()))
 	names(g$tm_grid) <- paste("grid", names(g$tm_grid), sep=".")
 	class(g) <- "tmap"
 	attr(g, "call") <- names(match.call(expand.dots = TRUE)[-1])
 	g
 }
+
+#' @name tm_graticules
+#' @rdname tm_grid
+#' @export
+tm_graticules <- function(x=NA,
+						 y=NA,
+						 n.x=NA,
+						 n.y=NA,
+						 projection = "longlat",
+						 labels.format = list(suffix = intToUtf8(176)),
+						 labels.cardinal = TRUE,
+						 ...) {
+	do.call(tm_grid, c(list(x = x, y = y, n.x = n.x, n.y = n.y, projection = projection, labels.format = labels.format, labels.cardinal = labels.cardinal), list(...)))
+}
+
 
 #' Credits text
 #' 
@@ -184,24 +213,31 @@ tm_logo <- function(file,
 #' 
 #' @param breaks breaks of the scale bar. If not specified, breaks will be automatically be chosen given the prefered \code{width} of the scale bar. Not available for view mode.
 #' @param width (preferred) width of the scale bar. Only applicable when \code{breaks=NULL}. In plot mode, it corresponds the relative width; the default is 0.25 so one fourth of the map width. In view mode, it corresponds to the width in pixels; the default is 100.
-#' @param size relative text size (which is upperbound by the available label width)
+#' @param text.size relative text size (which is upperbound by the available label width)
 #' @param text.color color of the text. By default equal to the argument \code{attr.color} of \code{\link{tm_layout}}.
 #' @param color.dark color of the dark parts of the scale bar, typically (and by default) black.
 #' @param color.light color of the light parts of the scale bar, typically (and by default) white.
 #' @param lwd line width of the scale bar
 #' @param position position of the scale bar Vector of two values, specifying the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left bottom corner of the scale bar. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
 #' @param just Justification of the attribute relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{position} is specified by numeric coordinates. The default value is controlled by the argument \code{"attr.just"} of \code{\link{tm_layout}}.
+#' @param size deprecated: renamed to text.size
 #' @export
 #' @example ./examples/tm_scale_bar.R
 tm_scale_bar <- function(breaks=NULL,
 						 width=NA, 
-						 size=.5,
+						 text.size = .5,
 						 text.color=NA,
 						 color.dark="black", 
 						 color.light="white",
 						 lwd=1,
 						 position=NA,
-						 just=NA) {
+						 just=NA,
+						 size = NULL) {
+	if (!missing(size)) {
+		warning("The argument size of tm_scale_bar is deprecated. It has been renamed to text.size", call. = FALSE)
+		text.size <- size
+		size <- NULL
+	}
 	g <- list(tm_scale_bar=as.list(environment()))
 	names(g$tm_scale_bar) <- paste("scale", names(g$tm_scale_bar), sep=".")
 	class(g) <- "tmap"
@@ -215,7 +251,7 @@ tm_scale_bar <- function(breaks=NULL,
 #' 
 #' @param north north direction in degrees: 0 means up, 90 right, etc.
 #' @param type compass type, one of: \code{"arrow"}, \code{"4star"}, \code{"8star"}, \code{"radar"}, \code{"rose"}. The default is controlled by \code{\link{tm_layout}} (which uses \code{"arrow"} for the default style)
-#' @param fontsize relative font size
+#' @param text.size relative font size
 #' @param size size of the compass in number of text lines. The default values depend on the \code{type}: for \code{"arrow"} it is 2, for \code{"4star"} and \code{"8star"} it is 4, and for \code{"radar"} and \code{"rose"} it is 6.
 #' @param show.labels number that specifies which labels are shown: 0 means no labels, 1 (default) means only north, 2 means all four cardinal directions, and 3 means the four cardinal directions and the four intercardinal directions (e.g. north-east).
 #' @param cardinal.directions labels that are used for the cardinal directions north, east, south, and west.
@@ -225,11 +261,12 @@ tm_scale_bar <- function(breaks=NULL,
 #' @param lwd line width of the compass
 #' @param position position of the compass. Vector of two values, specifying the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left bottom corner of the compass. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
 #' @param just Justification of the attribute relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{position} is specified by numeric coordinates. The default value is controlled by the argument \code{"attr.just"} of \code{\link{tm_layout}}.
+#' @param fontsize deprecated: renamed to text.size
 #' @export
 #' @example ./examples/tm_compass.R
 tm_compass <- function(north=0, 
 					   type=NA, 
-					   fontsize=.8, 
+					   text.size=.8,
 					   size=NA,
 					   show.labels=1, 
 					   cardinal.directions=c("N", "E", "S", "W"), 
@@ -238,7 +275,13 @@ tm_compass <- function(north=0,
 					   color.light=NA,
 					   lwd=1,
 					   position=NA,
-					   just=NA) {
+					   just=NA,
+					   fontsize = NULL) {
+	if (!missing(fontsize)) {
+		warning("The argument fontsize of tm_compass is deprecated. It has been renamed to text.size", call. = FALSE)
+		text.size <- fontsize
+		fontsize <- NULL
+	}
 	g <- list(tm_compass=as.list(environment()))
 	names(g$tm_compass) <- paste("compass", names(g$tm_compass), sep=".")
 	class(g) <- "tmap"
@@ -261,7 +304,7 @@ tm_compass <- function(north=0,
 tm_xlab <- function(text,
 					size=.8,
 					rotation=0,
-					space = NA) {
+					space = 0) {
 	g <- list(tm_xlab=as.list(environment()))
 	names(g$tm_xlab) <- paste("xlab", names(g$tm_xlab), sep=".")
 	class(g) <- "tmap"
@@ -275,7 +318,7 @@ tm_xlab <- function(text,
 tm_ylab <- function(text,
 					size=.8,
 					rotation=90,
-					space = NA) {
+					space = 0) {
 	g <- list(tm_ylab=as.list(environment()))
 	names(g$tm_ylab) <- paste("ylab", names(g$tm_ylab), sep=".")
 	class(g) <- "tmap"
@@ -300,6 +343,7 @@ tm_minimap <- function(server = NA, position= c("left", "bottom"), toggle = TRUE
 	attr(g, "call") <- names(match.call(expand.dots = TRUE)[-1])
 	g	
 }
+
 
 
 #' Stacking of tmap elements

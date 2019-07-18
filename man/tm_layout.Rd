@@ -15,20 +15,19 @@ tm_layout(title, scale, title.size, bg.color, aes.color, aes.palette,
   legend.show, legend.only, legend.outside, legend.outside.position,
   legend.outside.size, legend.position, legend.stack, legend.just,
   legend.width, legend.height, legend.hist.height, legend.hist.width,
-  legend.title.size, legend.title.fontface, legend.title.fontfamily,
-  legend.text.size, legend.text.fontface, legend.text.fontfamily,
-  legend.hist.size, legend.format, legend.frame, legend.frame.lwd,
-  legend.text.color, legend.bg.color, legend.bg.alpha,
-  legend.hist.bg.color, legend.hist.bg.alpha, title.snap.to.legend,
-  title.position, title.color, title.fontface, title.fontfamily,
-  title.bg.color, title.bg.alpha, panel.show, panel.labels,
-  panel.label.size, panel.label.color, panel.label.fontface,
+  legend.title.color, legend.title.size, legend.title.fontface,
+  legend.title.fontfamily, legend.text.color, legend.text.size,
+  legend.text.fontface, legend.text.fontfamily, legend.hist.size,
+  legend.format, legend.frame, legend.frame.lwd, legend.bg.color,
+  legend.bg.alpha, legend.hist.bg.color, legend.hist.bg.alpha,
+  title.snap.to.legend, title.position, title.color, title.fontface,
+  title.fontfamily, title.bg.color, title.bg.alpha, panel.show,
+  panel.labels, panel.label.size, panel.label.color, panel.label.fontface,
   panel.label.fontfamily, panel.label.bg.color, panel.label.height,
   panel.label.rot, main.title, main.title.size, main.title.color,
   main.title.fontface, main.title.fontfamily, main.title.position,
   attr.outside, attr.outside.position, attr.outside.size, attr.position,
-  attr.just, design.mode, basemaps, basemaps.alpha, bg.overlay,
-  bg.overlay.alpha)
+  attr.just, design.mode)
 
 tm_legend(...)
 
@@ -95,11 +94,11 @@ tm_format(format, ...)
 
 \item{legend.outside.position}{Character that determines the outside position of the legend. Only applicable when \code{legend.outside=TRUE}. One of: \code{"right"}, \code{"left"}, \code{"top"}, or \code{"bottom"}.}
 
-\item{legend.outside.size}{Numeric value that determines the relative size of the legend, when \code{legend.outside=TRUE}. If the first value of \code{legend.outside.position} is \code{"top"} or \code{"bottom"}, then it is the width of the legend, else it is the height of the legend.}
+\item{legend.outside.size}{Numeric value that determines the relative size of the legend, when \code{legend.outside=TRUE}. If the first value of \code{legend.outside.position} is \code{"top"} or \code{"bottom"}, then it is the width of the legend, else it is the height of the legend. Note that the actual height or width of the legend is determined by the content of the legend (and the used font sizes). This argument specifies the upperbound of the width or height.}
 
 \item{legend.position}{Position of the legend. Vector of two values, specifying the x and y coordinates. Either this vector contains \code{"left"}, \code{"LEFT"}, \code{"center"}, \code{"right"}, or \code{"RIGHT"} for the first value and \code{"top"}, \code{"TOP"}, \code{"center"}, \code{"bottom"}, or \code{"BOTTOM"} for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y coordinates of the left bottom corner of the legend. The uppercase values correspond to the position without margins (so tighter to the frame). By default, it is automatically placed in the corner with most space based on the (first) shape object. If \code{legend.outside=TRUE}, this argument specifies the legend position within the outside panel.}
 
-\item{legend.stack}{Value that determines how the legend items are stacked: \code{"vertical"} or \code{"horizontal"}.}
+\item{legend.stack}{Value that determines how different legends are stacked: \code{"vertical"} or \code{"horizontal"}. To stack items within a same legend, look at \code{"legend.is.portrait"} in the specific layer calls.}
 
 \item{legend.just}{Justification of the legend relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{legend.position} is specified by numeric coordinates.}
 
@@ -111,11 +110,15 @@ tm_format(format, ...)
 
 \item{legend.hist.width}{width of the histogram. By default, it is equal to the \code{legend.width}.}
 
+\item{legend.title.color}{color of the legend titles}
+
 \item{legend.title.size}{Relative font size for the legend title}
 
 \item{legend.title.fontface}{font face for the legend title. By default, set to the global parameter \code{fontface}.}
 
 \item{legend.title.fontfamily}{font family for the legend title. By default, set to the global parameter \code{fontfamily}.}
+
+\item{legend.text.color}{color of the legend text}
 
 \item{legend.text.size}{Relative font size for the legend text elements}
 
@@ -128,9 +131,10 @@ tm_format(format, ...)
 \item{legend.format}{list of formatting options for the legend numbers. Only applicable for layer functions (such as \code{\link{tm_fill}}) where \code{labels} is undefined. Parameters are:
 \describe{
 \item{fun}{Function to specify the labels. It should take a numeric vector, and should return a character vector of the same size. By default it is not specified. If specified, the list items \code{scientific}, \code{format}, and \code{digits} (see below) are not used.}
-\item{scientific}{Should the labels be formatted scientifically? If so, square brackets are used, and the \code{format} of the numbers is \code{"g"}. Otherwise, \code{format="f"}, and \code{text.separator}, \code{text.less.than}, and \code{text.or.more} are used. Also, the numbers are automatically  rounded to millions or billions if applicable.}
+\item{scientific}{Should the labels be formatted scientifically? If so, square brackets are used, and the \code{format} of the numbers is \code{"g"}. Otherwise, \code{format="f"}, and \code{text.separator}, \code{text.less.than}, \code{text.or.more}, and \code{big.num.abbr} are used. Also, the numbers are automatically  rounded to millions or billions if applicable.}
 \item{format}{By default, \code{"f"}, i.e. the standard notation \code{xxx.xxx}, is used. If \code{scientific=TRUE} then \code{"g"}, which means that numbers are formatted scientifically, i.e. \code{n.dddE+nn} if needed to save space.}
 \item{digits}{Number of digits after the decimal point if \code{format="f"}, and the number of significant digits otherwise.}
+\item{big.num.abbr}{Vector that defines whether and which abbrevations are used for large numbers. It is a named numeric vector, where the name indicated the abbreviation, and the number the magnitude (in terms on numbers of zero). Numbers are only abbrevation when they are large enough. Set it to \code{NA} to disable abbrevations.  The default is \code{c("mln" = 6, "bln" = 9)}. For layers where \code{style} is set to \code{log10} or \code{log10_pretty}, the default is \code{NA}.}
 \item{text.separator}{Character string to use to separate numbers in the legend (default: "to").}
 \item{text.less.than}{Character value(s) to use to translate "Less than". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
 \item{text.or.more}{Character value(s) to use to translate "or more". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
@@ -144,8 +148,6 @@ tm_format(format, ...)
 \item{legend.frame}{either a logical that determines whether the legend is placed inside a frame, or a color that directly specifies the frame border color.}
 
 \item{legend.frame.lwd}{line width of the legend frame (applicable if \code{legend.frame} is \code{TRUE} or a color)}
-
-\item{legend.text.color}{color of the legend text}
 
 \item{legend.bg.color}{Background color of the legend. Use \code{TRUE} to match with the overall background color \code{bg.color}.}
 
@@ -211,14 +213,6 @@ By default the title is placed on top of the legend (determined by \code{legend.
 \item{attr.just}{Justification of the attributes relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{attr.position} is specified by numeric coordinates. It can also be specified per attribute function.}
 
 \item{design.mode}{Logical that enables the design mode. If \code{TRUE}, inner and outer margins, legend position, aspect ratio are explicitly shown. Also, feedback text in the console is given.}
-
-\item{basemaps}{Migrated to \code{\link{tm_view}}. vector of one or more names of baselayer maps used in the interactive view mode. See \code{\link{tm_view}}.}
-
-\item{basemaps.alpha}{Migrated to \code{\link{tm_view}}. alpha transparency (opacity) of the basemaps. See \code{\link{tm_view}}.}
-
-\item{bg.overlay}{Not used anymore. See \code{\link{tm_view}}.}
-
-\item{bg.overlay.alpha}{Not used anymore. See \code{\link{tm_view}}.}
 
 \item{...}{other arguments from \code{tm_layout}}
 

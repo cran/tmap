@@ -45,8 +45,10 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 	
 	if (inherits(shp, c("Raster", "SpatialPixels", "SpatialGrid"))) {
 		is.RGB <- attr(raster_facets_vars, "is.RGB") # true if tm_rgb is used (NA if qtm is used)
+		rgb.vars <- attr(raster_facets_vars, "rgb.vars")
 		to.Cat <- attr(raster_facets_vars, "to.Cat") # true if tm_raster(..., style = "cat) is specified
-
+		max.value <- attr(raster_facets_vars, "max.value") # NULL is tm_raster is called, when tm_rgb is called: NA (default) when max color value is determined automatically.
+		
 		if (interactive) gm$shape.master_crs <- .crs_merc
 		
 		if (inherits(shp, "Spatial")) shp <- brick(shp)
@@ -89,22 +91,53 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 			
 			shpnames <- names(rdata) #get_raster_names(shp)
 			
-			convert.RGB <- !identical(is.RGB, FALSE) && 
-				(is.na(raster_facets_vars[1]) || !any(raster_facets_vars %in% shpnames)) &&
-				nlayers(shp)>=3 && nlayers(shp)<=4 && all(minValue(shp)>=0) && all(maxValue(shp)<= 255)
+			mxdata <- max(maxValue(shp))
 			
-			
-			if (is.na(is.RGB) && convert.RGB && show.messages) {
-				message("Numeric values of ", y$shp_name, " interpreted as RGB(A) values. Run tm_shape(", y$shp_name, ") + tm_raster() to visualize the data.")
+			if (is.na(is.RGB)) {
+				if ((nlayers(shp) == 3) && all(minValue(shp)>=0) && mxdata <= max.value) {
+					if (mxdata <= 1) {
+						max.value <- 1
+						message("Numeric values of ", y$shp_name, " interpreted as RGB values with max.value = 1. Run tm_shape(", y$shp_name, ") + tm_raster() to visualize the data.")
+					} else {
+						message("Numeric values of ", y$shp_name, " interpreted as RGB values with max.value = 255. Run tm_shape(", y$shp_name, ") + tm_raster() to visualize the data.")
+					}
+					is.RGB <- TRUE
+					rgb.vars <- 1:3
+				} else {
+					is.RGB <- FALSE
+				}
+			} else if (is.RGB) {
+				if (!any(rgb.vars %in% 1:nlayers(shp))) stop("Specified rgb(a) bands are ", rgb.vars, " whereas the number of layers is ", nlayers(shp), call. = FALSE)
+				if  (!all(minValue(shp)>=0) || !all(mxdata <= max.value)) {
+					shp[][shp[] < 0] <- 0
+					shp[][shp[] > max.value] <- max.value
+					rdata[rdata < 0] <- 0
+					rdata[rdata > max.value] <- max.value
+					warning("Raster values found that are outside the range [0, ", max.value, "]", call. = FALSE)
+				}
+				if (mxdata <= 1 && max.value == 255) message("No values higher than 1 found. Probably, max.value should be set to 1.")
 			}
 			
+			convert.RGB <- is.RGB
 			
-			if (identical(is.RGB, TRUE) && !convert.RGB) {
-				stop("Raster object does not have a color table, nor numeric data that can be converted to colors. Use tm_raster to visualize the data.", call. = FALSE)
-			}
+			
+			# 
+			# 
+			# convert.RGB <- !identical(is.RGB, FALSE) && 
+			# 	(is.na(raster_facets_vars[1]) || !any(raster_facets_vars %in% shpnames)) &&
+			# 	all(minValue(shp)>=0) && mxdata <= max.value
+			# 
+			# if (is.na(is.RGB) && convert.RGB && show.messages) {
+			# 	message("Numeric values of ", y$shp_name, " interpreted as RGB(A) values. Run tm_shape(", y$shp_name, ") + tm_raster() to visualize the data.")
+			# }
+			# 
+			# 
+			# if (identical(is.RGB, TRUE) && !convert.RGB) {
+			# 	stop("Raster object does not have a color table, nor numeric data that can be converted to colors. Use tm_raster to visualize the data.", call. = FALSE)
+			# }
 			
 			if (convert.RGB) {
-				layerIDs <- 1L:nlayers(shp)
+				layerIDs <- rgb.vars #1L:nlayers(shp)
 			} else {
 				if (is.na(raster_facets_vars[1])) {
 					if (length(mainID) != length(shpnames) && show.messages) {
@@ -205,7 +238,7 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 		}, data, lvls, SIMPLIFY=FALSE))
 		
 		if (convert.RGB) {
-			data <- data.frame(PIXEL__COLOR = raster_colors(as.matrix(data), use.colortable = FALSE))
+			data <- data.frame(PIXEL__COLOR = raster_colors(as.matrix(data), use.colortable = FALSE, max.value = max.value))
 		}
 		
 
@@ -246,6 +279,9 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 		} else if (!inherits(shp, c("sf", "sfc"))) {
 			stop("Object ", y$shp_name, " is neither from class sf, Spatial, nor Raster.", call. = FALSE)
 		}
+		
+		# drop z/m
+		shp <- sf::st_zm(shp)
 		
 		# remove empty units
 		empty_units <- st_is_empty(shp)

@@ -3,7 +3,7 @@ check_aes_args <- function(g) {
 	if ("style" %in% nms) {
 		if (length(g$style) != 1) stop("Only one value for style allowed per small multiple (unless free.scales=TRUE)", call.=FALSE)
 		if (!is.character(g$style)) stop("Style is not a character", call.=FALSE)
-		if (!g$style %in% c("cat", "fixed", "sd", "equal", "pretty", "quantile", "kmeans", "hclust", "bclust", "fisher", "jenks", "cont", "order")) stop("Invalid style value(s)", call.=FALSE)
+		if (!g$style %in% c("cat", "fixed", "sd", "equal", "pretty", "quantile", "kmeans", "hclust", "bclust", "fisher", "jenks", "cont", "order", "log10", "log10_pretty")) stop("Invalid style value(s)", call.=FALSE)
 	}
 	
 	if (!is.null(g$palette)) {
@@ -166,6 +166,14 @@ process_dtcol <- function(xname, dtcol, sel=NA, g, gt, nx, npol, areas=NULL, are
 		}
 
 		col[is.na(col)] <- g$colorNULL
+		
+		# apply color processing if needed
+		if ((!is.na(g$alpha) && (g$alpha < 1)) || (gt$pc$sepia.intensity != 0) || (gt$pc$saturation != 1)) {
+			ucol <- unique(as.vector(col))
+			ucol2 <- do.call("process_color", c(list(col=ucol, alpha=g$alpha), gt$pc))
+			col[] <- ucol2[match(col, ucol)]
+		}
+
 		legend.labels <- NA
 		legend.values <- NA
 		legend.palette <- NA

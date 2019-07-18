@@ -2,6 +2,7 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, nx, nxa, pan
 	attr.color <- aes.colors <- aes.color <- pc <- NULL
 	xlab.rotation <- xlab.text <- ylab.rotation <- ylab.text <- NULL
 	fontface <- fontfamily <- NULL
+	compass.text.size <- NULL
 	
 	credit.show <- !is.null(gc)
 	logo.show <- !is.null(gl)
@@ -120,10 +121,11 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, nx, nxa, pan
 		panel.label.size <- panel.label.size * scale
 				
 		#if (is.null(bg.color)) bg.color <- "white"
-		if (is.null(space.color)) space.color <- bg.color
-		if (is.null(earth.boundary.color)) earth.boundary.color <- attr.color
-		if (is.null(legend.text.color)) legend.text.color <- attr.color
-		if (is.null(title.color)) title.color <- attr.color
+		space.color <- ifelse(is.null(space.color), bg.color, space.color[1])
+		earth.boundary.color <- ifelse(is.null(earth.boundary.color), attr.color, earth.boundary.color[1])
+		legend.text.color <-  ifelse(is.null(legend.text.color), attr.color, legend.text.color[1])
+		legend.title.color <- ifelse(is.null(legend.title.color), attr.color, legend.title.color[1])
+		title.color <- ifelse(is.null(title.color), attr.color, title.color[1])
 
 		if (is.null(legend.hist.width)) legend.hist.width <- legend.width
 		
@@ -157,6 +159,7 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, nx, nxa, pan
 		title.color <- do.call("process_color", c(list(col=title.color), pc))
 		main.title.color <- do.call("process_color", c(list(col=main.title.color), pc))
 		legend.text.color <- do.call("process_color", c(list(col=legend.text.color), pc))
+		legend.title.color <- do.call("process_color", c(list(col=legend.title.color), pc))
 		if (!is.na(frame)) frame <- do.call("process_color", c(list(col=frame), pc))
 		if (!is.na(legend.frame)) legend.frame <- do.call("process_color", c(list(col=legend.frame), pc))
 		
@@ -314,7 +317,7 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, nx, nxa, pan
 			compass.color.dark <- do.call("process_color", c(list(col=compass.color.dark), gt$pc))
 			compass.color.light <- do.call("process_color", c(list(col=compass.color.light), gt$pc))
 			
-			compass.fontsize <- compass.fontsize * gt$scale
+			compass.fontsize <- compass.text.size * gt$scale
 			compass.lwd <- compass.lwd * gt$scale
 			
 			compass.show <- TRUE
@@ -328,21 +331,21 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, nx, nxa, pan
 	
 	if (!is.null(glab)) {
 		glab <- within(glab, {
-			if (exists("xlab.text")) {
+			if (!is.null(xlab.text)) {
 				xlab.nlines <- if (xlab.rotation %in% c(90, 270)) {
 					convertHeight(stringWidth(xlab.text), "lines", valueOnly = TRUE)	
 				} else number_text_lines(xlab.text)
-				if (is.na(xlab.space)) xlab.space <- ifelse(gg$grid.show && !gg$grid.labels.inside.frame, gg$grid.labels.size / xlab.size, 0)
+				#if (is.na(xlab.space)) xlab.space <- ifelse(gg$grid.show && !gg$grid.labels.inside.frame, gg$grid.labels.size / xlab.size, 0)
 				xlab.size <- xlab.size * gt$scale
 				xlab.show <- TRUE
 			} else {
 				xlab.show <- FALSE
 			}
-			if (exists("ylab.text")) {
+			if (!is.null(ylab.text)) {
 				ylab.nlines <- if (ylab.rotation %in% c(0, 180)) {
 					convertWidth(stringWidth(ylab.text), "lines", valueOnly = TRUE)	
 				} else number_text_lines(ylab.text)
-				if (is.na(ylab.space)) ylab.space <- ifelse(gg$grid.show && !gg$grid.labels.inside.frame, gg$grid.labels.size / ylab.size, 0)
+				#if (is.na(ylab.space)) ylab.space <- ifelse(gg$grid.show && !gg$grid.labels.inside.frame, gg$grid.labels.size / ylab.size, 0)
 				ylab.size <- ylab.size * gt$scale
 				ylab.show <- TRUE
 			} else {
@@ -407,7 +410,8 @@ process_meta_scale_bar <- function(gsb, interactive, gt) {
 					scale.width <- .25
 				}
 			}
-			scale.size <- scale.size * gt$scale
+			if (is.na(scale.text.color)) scale.text.color <- gt$attr.color
+			scale.text.size <- scale.text.size * gt$scale
 			scale.lwd <- scale.lwd * gt$scale
 			scale.show <- TRUE
 		})

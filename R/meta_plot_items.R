@@ -67,6 +67,11 @@ legend_subplot2 <- function(x, id, rel_height, gt, histWidth, titleRow) {
 
 legend_title <- function(x, gt, is.main.title, lineHeight, m) {
 	size <- ifelse(is.main.title, gt$title.size, gt$legend.title.size)
+	
+	fontface <- ifelse(is.main.title, gt$title.fontface, gt$legend.title.fontface)
+	fontfamily <- ifelse(is.main.title, gt$title.fontfamily, gt$legend.title.fontfamily)
+	color <- ifelse(is.main.title, gt$title.color, gt$legend.title.color)
+	
 	title <- x$title
 	nlines <- number_text_lines(x$title)
 	my <- lineHeight * size * m
@@ -75,8 +80,7 @@ legend_title <- function(x, gt, is.main.title, lineHeight, m) {
 	w <- text_width_npc(title)
 	newsize <- min(size, 5/(lineHeight*nlines*6), (1-2*mx)/w)
 	
-	
-	list(textGrob(title, x=mx, y=6/12 , just=c("left", "center"), gp=gpar(col=gt$legend.text.color, cex=newsize, fontface=gt$legend.title.fontface, fontfamily=gt$legend.title.fontfamily)), legWidth=2*mx+w*newsize)
+	list(textGrob(title, x=mx, y=6/12 , just=c("left", "center"), gp=gpar(col=color, cex=newsize, fontface=fontface, fontfamily=fontfamily)), legWidth=2*mx+w*newsize)
 }
 
 
@@ -594,7 +598,7 @@ plot_scale <- function(gt, just, xrange, crop_factor) {
 	ticks3 <- ticks2*unit.size / xrange
 	
 	widths <- ticks3[2] - ticks3[1]
-	size <- min(gt$scale.size, widths/max(ticksWidths))
+	size <- min(gt$scale.text.size, widths/max(ticksWidths))
 	x <- ticks3[1:(n-1)] + .5*ticksWidths[1]*size
 	
 	lineHeight <- convertHeight(unit(1, "lines"), "npc", valueOnly=TRUE) * size
@@ -622,7 +626,7 @@ plot_scale <- function(gt, just, xrange, crop_factor) {
 	gTree(children=gList(
 		grobBG,
 		rectGrob(x=x, y=1.5*lineHeight, width = widths, height=lineHeight*.5, just=c("left", "bottom"), gp=gpar(col=dark, fill=c(light, dark), lwd=gt$scale.lwd)),
-		textGrob(label=labels, x = xtext, y = lineHeight, just=c("center", "center"), gp=gpar(col=gt$attr.color, cex=size, fontface=gt$fontface, fontfamily=gt$fontfamily))), name="scale_bar")
+		textGrob(label=labels, x = xtext, y = lineHeight, just=c("center", "center"), gp=gpar(col=gt$scale.text.color, cex=size, fontface=gt$fontface, fontfamily=gt$fontfamily))), name="scale_bar")
 	
 	
 }
@@ -874,7 +878,7 @@ plot_compass <- function(gt, just) {
 		
 		lx <- lr * sin(ld+drotate) + .5
 		ly <- lr * cos(ld+drotate) + .5
-		textGrob(labels, x=lx, y=ly, just=c("center", "center"), rot=-drotate/pi*180, gp=gpar(col=gt$attr.color, cex=gt$compass.fontsize, fontface=gt$fontface, fontfamily=gt$fontfamily))
+		textGrob(labels, x=lx, y=ly, just=c("center", "center"), rot=-drotate/pi*180, gp=gpar(col=gt$compass.text.color, cex=gt$compass.text.size, fontface=gt$fontface, fontfamily=gt$fontfamily))
 	}
 	
 	grobComp <- if (gt$compass.type %in% c("arrow", "4star", "8star")) {
