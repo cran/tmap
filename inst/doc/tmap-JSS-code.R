@@ -148,7 +148,7 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #    dir <- tempdir()
 #    download.file("http://www2.census.gov/geo/tiger/GENZ2010/gz_2010_us_050_00_20m.zip", destfile = file.path(dir, "gz_2010_us_050_00_20m.zip"))
 #    unzip(file.path(dir, "gz_2010_us_050_00_20m.zip"), exdir = dir)
-#    US <- read_shape(file.path(dir, "gz_2010_us_050_00_20m.shp"))
+#    US <- sf::read_sf(file.path(dir, "gz_2010_us_050_00_20m.shp"))
 #    levels(US$NAME) <- iconv(levels(US$NAME), from = "latin1", to = "utf8")
 #    US
 #  }
@@ -166,13 +166,17 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #  #############################
 #  ## Figure 10
 #  #############################
+#  library(dplyr)
+#  library(sf)
+#  
 #  US$FIPS <- paste0(US$STATE, US$COUNTY)
 #  
 #  # append data to shape
-#  US <- append_data(US, FEA, key.shp = "FIPS", key.data = "FIPS", ignore.duplicates = TRUE)
+#  #US <- append_data(US, FEA, key.shp = "FIPS", key.data = "FIPS", ignore.duplicates = TRUE)
+#  US <- left_join(US, FEA, by = c("FIPS", "FIPS"))
 #  
-#  unmatched_data <- over_coverage()
-#  str(unmatched_data)
+#  
+#  unmatched_data <- FEA %>% filter(!(FIPS %in% US$FIPS))
 #  
 #  tmap_mode("view")
 #  qtm(US, fill = "PCT_OBESE_ADULTS10")
@@ -181,8 +185,6 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #  #############################
 #  ## Figure 11
 #  #############################
-#  library("dplyr")
-#  
 #  US_cont <- US %>%
 #    subset(!STATE %in% c("02", "15", "72")) %>%
 #    simplify_shape(0.2)
@@ -254,10 +256,10 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #  
 #  # create sf of known locations
 #  crimes <- crimes[!is.na(crimes$Longitude) & !is.na(crimes$Latitude), ]
-#  crimes <- st_as_sf(crimes, coords = c("Longitude", "Latitude"))
+#  crimes <- st_as_sf(crimes, coords = c("Longitude", "Latitude"), crs = 4326)
 #  
 #  # set map projection to British National Grid
-#  crimes <- set_projection(crimes, current.projection = "longlat", projection = 27700)
+#  crimes <- st_transform(crimes, crs = 27700)
 #  
 #  c1 <- qtm(crimes)
 #  tmap_save(c1, "crimes1.png", scale = .6, width = 3, units = "in", outer.margins = 0)
@@ -283,9 +285,9 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #  #############################
 #  ## Figure 14
 #  #############################
-#  regions <- ne_download(scale = "large", type = "states", category = "cultural")
+#  regions <- ne_download(scale = "large", type = "states", category = "cultural", returnclass = "sf")
 #  london <- regions[which(regions$region == "Greater London"),]
-#  london <- set_projection(london, projection = 27700)
+#  london <- st_transform(london, crs = 27700)
 #  
 #  # remove crimes outside Greater London
 #  crimes_london <- crop_shape(crimes, london, polygon =  TRUE)
@@ -299,6 +301,10 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #  #############################
 #  ## Figure 15
 #  #############################
+#  library("devtools")
+#  install_github("mtennekes/oldtmaptools")
+#  library(oldtmaptools)
+#  
 #  crime_densities <- smooth_map(crimes_london, bandwidth = 0.5, breaks = c(0, 50, 100, 250, 500, 1000), cover = london)
 #  
 #  # download rivers, and get Thames shape

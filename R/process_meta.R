@@ -150,7 +150,7 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, nx, nxa, pan
 # 		}
 		
 		inner.margins <- if (is.na(inner.margins[1])) {
-			if (gm$shape.any_raster) rep(0, 4) else rep(0.02, 4)
+			if (gm$shape.is_raster_master) rep(0, 4) else rep(0.02, 4)
 		} else rep(inner.margins, length.out=4)
 		
  		attr.color.light <- is_light(attr.color)
@@ -239,7 +239,7 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, nx, nxa, pan
 		
 	})	
 
-	gg <- process_meta_grid(gg, gt)
+	gg <- process_meta_grid(gg, gt, interactive)
 
 	if (credit.show) {
 		gc <- within(gc, {
@@ -388,11 +388,14 @@ find_leaflet_position <- function(position) {
 
 
 process_meta_scale_bar <- function(gsb, interactive, gt) {
-	show.messages <- get(".tmapOptions", envir = .TMAP_CACHE)$show.messages
+	show.messages <- get("tmapOptions", envir = .TMAP_CACHE)$show.messages
 	
 	if (!is.null(gsb)) {
 		gsb <- within(gsb, {
+			if (!exists("scale.call")) scale.call <- ""
 			if (interactive) {
+				if ("breaks" %in% scale.call) warnings("In view mode, scale bar breaks are ignored.", call. = FALSE)
+				
 				if (is.na(scale.width))
 					scale.width <- 100
 				else if (scale.width < 1) {
@@ -403,6 +406,16 @@ process_meta_scale_bar <- function(gsb, interactive, gt) {
 				if (is.na(scale.position[1])) scale.position <- gt$attr.position
 				scale.position <- find_leaflet_position(scale.position)
 			} else {
+				if (all(c("breaks", "width") %in% scale.call)) {
+					warning("For tm_scale_bar, breaks and width cannot be used together. The width is being ignored.", call. = FALSE)	
+				}
+				if ("breaks" %in% scale.call) {
+					if (scale.breaks[1] != 0) {
+						warning("First scale_bar breaks value should be 0.", call. = FALSE)
+						scale.breaks <- c(0, scale.breaks)
+					}
+				}
+				
 				if (is.na(scale.width))
 					scale.width <- .25
 				else if (scale.width > 1) {
@@ -420,7 +433,7 @@ process_meta_scale_bar <- function(gsb, interactive, gt) {
 	}
 }
 
-process_meta_grid <- function(gg, gt) {
+process_meta_grid <- function(gg, gt, interactive) {
 	grid.alpha <- grid.labels.inside.frame <- grid.labels.rot <- NULL
 	if (!is.null(gg)) {
 		gg <- within(gg, {
@@ -435,7 +448,7 @@ process_meta_grid <- function(gg, gt) {
 			
 			grid.projection <- get_proj4(grid.projection, output = "crs")
 			
-			if (!grid.labels.inside.frame && any(gt$outer.margins[1:2]==0)) stop("When grid labels are plotted outside the frame, outer.margins (the bottom and the left) should be greater than 0. When using tmap_save, notice that outer.margins are set to 0 by default, unless set to NA.")
+			if (!interactive && !grid.labels.inside.frame && any(gt$outer.margins[1:2]==0)) stop("When grid labels are plotted outside the frame, outer.margins (the bottom and the left) should be greater than 0. When using tmap_save, notice that outer.margins are set to 0 by default, unless set to NA.")
 			if (!"scientific" %in% names(grid.labels.format)) grid.labels.format$scientific <- FALSE
 			if (!"digits" %in% names(grid.labels.format)) grid.labels.format$digits <- NA
 			

@@ -5,7 +5,7 @@ rasterCheckSize <- function(x, interactive) {
 	# 				  "... decreasing Raster* resolution to", maxpixels, "pixels\n",
 	# 				  "to view full resolution set 'maxpixels = ", ncell(x), "'"))
 
-	tmapOptions <- get(".tmapOptions", envir = .TMAP_CACHE)
+	tmapOptions <- get("tmapOptions", envir = .TMAP_CACHE)
 	max.raster <- tmapOptions$max.raster
 	show.messages <- tmapOptions$show.messages
 	
@@ -29,7 +29,7 @@ rasterCheckSize <- function(x, interactive) {
 preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 	shp <- y$shp
 	
-	show.messages <- get(".tmapOptions", envir = .TMAP_CACHE)$show.messages
+	show.messages <- get("tmapOptions", envir = .TMAP_CACHE)$show.messages
 
 	
 	if (is.null(shp)) return(list(shp=NULL, data=NULL, type="tiles"))
@@ -77,7 +77,7 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 			lvls <- list(uctable)
 			
 			# if (!is.RGB && is.na(do.interpolate)) {
-			# 	if (get(".tmapOptions", envir = .TMAP_CACHE)$show.messages) {
+			# 	if (get("tmapOptions", envir = .TMAP_CACHE)$show.messages) {
 			# 		message("For bitmap images, it is recommended to use tm_rgb instead of tm_raster (or to set interpolate to TRUE).")
 			# 	}
 			# }
@@ -91,8 +91,9 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 			
 			shpnames <- names(rdata) #get_raster_names(shp)
 			
-			mxdata <- max(maxValue(shp))
-			
+			mxdata <- suppressWarnings(max(maxValue(shp)))
+			if (is.na(mxdata)) mxdata <- 0
+
 			if (is.na(is.RGB)) {
 				if ((nlayers(shp) == 3) && all(minValue(shp)>=0) && mxdata <= max.value) {
 					if (mxdata <= 1) {
@@ -107,7 +108,8 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 					is.RGB <- FALSE
 				}
 			} else if (is.RGB) {
-				if (!any(rgb.vars %in% 1:nlayers(shp))) stop("Specified rgb(a) bands are ", rgb.vars, " whereas the number of layers is ", nlayers(shp), call. = FALSE)
+				if (!all(rgb.vars %in% 1:nlayers(shp))) stop("Specified rgb(a) bands are ", paste(rgb.vars, collapse = ", "), " whereas the number of layers is ", nlayers(shp), call. = FALSE)
+				
 				if  (!all(minValue(shp)>=0) || !all(mxdata <= max.value)) {
 					shp[][shp[] < 0] <- 0
 					shp[][shp[] > max.value] <- max.value
@@ -115,6 +117,7 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 					rdata[rdata > max.value] <- max.value
 					warning("Raster values found that are outside the range [0, ", max.value, "]", call. = FALSE)
 				}
+				
 				if (mxdata <= 1 && max.value == 255) message("No values higher than 1 found. Probably, max.value should be set to 1.")
 			}
 			
@@ -211,6 +214,7 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 			shpTmp <- suppressWarnings(projectRaster(shp, to=new_ext, crs=gm$shape.master_crs$proj4string, method = ifelse(use_interp, "bilinear", "ngb")))
 			shp2 <- raster(shpTmp)
 			data <- suppressWarnings(get_raster_data(shpTmp)[,layerIDs, drop=FALSE])
+			names(data) <- names(lvls)
 		} else {
 			shp2 <- raster(shp)
 			data <- suppressWarnings(get_raster_data(shp)[,layerIDs, drop=FALSE])
@@ -274,22 +278,8 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 		kernel_density <- ("kernel_density" %in% names(attributes(shp)))
 		isolines <- ("isolines" %in% names(attributes(shp)))
 		
-		if (inherits(shp, "Spatial")) {
-			shp <- as(shp, "sf")
-		} else if (!inherits(shp, c("sf", "sfc"))) {
-			stop("Object ", y$shp_name, " is neither from class sf, Spatial, nor Raster.", call. = FALSE)
-		}
-		
-		# drop z/m
-		shp <- sf::st_zm(shp)
-		
-		# remove empty units
-		empty_units <- st_is_empty(shp)
-		if (any(empty_units)) {
-			shp <- if (inherits(shp, "sf")) shp[!empty_units, ] else shp[!empty_units]
-		}
-		
-		
+		if (y$check_shape) shp <- check_shape(shp, y$shp_name)
+
 		## get data.frame from shapes, and store ID numbers in shape objects (needed for cropping)
 		if (inherits(shp, "sfc")) {
 			data <- data.frame(tmapID = seq_len(length(shp)))
@@ -400,17 +390,23 @@ split_geometry_collection <- function(sfc) {
 										st_collection_extract(g, "POINT"),
 										st_collection_extract(g, "LINESTRING")))
 			# tp2 <- factor(c("polygons", "points", "lines"), levels=c("polygons", "lines", "points"))
-			sel <- !vapply(g2, st_is_empty, logical(1))
-			
-			g2 <- g2[sel]
+			g2 <- tryCatch({
+				sel <- !vapply(g2, function(x)all(st_is_empty(x)), logical(1))
+				g2[sel]
+			}, error = function(e) {
+				g2 <- lapply(g2, lwgeom::st_make_valid)
+				sel <- !vapply(g2, function(x)all(st_is_empty(x)), logical(1))
+				g2[sel]
+			})
+
 			# tp2 <- tp2[sel]
-			id2 <- rep(id, length(g2))
+			id2 <- rep(id, length(g2[[1]]))
 			list(g2, id2)
 		} else {
 			list(list(g), id)
 		}
 	}, sfc, types, 1:length(sfc), SIMPLIFY = FALSE)			
-	gnew <- st_sfc(do.call(c, lapply(res, "[[", 1)), crs = st_crs(sfc))
+	gnew <- st_sfc(do.call(c, lapply(lapply(res, "[[", 1), "[[", 1)), crs = st_crs(sfc))
 	ids <- do.call(c, lapply(res, "[[", 2))
 	attr(gnew, "ids") <- ids
 	gnew

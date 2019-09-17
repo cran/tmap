@@ -76,8 +76,6 @@ qtm <- function(shp,
 		attr(g, "qtm_shortcut") <- TRUE
 		class(g) <- "tmap"
 		return(g)
-	} else if (inherits(shp, "Spatial") && !(inherits(shp, c("Raster", "SpatialPixels", "SpatialGrid")))) {
-		shp <- as(shp, "sf")
 	}
 	
 	if ("bubble.size" %in% names(args)) {
@@ -95,8 +93,10 @@ qtm <- function(shp,
 		borders <- NULL
 		showPoints <- FALSE
 	} else {
-		
-		
+		shp <- check_shape(shp, shp_name)
+
+		if (inherits(shp, "sfc")) shp <- st_sf(shp)
+
 		if (any(st_geometry_type(shp) == "GEOMETRYCOLLECTION")) {
 			geom <- split_geometry_collection(st_geometry(shp))
 			shp <- shp[attr(geom, "ids"), ]
@@ -185,7 +185,7 @@ qtm <- function(shp,
 
 	g <- do.call("tm_shape", c(list(shp=shp, projection=projection, bbox = bbox), args2[["tm_shape"]]))
 	g$tm_shape$shp_name <- shp_name
-	
+	g$tm_shape$check_shape <- FALSE
 
 	g <- g + tm_basemap(basemaps)
 	
@@ -241,13 +241,13 @@ qtm <- function(shp,
 	scaleLst <- if (!is.na(scale) && !is.na(title[1])) list(title=title, scale=scale) else if (!is.na(scale)) list(scale=scale) else if (!is.na(title[1])) list(title=title) else list()
 	
 	if (!missing(style)) {
-		.tmapOptions <- get(".tmapOptions", envir = .TMAP_CACHE)	
+		.tmapOptions <- get("tmapOptions", envir = .TMAP_CACHE)	
 		check_style(style)
 		g <- g + tm_style(style)
 	}
 	
 	if (!missing(format)) {
-		.tmapFormats <- get(".tmapFormats", envir = .TMAP_CACHE)
+		.tmapFormats <- get("tmapFormats", envir = .TMAP_CACHE)
 		if (!(format %in% names(.tmapFormats))) stop("Unknown format. Please check tmap_format() for available formats")
 		g <- g + tm_format(format)
 	}
@@ -258,7 +258,7 @@ qtm <- function(shp,
 	gview <- do.call("tm_view", args2[["tm_view"]])
 	g <- g + glayout + gview
 	
-	assign(".last_map_new", match.call(), envir = .TMAP_CACHE)
+	assign("last_map_new", match.call(), envir = .TMAP_CACHE)
 	attr(g, "qtm_shortcut") <- FALSE
 	g
 }

@@ -81,6 +81,9 @@ postprocess_symbols <- function(res, g, gt, data, npol, nx, just, interactive) {
 	if (!is.null(g$shapes.legend)) {
 		shape.neutral <- g$shapes.legend
 		col.neutral <- if (is.na(g$shapes.legend.fill)[1]) gt$aes.colors["symbols"] else  g$shapes.legend.fill
+	} else {
+		shape.neutral <- NULL
+		col.neutral <- NA
 	}
 	
 	# if (!g$legend.size.show) symbol.size.legend.title <- NA
@@ -132,14 +135,14 @@ postprocess_symbols <- function(res, g, gt, data, npol, nx, just, interactive) {
 	
 	
 	res$symbol.col.legend.sizes <- res$symbol.size.legend.misc$symbol.max.size
-	res$symbol.col.legend.shapes <- res$symbol.shape.legend.misc$shape.neutral
-
-	#res$symbol.size.legend.sizes=symbol.legend.sizes,
-	res$symbol.size.legend.shapes <- res$symbol.shape.legend.misc$shape.neutral
+	res$symbol.col.legend.shapes <- if (is.null(shape.neutral)) res$symbol.shape.legend.misc$shape.neutral else shape.neutral
+	
+	res$symbol.size.legend.shapes <- if (is.null(shape.neutral)) res$symbol.shape.legend.misc$shape.neutral else shape.neutral
+	if (!is.na(col.neutral)) res$symbol.size.legend.palette <- col.neutral
 
 	res$symbol.shape.legend.sizes <- res$symbol.size.legend.misc$symbol.max.size
-	#res$symbol.shape.legend.shapes=shape.legend.shapes,
-	
+	if (!is.na(col.neutral)) res$symbol.shape.legend.palette <- col.neutral
+
 	
 	
 	
@@ -167,8 +170,8 @@ process_symbols <- function(data, g, gt, gby, z, interactive) {
 
 
 submit_symbol_shapes <- function(x, interactive, just, just.override, grob.dim) {
-	shapeLib <- get(".shapeLib", envir = .TMAP_CACHE)
-	justLib <- get(".justLib", envir = .TMAP_CACHE)
+	shapeLib <- get("shapeLib", envir = .TMAP_CACHE)
+	justLib <- get("justLib", envir = .TMAP_CACHE)
 	n <- length(x)
 	id <- 999 + length(shapeLib)
 	if (interactive) {
@@ -222,8 +225,8 @@ submit_symbol_shapes <- function(x, interactive, just, just.override, grob.dim) 
 	
 	shapeLib <- c(shapeLib, items[!numbers])
 	justLib <- c(justLib, just_items[!numbers])
-	assign(".shapeLib", shapeLib, envir = .TMAP_CACHE)
-	assign(".justLib", justLib, envir = .TMAP_CACHE)
+	assign("shapeLib", shapeLib, envir = .TMAP_CACHE)
+	assign("justLib", justLib, envir = .TMAP_CACHE)
 	names(x2) <- names(x)
 	x2
 }

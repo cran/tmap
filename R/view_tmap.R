@@ -7,18 +7,6 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 	
 	if (!proxy) lf <- leaflet(options = leaflet::leafletOptions(crs=gt$projection))
 
-	pOptions <- function(cw) {
-		if (is.null(cw)) cw <- 20
-		
-		width <- max(500, cw * 4.5)
-		leaflet::popupOptions(minWidth = 100, maxWidth = width)
-		
-		# minWidth and maxWidth apply to every popup
-		# setting leaflet::popupOptions(minWidth = width, maxWidth = width) makes every popup wide
-		# horizontal scrollbars still occur
-	}
-		
-	
 	# add background overlay
 	if (!in.shiny) {
 		lf <- appendContent(lf, {
@@ -62,9 +50,13 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 	
 	if (inherits(shps, "sf")) shps <- list(shps)
 
-	bases <- NA
-	overlays <- NA
-	overlays_tiles <- character(0)
+	bases <- if ("bases" %in% ls(envir = .TMAP_CACHE)) get("bases", envir = .TMAP_CACHE) else NA
+	overlays <- if ("overlays" %in% ls(envir = .TMAP_CACHE)) get("overlays", envir = .TMAP_CACHE) else NA
+	overlays_tiles <- if ("overlays_tiles" %in% ls(envir = .TMAP_CACHE)) get("overlays_tiles", envir = .TMAP_CACHE) else character(0)
+	
+	# bases <- NA
+	# overlays <- NA
+	# overlays_tiles <- character(0)
 	
 	## keep track of layerIds to prevent duplicates (duplicates are not shown in leaflet)
 	# layerIds <- list(polygons = character(0),
@@ -73,7 +65,7 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 	
 	
 	if (proxy) {
-		layerIds <- get(".layerIdsNew", envir = .TMAP_CACHE)
+		layerIds <- get("layerIdsNew", envir = .TMAP_CACHE)
 		if (length(layerIds) == 0) {
 			start_pane_id <- 401
 		} else {
@@ -177,7 +169,6 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 						gpl <- res$gpl
 						shp <- res$shp
 					}
-					#co <- suppressWarnings(st_coordinates(st_geometry(st_centroid(shp))))
 				}
 			}
 		}
@@ -205,8 +196,6 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 			dashArray <- lty2dashArray(gpl$lty)
 			stroke <- gpl$lwd>0 && !is.na(bcol) && bopacity!=0
 			
-			charwidth <- attr(popups, "charwidth")
-
 			group_name <- if (is.na(gpl$fill.group)) shp_name else gpl$fill.group
 			addOverlayGroup(group_name)
 			
@@ -218,7 +207,7 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 			shp$tmapID <- if (!is.null(labels)) as.character(labels) else shp$tmapID
 			shp$tmapID2 <- submit_labels(shp$tmapID, "polygons", pane, e)
 			
-			lf <- lf %>% addPolygons(data=shp, label = ~tmapID, layerId = shp$tmapID2, stroke=stroke, weight=gpl$lwd, color=bcol, fillColor = fcol, opacity=bopacity, fillOpacity = fopacity, dashArray = dashArray, popup = popups, options = pathOptions(clickable=!is.null(popups), pane=pane), group=group_name, popupOptions = pOptions(charwidth))
+			lf <- lf %>% addPolygons(data=shp, label = ~tmapID, layerId = shp$tmapID2, stroke=stroke, weight=gpl$lwd, color=bcol, fillColor = fcol, opacity=bopacity, fillOpacity = fopacity, dashArray = dashArray, popup = popups, options = pathOptions(clickable=!is.null(popups), pane=pane), group=group_name)
 			
 			# if (!is.null(labels)) {
 			# 	lf <- lf %>% 
@@ -241,8 +230,7 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 
 			popups <- get_popups(gpl, type="line")
 			labels <- get_labels(gpl, type="line")
-			charwidth <- attr(popups, "charwidth")
-			
+
 			dashArray <- lty2dashArray(gpl$line.lty)
 			
 
@@ -257,7 +245,7 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 			shp$tmapID2 <- submit_labels(shp$tmapID, "lines", pane, e)
 			
 			
-			lf <- lf %>% addPolylines(data=shp, label = ~tmapID, layerId = shp$tmapID2, stroke=TRUE, weight=gpl$line.lwd, color=lcol, opacity = lopacity, popup = popups, options = pathOptions(clickable=!is.null(popups), pane=pane), dashArray=dashArray, group=group_name, popupOptions = pOptions(charwidth)) 
+			lf <- lf %>% addPolylines(data=shp, label = ~tmapID, layerId = shp$tmapID2, stroke=TRUE, weight=gpl$line.lwd, color=lcol, opacity = lopacity, popup = popups, options = pathOptions(clickable=!is.null(popups), pane=pane), dashArray=dashArray, group=group_name) 
 
 			# if (!is.null(labels)) {
 			# 	lf <- lf %>% 
@@ -330,8 +318,7 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 			ids <- submit_labels(labels, "symbols", pane, e)
 			
 			
-			charwidth <- attr(popups, "charwidth")
-			
+
 			popups <- popups[sel]
 			
 			# sort symbols
@@ -371,7 +358,7 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 				if (any(symbol.shape2<1000)) {
 					icons <- NULL
 				} else {
-					iconLib <- get(".shapeLib", envir = .TMAP_CACHE)[symbol.shape2-999]
+					iconLib <- get("shapeLib", envir = .TMAP_CACHE)[symbol.shape2-999]
 					icons <- merge_icons(iconLib)
 					#print(summary(symbol.size2))
 					icons$iconWidth <- icons$iconWidth * symbol.size2
@@ -389,9 +376,9 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 				}
 				
 				if (fixed) {
-					lf <- lf %>% addCircleMarkers(lng=co2[,1], lat=co2[,2], label = labels2, layerId = ids2, fill = any(!is.na(fcol2)), fillColor = fcol2, fillOpacity=fopacity, color = bcol, stroke = !is.na(bcol) && bopacity!=0, radius = 20*symbol.size2, weight = 1, popup=popups2, group=group_name, popupOptions = pOptions(charwidth), clusterOptions=clustering, options = pathOptions(clickable=!is.null(popups), pane=pane))
+					lf <- lf %>% addCircleMarkers(lng=co2[,1], lat=co2[,2], label = labels2, layerId = ids2, fill = any(!is.na(fcol2)), fillColor = fcol2, fillOpacity=fopacity, color = bcol, stroke = !is.na(bcol) && bopacity!=0, radius = 20*symbol.size2, weight = 1, popup=popups2, group=group_name, clusterOptions=clustering, options = pathOptions(clickable=!is.null(popups), pane=pane))
 				} else {
-					lf <- lf %>% addCircles(lng=co2[,1], lat=co2[,2], label = labels2, layerId = ids2, fill = any(!is.na(fcol2)), fillColor = fcol2, fillOpacity=fopacity, color = bcol, stroke = !is.na(bcol) && bopacity!=0, radius=rad, weight =1, popup=popups2, group=group_name, popupOptions = pOptions(charwidth), options = pathOptions(clickable=!is.null(popups), pane=pane))
+					lf <- lf %>% addCircles(lng=co2[,1], lat=co2[,2], label = labels2, layerId = ids2, fill = any(!is.na(fcol2)), fillColor = fcol2, fillOpacity=fopacity, color = bcol, stroke = !is.na(bcol) && bopacity!=0, radius=rad, weight =1, popup=popups2, group=group_name, options = pathOptions(clickable=!is.null(popups), pane=pane))
 				}
 			}
 				
@@ -525,7 +512,7 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 			
 			res <- split_alpha_channel(pal, alpha)
 			pal_col <- res$col
-			pal_opacity <- max(res$opacity)
+			pal_opacity <- if (length(res$opacity) == 0L) 0 else max(res$opacity)
 			
 			mappal <- function(x) {
 				if (all(is.na(shp@data@values))) return(rep("#00000000", length(x)))
@@ -535,7 +522,11 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 				y
 			}
 			
-			lf <- lf %>% addRasterImage(x=shp, colors=mappal, opacity = pal_opacity, group=group_name, project = FALSE)
+			pane <- paneName(zi)
+			
+			layerId <- submit_labels(pane, "raster", pane, e)
+
+			lf <- lf %>% addRasterImage(x=shp, colors=mappal, opacity = pal_opacity, group=group_name, project = FALSE, layerId = layerId)
 			
 			if (!is.na(gpl$xraster[1])) {
 				if (gpl$raster.legend.show) lf <- lf %>% add_legend(gpl, gt, aes="raster", alpha=alpha, group = if (gt$free.scales.raster) group_name else NULL, zindex = zi)
@@ -694,6 +685,8 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 		stop("Invalid control.position", call.=FALSE)
 	}
 
+	
+
 	if (length(bases) == 1 && !basename.specified) {
 		if (!is.na(overlays[1])) {
 			lf <- lf %>% addLayersControl(overlayGroups = unname(overlays), options = layersControlOptions(autoZIndex = TRUE), position=control.position)
@@ -703,7 +696,7 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 	} else {
 		lf <- lf %>% addLayersControl(baseGroups=unname(bases), options = layersControlOptions(autoZIndex = TRUE), position=control.position)  
 	}
-	
+
 
 	if (gt$scale.show) {
 		u <- gt$shape.units$unit
@@ -765,7 +758,11 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 	if (!proxy) lf <- set_bounds_view(lf, gt)
 	lf$title <- gt$title
 	
-	assign(".layerIds", layerIds, envir = .TMAP_CACHE)
+	assign("layerIds", layerIds, envir = .TMAP_CACHE)
+	assign("bases", bases, envir = .TMAP_CACHE)
+	assign("overlays", overlays, envir = .TMAP_CACHE)
+	assign("overlays_tiles", overlays_tiles, envir = .TMAP_CACHE)
+	
 	
 	lf	
 	
@@ -847,20 +844,16 @@ format_popups <- function(id=NULL, titles, format, values) {
 	
 	
 	labels2 <- mapply(function(l, v) {
-		paste0("<tr><td style=\"color: #888888;\">", l, "</td><td>", v, "</td>")
+		paste0("<tr><td style=\"color: #888888;\">", l, "</td><td align=\"right\"><nobr>", v, "</nobr></td>")
 	}, titles_format, values_format, SIMPLIFY=FALSE)
 	
 	labels3 <- paste0(do.call("paste", c(labels2, list(sep="</tr>"))), "</tr>")
-	x <- paste("<div style=\"max-height:10em;overflow:auto;\"><table>
-			   <thead><tr><th colspan=\"2\">", labels, "</th></thead></tr>", labels3, "</table></div>", sep="")
 	
-	nc_labels <- nchar(labels)
-	nc_titles <- max(nchar(titles_format))
-	nc_values_format <- do.call(pmax, c(lapply(values_format, nchar, allowNA = TRUE), list(na.rm = TRUE))) + 2 # which space between title and value
+	padding_right <- ifelse(length(titles_format) > 13, 15, 0) # add padding for horizontal scroll bar. These will appear on most browsers when there are over 13 normal lines (tested: RStudio, FF, Chrome)
 
-	charwidth <- max(nc_labels + nc_titles + nc_values_format)
-	# print(which.max(nc_labels + nc_titles + nc_values_format))
-	attr(x, "charwidth") <- charwidth
+	x <- paste0("<style> div.leaflet-popup-content {width:auto !important;overflow-y:auto; overflow-x:hidden;}</style><div style=\"max-height:25em;padding-right:", padding_right, "px;\"><table>
+			   <thead><tr><th colspan=\"2\">", labels, "</th></thead></tr>", labels3, "</table></div>")
+	
 	x
 }
 
@@ -1056,13 +1049,14 @@ units_per_line <- function(bbx) {
 	max_lines <- 60
 
 	# calculate top-center to bottom-center
-	vdist <- tmaptools::approx_distances(bbx, projection = "longlat", target = "m")$vdist
+	vdist <- suppressWarnings({tmaptools::approx_distances(bbx, projection = "longlat", target = "m")$vdist})
 	vdist/max_lines
 }
 
 lty2dashArray <- function(lty) {
 	numlty <- switch(lty,
 					 solid=0,
+					 blank=0,
 					 # These numbers taken from ?par
 					 dashed=c(4, 4),
 					 dotted=c(1, 3),

@@ -205,7 +205,7 @@ legend_portr <- function(x, gt, lineHeight, m) {
 			shapes <- legend.shapes
 			shapes <- rep(shapes, length.out=nitems)
 			if (any(!is.na(shapes) & shapes>999)) {
-				shapeLib <- get(".shapeLib", envir = .TMAP_CACHE)
+				shapeLib <- get("shapeLib", envir = .TMAP_CACHE)
 				
 				gpars <- get_symbol_gpar(x=shapes,
 										 fill=cols,
@@ -479,7 +479,7 @@ legend_landsc <- function(x, gt, lineHeight, m) {
 			xtraWidth <- convertWidth(max(symbolR), "npc", valueOnly=TRUE)/2/s2
 			
 			if (any(!is.na(shapes) & shapes>999)) {
-				shapeLib <- get(".shapeLib", envir = .TMAP_CACHE)
+				shapeLib <- get("shapeLib", envir = .TMAP_CACHE)
 				
 				gpars <- get_symbol_gpar(x=shapes,
 										 fill=cols,
@@ -597,29 +597,19 @@ plot_scale <- function(gt, just, xrange, crop_factor) {
 	n <- length(ticks2)
 	ticks3 <- ticks2*unit.size / xrange
 	
-	widths <- ticks3[2] - ticks3[1]
+	widths <- ticks3[2:n] - ticks3[1:(n-1)]
 	size <- min(gt$scale.text.size, widths/max(ticksWidths))
 	x <- ticks3[1:(n-1)] + .5*ticksWidths[1]*size
 	
 	lineHeight <- convertHeight(unit(1, "lines"), "npc", valueOnly=TRUE) * size
-	#my <- lineHeight / 2
-	#mx <- convertWidth(convertHeight(unit(my, "npc"), "inch"), "npc", TRUE)
-	
+
 	unitWidth <- text_width_npc(unit) * size
-	width <- widths * (n-1) + .5*ticksWidths[1]*size + .5*ticksWidths[n]*size+ unitWidth   #widths * n 
+	width <- sum(widths[-n]) + .5*ticksWidths[1]*size + .5*ticksWidths[n]*size+ unitWidth   #widths * n 
 	
 	xtext <- x[1] + c(ticks3, ticks3[n] + .5*ticksWidths[n]*size + .5*unitWidth)# + widths*.5 + unitWidth*.5) #+ position[1]
 	
 	x <- just-just*width+x
 	xtext <- just-just*width+xtext
-	
-	# if (just=="right") {
-	# 	x <- 1-width+x
-	# 	xtext <- 1-width+xtext
-	# } else if (just=="center") {
-	# 	x <- .5-.5*width+x
-	# 	xtext <- .5-.5*width+xtext
-	# }
 	
 	grobBG <- if (gt$design.mode) rectGrob(gp=gpar(fill="orange")) else NULL
 	

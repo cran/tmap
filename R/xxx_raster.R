@@ -1,16 +1,21 @@
 raster_colors <- function(x, use.colortable = FALSE, max.value = 255) {
 	
-	x[is.na(x)] <- 0
+	anyna <- apply(x, MARGIN = 1, function(i) any(is.na(i)))
+	
+	x[anyna, ] <- max.value
 	
 	n <- nrow(x)
 
 	# get alpha transparency
 	if (ncol(x)==4) {
-		a <- x[,4]
+		a <- ifelse(anyna, 0, x[,4])
 		x <- x[,1:3]
-		x[x]
 	} else {
-		a <- NULL
+		if (any(anyna)) {
+			a <- ifelse(anyna, 0, max.value)
+		} else {
+			a <- NULL
+		}
 	}
 
 	if (!use.colortable) {
@@ -27,7 +32,7 @@ raster_colors <- function(x, use.colortable = FALSE, max.value = 255) {
 	v <- x[, 1] * 1e6L + x[, 2] * 1e3L + x[, 3]
 
 	isna <- is.na(v)
-	if (!is.null(a)) isna <- isna & (a==255)
+	if (!is.null(a)) isna <- isna & (a!=max.value)
 
 	v <- v[!isna]
 	u <- unique(v)
@@ -92,7 +97,9 @@ extract_raster_data <- function(nm, isf, d, a){
 }
 
 get_raster_layer_data <- function(rl) {
-	extract_raster_data(nm = rl@data@names, isf = rl@data@isfactor, d = rl@data@values, a = rl@data@attributes)
+	values <- rl@data@values
+	if (length(values) == 0L) values <- rep_len(NA, length(rl))
+	extract_raster_data(nm = rl@data@names, isf = rl@data@isfactor, d = values, a = rl@data@attributes)
 }
 
 fromDisk2 <- function(x) {
@@ -166,7 +173,7 @@ get_data_frame_levels <- function(data) {
 		if (is.factor(x)) {
 			levels(x)
 		} else if (is.numeric(x)) {
-			range(x, na.rm = TRUE)
+			suppressWarnings(range(x, na.rm = TRUE))
 		} else if (is.logical(x)) {
 			c(FALSE, TRUE)
 		} else {

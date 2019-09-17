@@ -7,6 +7,7 @@
 <meta charset="utf-8" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -68,7 +69,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
       if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
       var style = rule.style.cssText;
       // check if color or background-color is set
-      if (rule.style.color === '' || rule.style.backgroundColor === '') continue;
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
       // replace div.sourceCode by a pre.sourceCode rule
       sheets[i].deleteRule(j);
       sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
@@ -262,7 +263,7 @@ get_US_county_2010_shape &lt;-<span class="st"> </span><span class="cf">function
   dir &lt;-<span class="st"> </span><span class="kw">tempdir</span>()
   <span class="kw">download.file</span>(<span class="st">&quot;http://www2.census.gov/geo/tiger/GENZ2010/gz_2010_us_050_00_20m.zip&quot;</span>, <span class="dt">destfile =</span> <span class="kw">file.path</span>(dir, <span class="st">&quot;gz_2010_us_050_00_20m.zip&quot;</span>))
   <span class="kw">unzip</span>(<span class="kw">file.path</span>(dir, <span class="st">&quot;gz_2010_us_050_00_20m.zip&quot;</span>), <span class="dt">exdir =</span> dir)
-  US &lt;-<span class="st"> </span><span class="kw">read_shape</span>(<span class="kw">file.path</span>(dir, <span class="st">&quot;gz_2010_us_050_00_20m.shp&quot;</span>))
+  US &lt;-<span class="st"> </span>sf<span class="op">::</span><span class="kw">read_sf</span>(<span class="kw">file.path</span>(dir, <span class="st">&quot;gz_2010_us_050_00_20m.shp&quot;</span>))
   <span class="kw">levels</span>(US<span class="op">$</span>NAME) &lt;-<span class="st"> </span><span class="kw">iconv</span>(<span class="kw">levels</span>(US<span class="op">$</span>NAME), <span class="dt">from =</span> <span class="st">&quot;latin1&quot;</span>, <span class="dt">to =</span> <span class="st">&quot;utf8&quot;</span>)
   US
 }
@@ -280,21 +281,23 @@ us1 &lt;-<span class="st"> </span><span class="kw">qtm</span>(US)
 #############################
 ## Figure 10
 #############################
+<span class="kw">library</span>(dplyr)
+<span class="kw">library</span>(sf)
+
 US<span class="op">$</span>FIPS &lt;-<span class="st"> </span><span class="kw">paste0</span>(US<span class="op">$</span>STATE, US<span class="op">$</span>COUNTY)
 
 <span class="co"># append data to shape</span>
-US &lt;-<span class="st"> </span><span class="kw">append_data</span>(US, FEA, <span class="dt">key.shp =</span> <span class="st">&quot;FIPS&quot;</span>, <span class="dt">key.data =</span> <span class="st">&quot;FIPS&quot;</span>, <span class="dt">ignore.duplicates =</span> <span class="ot">TRUE</span>)
+<span class="co">#US &lt;- append_data(US, FEA, key.shp = &quot;FIPS&quot;, key.data = &quot;FIPS&quot;, ignore.duplicates = TRUE)</span>
+US &lt;-<span class="st"> </span><span class="kw">left_join</span>(US, FEA, <span class="dt">by =</span> <span class="kw">c</span>(<span class="st">&quot;FIPS&quot;</span>, <span class="st">&quot;FIPS&quot;</span>))
 
-unmatched_data &lt;-<span class="st"> </span><span class="kw">over_coverage</span>()
-<span class="kw">str</span>(unmatched_data)
+
+unmatched_data &lt;-<span class="st"> </span>FEA <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">filter</span>(<span class="op">!</span>(FIPS <span class="op">%in%</span><span class="st"> </span>US<span class="op">$</span>FIPS))
 
 <span class="kw">tmap_mode</span>(<span class="st">&quot;view&quot;</span>)
 <span class="kw">qtm</span>(US, <span class="dt">fill =</span> <span class="st">&quot;PCT_OBESE_ADULTS10&quot;</span>)</code></pre></div>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">#############################
 ## Figure 11
 #############################
-<span class="kw">library</span>(<span class="st">&quot;dplyr&quot;</span>)
-
 US_cont &lt;-<span class="st"> </span>US <span class="op">%&gt;%</span><span class="st"> </span>
 <span class="st">  </span><span class="kw">subset</span>(<span class="op">!</span>STATE <span class="op">%in%</span><span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;02&quot;</span>, <span class="st">&quot;15&quot;</span>, <span class="st">&quot;72&quot;</span>)) <span class="op">%&gt;%</span><span class="st"> </span>
 <span class="st">  </span><span class="kw">simplify_shape</span>(<span class="fl">0.2</span>) 
@@ -367,10 +370,10 @@ crimes &lt;-<span class="st"> </span><span class="kw">get_crimes_data</span>(<sp
 
 <span class="co"># create sf of known locations</span>
 crimes &lt;-<span class="st"> </span>crimes[<span class="op">!</span><span class="kw">is.na</span>(crimes<span class="op">$</span>Longitude) <span class="op">&amp;</span><span class="st"> </span><span class="op">!</span><span class="kw">is.na</span>(crimes<span class="op">$</span>Latitude), ]
-crimes &lt;-<span class="st"> </span><span class="kw">st_as_sf</span>(crimes, <span class="dt">coords =</span> <span class="kw">c</span>(<span class="st">&quot;Longitude&quot;</span>, <span class="st">&quot;Latitude&quot;</span>))
+crimes &lt;-<span class="st"> </span><span class="kw">st_as_sf</span>(crimes, <span class="dt">coords =</span> <span class="kw">c</span>(<span class="st">&quot;Longitude&quot;</span>, <span class="st">&quot;Latitude&quot;</span>), <span class="dt">crs =</span> <span class="dv">4326</span>)
 
 <span class="co"># set map projection to British National Grid</span>
-crimes &lt;-<span class="st"> </span><span class="kw">set_projection</span>(crimes, <span class="dt">current.projection =</span> <span class="st">&quot;longlat&quot;</span>, <span class="dt">projection =</span> <span class="dv">27700</span>)
+crimes &lt;-<span class="st"> </span><span class="kw">st_transform</span>(crimes, <span class="dt">crs =</span> <span class="dv">27700</span>)
 
 c1 &lt;-<span class="st"> </span><span class="kw">qtm</span>(crimes)
 <span class="kw">tmap_save</span>(c1, <span class="st">&quot;crimes1.png&quot;</span>, <span class="dt">scale =</span> .<span class="dv">6</span>, <span class="dt">width =</span> <span class="dv">3</span>, <span class="dt">units =</span> <span class="st">&quot;in&quot;</span>, <span class="dt">outer.margins =</span> <span class="dv">0</span>)</code></pre></div>
@@ -390,9 +393,9 @@ c3 &lt;-<span class="st"> </span><span class="kw">qtm</span>(crimes_osm, <span c
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">#############################
 ## Figure 14
 #############################
-regions &lt;-<span class="st"> </span><span class="kw">ne_download</span>(<span class="dt">scale =</span> <span class="st">&quot;large&quot;</span>, <span class="dt">type =</span> <span class="st">&quot;states&quot;</span>, <span class="dt">category =</span> <span class="st">&quot;cultural&quot;</span>)
+regions &lt;-<span class="st"> </span><span class="kw">ne_download</span>(<span class="dt">scale =</span> <span class="st">&quot;large&quot;</span>, <span class="dt">type =</span> <span class="st">&quot;states&quot;</span>, <span class="dt">category =</span> <span class="st">&quot;cultural&quot;</span>, <span class="dt">returnclass =</span> <span class="st">&quot;sf&quot;</span>)
 london &lt;-<span class="st"> </span>regions[<span class="kw">which</span>(regions<span class="op">$</span>region <span class="op">==</span><span class="st"> &quot;Greater London&quot;</span>),]
-london &lt;-<span class="st"> </span><span class="kw">set_projection</span>(london, <span class="dt">projection =</span> <span class="dv">27700</span>)
+london &lt;-<span class="st"> </span><span class="kw">st_transform</span>(london, <span class="dt">crs =</span> <span class="dv">27700</span>)
 
 <span class="co"># remove crimes outside Greater London</span>
 crimes_london &lt;-<span class="st"> </span><span class="kw">crop_shape</span>(crimes, london, <span class="dt">polygon =</span>  <span class="ot">TRUE</span>)
@@ -404,6 +407,10 @@ c3b &lt;-<span class="st"> </span><span class="kw">qtm</span>(crimes_london, <sp
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">#############################
 ## Figure 15
 #############################
+<span class="kw">library</span>(<span class="st">&quot;devtools&quot;</span>)
+<span class="kw">install_github</span>(<span class="st">&quot;mtennekes/oldtmaptools&quot;</span>)
+<span class="kw">library</span>(oldtmaptools)
+
 crime_densities &lt;-<span class="st"> </span><span class="kw">smooth_map</span>(crimes_london, <span class="dt">bandwidth =</span> <span class="fl">0.5</span>, <span class="dt">breaks =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="dv">50</span>, <span class="dv">100</span>, <span class="dv">250</span>, <span class="dv">500</span>, <span class="dv">1000</span>), <span class="dt">cover =</span> london)
 
 <span class="co"># download rivers, and get Thames shape</span>
@@ -463,6 +470,9 @@ crimes_city<span class="op">$</span>Crime.group &lt;-<span class="st"> </span><s
     <span class="dt">basemaps =</span> <span class="st">&quot;Esri.WorldTopoMap&quot;</span>)</code></pre></div>
 </div>
 
+
+
+<!-- code folding -->
 
 
 <!-- dynamically load mathjax for compatibility with self-contained -->

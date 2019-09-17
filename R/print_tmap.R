@@ -30,6 +30,7 @@
 #' @import leaflet
 #' @importFrom htmlwidgets appendContent onRender
 #' @importFrom htmltools tags HTML htmlEscape
+#' @importFrom lwgeom st_make_valid
 #' @import leafsync
 #' @importFrom utils packageVersion
 #' @export
@@ -76,7 +77,7 @@ print_shortcut <- function(x, interactive, in.shiny, args, knit) {
 		
 		gt <- preprocess_gt(x, interactive=interactive)
 		gt$shp_name <- rep("dummy", length(xtiles))
-		gt$shape.units <- list(unit = get(".tmapOptions", envir = .TMAP_CACHE)$unit)
+		gt$shape.units <- list(unit = get("tmapOptions", envir = .TMAP_CACHE)$unit)
 		if (is.null(gt$bbox)) gt$bbox <- c(-190, -90, 180, 90)
 		
 		if (any(names(x) == "tm_scale_bar")) {
@@ -126,7 +127,7 @@ print_shortcut <- function(x, interactive, in.shiny, args, knit) {
 }
 
 supported_elem_view_mode <- function(nms) {
-	if (get(".tmapOptions", envir = .TMAP_CACHE)$show.messages) {
+	if (get("tmapOptions", envir = .TMAP_CACHE)$show.messages) {
 		if (any(nms=="tm_credits")) message("Credits not supported in view mode.")
 		if (any(nms=="tm_logo")) message("Logo not supported in view mode.")
 		if (any(nms=="tm_compass")) message("Compass not supported in view mode.")
@@ -150,13 +151,14 @@ gather_shape_info <- function(x, interactive) {
 	
 	## find master shape
 	is_raster <- vapply(x[shape.id], function(xs) {
-		!is.null(xs$shp) && inherits(xs$shp, c("Raster", "SpatialPixels", "SpatialGrid"))	
+		!is.null(xs$shp) && inherits(xs$shp, c("Raster", "SpatialPixels", "SpatialGrid"))
 	}, logical(1))
 	is_master <- vapply(x[shape.id], "[[", logical(1), "is.master")
-	any_raster <- any(is_raster)
+#	any_raster <- any(is_raster)
 	masterID <- if (!length(which(is_master))) {
-		if (any_raster) which(is_raster)[1] else which(is.na(is_master))[1]
+		which(is.na(is_master))[1]
 	} else which(is_master)[1]
+	is_raster_master <- is_raster[masterID]
 	
 	## find master projection (and set to longlat when in view mode)
 	master_crs <- get_proj4(x[[shape.id[masterID]]]$projection, output = "crs")
@@ -205,7 +207,7 @@ gather_shape_info <- function(x, interactive) {
 	
 	## get arguments related to units (approx_areas)
 	unit <- x[[shape.id[masterID]]]$unit
-	if (is.null(unit)) unit <- get(".tmapOptions", envir = .TMAP_CACHE)$unit
+	if (is.null(unit)) unit <- get("tmapOptions", envir = .TMAP_CACHE)$unit
 	if (unit == "metric") unit <- "km"
 	if (unit == "imperial") unit <- "mi"
 	
@@ -224,7 +226,7 @@ gather_shape_info <- function(x, interactive) {
 	list(shape.id=shape.id,
 		 shape.nshps=nshps,
 		 shape.apply_map_coloring=apply_map_coloring,
-		 shape.any_raster=any_raster,
+		 shape.is_raster_master=is_raster_master,
 		 shape.masterID=masterID,
 		 shape.master_crs=master_crs,
 		 shape.orig_crs=orig_crs,
@@ -253,7 +255,7 @@ prepare_vp <- function(vp, gm, interactive, gt) {
 		## calculate device aspect ratio (needed for small multiples' nrow and ncol)
 		inner.margins <- gt$inner.margins
 		inner.margins <- if (is.na(inner.margins[1])) {
-			if (gm$shape.any_raster) rep(0, 4) else rep(0.02, 4)
+			if (gm$shape.is_raster_master) rep(0, 4) else rep(0.02, 4)
 		} else rep(inner.margins, length.out=4)
 		xmarg <- sum(inner.margins[c(2,4)])
 		ymarg <- sum(inner.margins[c(1,3)])
@@ -310,7 +312,7 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	
 	interactive <- (mode == "view") || proxy
 	
-	tmapOptions <- get(".tmapOptions", envir = .TMAP_CACHE)
+	tmapOptions <- get("tmapOptions", envir = .TMAP_CACHE)
 	
 	show.messages <- tmapOptions$show.messages
 	
@@ -331,18 +333,18 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	}
 	
 	# reset symbol shape / shape just/anchor lists
-	assign(".shapeLib", list(), envir = .TMAP_CACHE)
-	assign(".justLib", list(), envir = .TMAP_CACHE)
+	assign("shapeLib", list(), envir = .TMAP_CACHE)
+	assign("justLib", list(), envir = .TMAP_CACHE)
 
 
 	## process proxy
 	if (proxy) {
 		layerIds <- if (".layerIdsNew" %in% ls(envir = .TMAP_CACHE)) {
-			get(".layerIdsNew", envir = .TMAP_CACHE)
+			get("layerIdsNew", envir = .TMAP_CACHE)
 		} else {
-			get(".layerIds", envir = .TMAP_CACHE)
+			get("layerIds", envir = .TMAP_CACHE)
 		}
-		assign(".layerIds", layerIds, envir = .TMAP_CACHE)
+		assign("layerIds", layerIds, envir = .TMAP_CACHE)
 		
 		typesList <- as.list(attr(layerIds, "types"))
 		names(typesList) <- names(layerIds)
@@ -353,18 +355,27 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 				z <- x[[id]]$zindex
 				name <- paneName(z)
 				legend <- legendName(z)
-				lf <- lf %>% leaflet::removeShape(sort(unname(layerIds[[name]]))) %>% 
-					leaflet::removeControl(legend)
+				
+				if (typesList[[name]] == "raster") {
+					lf <- lf %>% leaflet::removeImage(sort(unname(layerIds[[name]]))) %>%
+						leaflet::removeControl(legend)
+				} else {
+					lf <- lf %>% leaflet::removeShape(sort(unname(layerIds[[name]]))) %>%
+						leaflet::removeControl(legend)
+				}
+				
 				layerIds[[name]] <- NULL
 				typesList[[name]] <- NULL
 			}
 			attr(layerIds, "types") <- unlist(typesList)
-			assign(".layerIdsNew", layerIds, envir = .TMAP_CACHE)
+			assign("layerIdsNew", layerIds, envir = .TMAP_CACHE)
 		}
 		x <- x[!(names(x) %in% c("tm_remove_layer"))]
 		if (length(x) == 0) {
 			return(lf)
 		}
+	} else {
+		suppressWarnings(rm(list = c("bases", "overlays", "overlays_tiles"), envir = .TMAP_CACHE))
 	}
 	
 		

@@ -1,5 +1,5 @@
 process_grid <- function(gt, bbx, proj, sasp) {
-	grid.n.x <- grid.n.y <- grid.projection <- grid.is.projected <- NULL
+	grid.n.x <- grid.n.y <- grid.projection <- grid.is.projected <- grid.ndiscr <- NULL
 	
 	within(gt, { 
 		if (!is.na(grid.projection)) {
@@ -87,10 +87,10 @@ process_grid <- function(gt, bbx, proj, sasp) {
 
 			lnsList <- list(
 				if (is.na(grid.x2[1])) NULL else st_multilinestring(lapply(grid.x2, function(x) {
-					m <- matrix(c(rep(x,100), seq(grid.y2.min, grid.y2.max, length.out=100)), ncol=2)
+					m <- matrix(c(rep(x,grid.ndiscr), seq(grid.y2.min, grid.y2.max, length.out=grid.ndiscr)), ncol=2)
 				})),
 				if (is.na(grid.y2[1])) NULL else st_multilinestring(lapply(grid.y2, function(y) {
-					m <- matrix(c(seq(grid.x2.min, grid.x2.max, length.out=100), rep(y,100)), ncol=2)
+					m <- matrix(c(seq(grid.x2.min, grid.x2.max, length.out=grid.ndiscr), rep(y,grid.ndiscr)), ncol=2)
 				}))
 			)
 			
@@ -208,13 +208,18 @@ process_grid <- function(gt, bbx, proj, sasp) {
 }
 
 plot_grid_labels_x <- function(gt, scale) {
+	
+	labelsx <- gt$grid.labels.x
+	
 	# find coordinates for projected grid labels
 	if (!is.na(gt$grid.projection)) {
-		cogridx <- get_gridline_labels(lco=gt$grid.co.x.lns[gt$grid.sel.x], xax = 0)
+		glabelsx <- get_gridline_labels(lco=gt$grid.co.x.lns[gt$grid.sel.x], xax = 0)
+		cogridx <- glabelsx$cogrid
+		idsx <- glabelsx$ids
+		labelsx <- labelsx[idsx]
 	} else {
 		cogridx <- gt$grid.co.x	
 	}
-	labelsx <- gt$grid.labels.x
 	
 	cex <- gt$grid.labels.size*scale
 	
@@ -236,13 +241,17 @@ plot_grid_labels_x <- function(gt, scale) {
 }
 
 plot_grid_labels_y <- function(gt, scale) {
+	labelsy <- gt$grid.labels.y
+
 	# find coordinates for projected grid labels
 	if (!is.na(gt$grid.projection)) {
-		cogridy <- get_gridline_labels(lco=gt$grid.co.y.lns[gt$grid.sel.y], yax = 0)
+		glabelsy <- get_gridline_labels(lco=gt$grid.co.y.lns[gt$grid.sel.y], yax = 0)
+		cogridy <- glabelsy$cogrid
+		idsy <- glabelsy$ids
+		labelsy <- labelsy[idsy]
 	} else {
 		cogridy <- gt$grid.co.y
 	}
-	labelsy <- gt$grid.labels.y
 	
 	cex <- gt$grid.labels.size*scale
 
@@ -259,6 +268,7 @@ plot_grid_labels_y <- function(gt, scale) {
 	labels <- textGrob(labelsy, y=cogridy, x=1-spacerY-marginY, just=just, rot=gt$grid.labels.rot[2], gp=gpar(col=gt$grid.labels.col, cex=cex, fontface=gt$fontface, fontfamily=gt$fontfamily))
 	gTree(children = gList(ticks, labels), name = "gridTicksLabelsY")
 }
+
 
 
 plot_grid <- function(gt, scale, add.labels) {
@@ -315,8 +325,25 @@ plot_grid <- function(gt, scale, add.labels) {
 	}	
 	# find coordinates for projected grid labels
 	if (!is.na(gt$grid.projection)) {
-		cogridx <- if (selx) get_gridline_labels(lco=gt$grid.co.x.lns[gt$grid.sel.x], xax = labelsXw + spacerX+marginX) else numeric(0)
-		cogridy <- if (sely) get_gridline_labels(lco=gt$grid.co.y.lns[gt$grid.sel.y], yax = labelsYw + spacerY+marginY) else numeric(0)
+		glabelsx <- if (selx) get_gridline_labels(lco=gt$grid.co.x.lns[gt$grid.sel.x], xax = labelsXw + spacerX+marginX) else numeric(0)
+		glabelsy <- if (sely) get_gridline_labels(lco=gt$grid.co.y.lns[gt$grid.sel.y], yax = labelsYw + spacerY+marginY) else numeric(0)
+
+		cogridx <- glabelsx$cogrid
+		cogridy <- glabelsy$cogrid
+		
+		
+		idsx <- glabelsx$ids
+		idsy <- glabelsy$ids
+		
+		labelsx <- labelsx[idsx]
+		labelsy <- labelsy[idsy]
+		
+		cogridx_frst <- cogridx[sapply(1:max(idsx), function(i) which(i==idsx)[1])]
+		cogridy_frst <- cogridy[sapply(1:max(idsy), function(i) which(i==idsy)[1])]
+		
+	} else {
+		cogridx_frst <- cogridx
+		cogridy_frst <- cogridy
 	}
 	
 	# select grid labels to print
@@ -324,8 +351,8 @@ plot_grid <- function(gt, scale, add.labels) {
 	sely2 <- if (sely) (cogridy >= labelsXw + spacerX + marginX & cogridy <= 1 - spacerX) else sely
 	
 	# select grid lines to draw
-	selx <- if (selx) (cogridx >= labelsYw + spacerY + marginY & cogridx <= 1) else selx
-	sely <- if (sely) (cogridy >= labelsXw + spacerX + marginX & cogridy <= 1) else sely
+	selx <- if (selx) (cogridx_frst >= labelsYw + spacerY + marginY & cogridx_frst <= 1) else selx
+	sely <- if (sely) (cogridy_frst >= labelsXw + spacerX + marginX & cogridy_frst <= 1) else sely
 	
 	# crop projected grid lines, and extract polylineGrob ingredients
 	if (!is.na(gt$grid.projection)) {
@@ -333,33 +360,14 @@ plot_grid <- function(gt, scale, add.labels) {
 			if (any(selx)) st_multilinestring(gt$grid.co.x.lns) else NULL,
 			if (any(sely)) st_multilinestring(gt$grid.co.y.lns) else NULL
 		)
-		
-		# lnsList <- list(
-		# 	if (any(selx)) Lines(lapply(gt$grid.co.x.lns, function(m) {
-		# 		Line(m)
-		# 	}), ID="x") else NULL,
-		# 	if (any(sely)) Lines(lapply(gt$grid.co.y.lns, function(m) {
-		# 		Line(m)
-		# 	}), ID="y") else NULL
-		# )
 		lnsSel <- !vapply(lnsList, is.null, logical(1))
 		if (!any(lnsSel)) {
 			grid.co.x.lns <- numeric(0)
 			grid.co.y.lns <- numeric(0)
 		} else {
-			
 			lns <- st_sf(ID=c("x", "y")[lnsSel], geometry = st_sfc(lnsList[lnsSel], crs = 4326)) # trick for 0-1 coordinates
-			
-			
-			#lns <- SpatialLinesDataFrame(SpatialLines(lnsList[lnsSel]), data.frame(ID=c("x", "y")[lnsSel]), match.ID=FALSE)
-			
 			sf_bbox <- tmaptools::bb_poly(bb(c(labelsYw + spacerY + marginY, labelsXw + spacerX + marginX, 1, 1)), projection = 4326)
-			
 			lns_crop <- suppressWarnings(suppressMessages(st_intersection(lns, sf_bbox)))
-			#lns_crop <- raster::crop(lns, bb(c(labelsYw + spacerY + marginY, 1, labelsXw + spacerX + marginX, 1)))
-			
-			
-			
 			if (any(selx)) {
 				cogridxlns <- as.data.frame(st_coordinates(st_geometry(lns_crop)[1])[,1:3])
 				names(cogridxlns) <- c("x", "y", "ID")
@@ -373,25 +381,13 @@ plot_grid <- function(gt, scale, add.labels) {
 			} else {
 				cogridylns <- numeric(0)
 			}
-			# cogridxlns <- if (any(selx)) do.call("rbind", mapply(function(l, i) {
-			# 	co <- as.data.frame(attr(l, "coords"))
-			# 	co$ID <- i
-			# 	co
-			# }, lns_crop@lines[[1]]@Lines, 1:length(lns_crop@lines[[1]]@Lines), SIMPLIFY=FALSE)) else numeric(0)
-			# 
-			# cogridylns <- if (any(sely)) do.call("rbind", mapply(function(l, i) {
-			# 	co <- as.data.frame(attr(l, "coords"))
-			# 	co$ID <- i
-			# 	co
-			# }, lns_crop@lines[[sum(lnsSel)]]@Lines, 1:length(lns_crop@lines[[sum(lnsSel)]]@Lines), SIMPLIFY=FALSE)) else numeric(0)
-			
 		}
 		
 	}
 	
 	## process x-axis grid lines and labels
 	if (any(selx)) {
-		cogridx2 <- cogridx[selx]
+		cogridx2 <- cogridx_frst[selx]
 		cogridx3 <- cogridx[selx2]
 		labelsx <- labelsx[selx2]
 		
@@ -417,7 +413,7 @@ plot_grid <- function(gt, scale, add.labels) {
 	
 	## process y-axis grid lines and labels
 	if (any(sely)) {
-		cogridy2 <- cogridy[sely]
+		cogridy2 <- cogridy_frst[sely]
 		cogridy3 <- cogridy[sely2]
 		labelsy <- labelsy[sely2]
 		
@@ -480,19 +476,43 @@ get_gridline_labels <- function(lco, xax=NA, yax=NA) {
 		if (res) l[d] else -1
 	}, numeric(1))
 	cogrid <- ifelse(gint, 0, ins)
+	ids <- 1:length(cogrid) # number of grid labels per grid line (could be 2 for warped grid lines)
 	if (any(gint)) {
+		cogrid <- as.list(cogrid)
+		ids <- as.list(ids)
+		
+		wgint <- which(gint)
 		gints <- suppressMessages(st_intersection(lns[gint, ], ax))
-		cogrid[gint] <- st_coordinates(gints)[,d]
+
+		# count number of intersections per coordinate
+		gnrs <- vapply(st_geometry(gints), function(g) {
+			nr <- nrow(g)
+			if (is.null(nr)) 1L else nr
+		}, integer(1))
+		gints <- suppressWarnings(st_cast(x = st_cast(gints, "MULTIPOINT"), to = "POINT"))
+
+		coor <- st_coordinates(gints)[,d]
+
+		ids2 <- unlist(mapply(rep, 1:length(wgint), gnrs, SIMPLIFY = FALSE))
+		j <- 1L
+		for (i in which(gint)) {
+			cogrid[[i]] <- unname(coor[ids2 == j])
+			ids[[i]] <- rep(ids[[i]], gnrs[j])
+			j <- j + 1L
+		}
+		
+		cogrid <- unlist(cogrid)
+		ids <- unlist(ids)
 	}
-	cogrid
+	list(cogrid = cogrid, ids = ids)
 }
 
 
 plot_symbols <- function(co.native, g, gt, lineInch, lineNatH, lineNatW, i, k) {
 	symbolH <- lineNatH * gt$scale
 	symbolW <- lineNatW * gt$scale
-	shapeLib <- get(".shapeLib", envir = .TMAP_CACHE)
-	justLib <- get(".justLib", envir = .TMAP_CACHE)
+	shapeLib <- get("shapeLib", envir = .TMAP_CACHE)
+	justLib <- get("justLib", envir = .TMAP_CACHE)
 
 	with(g, {
 		npol <- nrow(co.native)

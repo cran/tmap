@@ -80,6 +80,7 @@ tm_facets <- function(by=NULL,
 #' @param col color of the grid lines.
 #' @param lwd line width of the grid lines
 #' @param alpha alpha transparency of the grid lines. Number between 0 and 1. By default, the alpha transparency of \code{col} is taken. 
+#' @param labels.show show tick labels
 #' @param labels.size font size of the tick labels
 #' @param labels.col font color of the tick labels
 #' @param labels.rot Rotation angles of the labels. Vector of two values: the first is the rotation angle (in degrees) of the tick labels on the x axis and the second is the rotation angle of the tick labels on the y axis. Only \code{0}, \code{90}, \code{180}, and \code{270} are valid values.
@@ -99,6 +100,7 @@ tm_facets <- function(by=NULL,
 #' @param labels.inside.frame Show labels inside the frame? By default \code{FALSE}
 #' @param ticks If \code{labels.inside.frame = FALSE}, should ticks can be drawn between the labels and the frame?
 #' @param lines If \code{labels.inside.frame = FALSE}, should grid lines can be drawn?
+#' @param ndiscr number of points to discretize a parallel or meridian (only applicable for curved grid lines)
 #' @param zindex zindex of the pane in view mode. By default, it is set to the layer number plus 400. By default, the tmap layers will therefore be placed in the custom panes \code{"tmap401"}, \code{"tmap402"}, etc., except for the base tile layers, which are placed in the standard \code{"tile"}. This parameter determines both the name of the pane and the z-index, which determines the pane order from bottom to top. For instance, if \code{zindex} is set to 500, the pane will be named \code{"tmap500"}.
 #' @param ... arguments passed on to \code{tm_grid}
 #' @export
@@ -111,6 +113,7 @@ tm_grid <- function(x=NA,
 					col=NA,
 					lwd=1,
 					alpha=NA,
+					labels.show=TRUE,
 					labels.size=.6,
 					labels.col=NA,
 					labels.rot = c(0, 0),
@@ -121,8 +124,9 @@ tm_grid <- function(x=NA,
 					labels.space.x=NA,
 					labels.space.y=NA,
 					labels.inside.frame=FALSE,
-					ticks = !labels.inside.frame,
+					ticks = labels.show && !labels.inside.frame,
 					lines = TRUE,
+					ndiscr = 100,
 					zindex = NA) {
 	g <- list(tm_grid=as.list(environment()))
 	names(g$tm_grid) <- paste("grid", names(g$tm_grid), sep=".")
@@ -241,7 +245,9 @@ tm_scale_bar <- function(breaks=NULL,
 	g <- list(tm_scale_bar=as.list(environment()))
 	names(g$tm_scale_bar) <- paste("scale", names(g$tm_scale_bar), sep=".")
 	class(g) <- "tmap"
-	attr(g, "call") <- names(match.call(expand.dots = TRUE)[-1])
+	gcall <- names(match.call(expand.dots = TRUE)[-1])
+	g$tm_scale_bar$scale.call <- gcall
+	attr(g, "call") <- gcall
 	g
 }
 
@@ -370,7 +376,7 @@ tm_minimap <- function(server = NA, position= c("left", "bottom"), toggle = TRUE
 		class(g) <- "tmap"
 	}
 	
-	assign(".last_map_new", match.call(), envir = .TMAP_CACHE)
+	assign("last_map_new", match.call(), envir = .TMAP_CACHE)
 	g
 }
 
@@ -383,17 +389,17 @@ tm_minimap <- function(server = NA, position= c("left", "bottom"), toggle = TRUE
 #' @export
 #' @seealso \code{\link{tmap_save}}
 tmap_last <- function() {
-	x <- get(".last_map", envir = .TMAP_CACHE)
+	x <- get("last_map", envir = .TMAP_CACHE)
 	if (is.null(x)) warning("A map has not been created yet")
 	eval(x)
 }
 
 save_last_map <- function() {
-	lt <- get(".last_map", envir = .TMAP_CACHE)
-	ltnew <- get(".last_map_new", envir = .TMAP_CACHE)
+	lt <- get("last_map", envir = .TMAP_CACHE)
+	ltnew <- get("last_map_new", envir = .TMAP_CACHE)
 	if (!is.null(ltnew)) lt <- replace_last_tmap_by_correct_call(ltnew, lt)
-	assign(".last_map", lt, envir = .TMAP_CACHE)
-	assign(".last_map_new", NULL, envir = .TMAP_CACHE)
+	assign("last_map", lt, envir = .TMAP_CACHE)
+	assign("last_map_new", NULL, envir = .TMAP_CACHE)
 }
 
 
