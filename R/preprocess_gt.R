@@ -43,38 +43,32 @@ preprocess_gt <- function(x, interactive, orig_crs) {
 				g$aes.palette <- gt$aes.palette
 				g$aes.palette[names(aes)] <- aes
 			}
+			if (("legend.format" %in% names(g))) {
+				lf <- g$legend.format
+				
+				extraArgs <- setdiff(names(lf), names(gt$legend.format))
+				
+				if (length(extraArgs) > 1) {
+					lf_base <- lf[intersect(names(lf), names(gt$legend.format))]
+					lf_extra <- lf[extraArgs]
+				} else {
+					lf_base <- lf
+					lf_extra <- list()
+				}
+				
+				#if (!all(names(lf) %in% names(gt$legend.format))) stop("Names in legend.format unknown: ", paste(setdiff(names(lf), names(gt$legend.format)), collapse = ", "), call. = FALSE)
+				g$legend.format <- gt$legend.format
+				g$legend.format[names(lf_base)] <- lf_base
+				
+				if (length(extraArgs) > 1) {
+					g$legend.format <- c(g$legend.format, lf_extra) 
+				}
+			}
+			
 			if (length(g)) gt[names(g)] <- g
 		}
 	}
 
-	# gt <- do.call(tln, args = list())$tm_layout
-	# gts <- x[names(x)=="tm_layout"]
-	# if (length(gts)) {
-	# 	gtsn <- length(gts)
-	# 	extraCall <- character(0)
-	# 	for (i in 1:gtsn) {
-	# 		gt[gts[[i]]$call] <- gts[[i]][gts[[i]]$call]
-	# 		if ("attr.color" %in% gts[[i]]$call) gt[c("earth.boundary.color", "legend.text.color", "title.color")] <- gts[[i]]["attr.color"]
-	# 		extraCall <- c(extraCall, gts[[i]]$call)
-	# 	}
-	# 	gt$call <- c(gt$call, extraCall)
-	# }
-
-	# # process tm_view: merge multiple to one gv
-	# if (any("tm_view" %in% names(x))) {
-	# 	vs <- which("tm_view" == names(x))
-	# 	gv <- x[[vs[1]]]
-	# 	if (length(vs)>1) {
-	# 		for (i in 2:length(vs)) {
-	# 			gv2 <- x[[vs[i]]]
-	# 			gv[gv2$call] <- gv2[gv2$call]
-	# 			gv$call <- unique(c(gv$call, gv2$call))
-	# 		}
-	# 	}
-	# } else {
-	# 	gv <- tm_view()$tm_view
-	# }
-	
 	## preprocess gt
 	gt <- within(gt, {
 		pc <- list(sepia.intensity=sepia.intensity, saturation=saturation)
@@ -95,18 +89,6 @@ preprocess_gt <- function(x, interactive, orig_crs) {
 		aes.colors.light <- vapply(aes.colors, is_light, logical(1))
 		aes.color <- NULL
 		
-		######################### tm_view
-		
-		# if (!get("internet", envir = .TMAP_CACHE) || identical(basemaps, FALSE)) {
-		# 	basemaps <- character(0)
-		# } else {
-		# 	# with basemap tiles
-		# 	#if (is.na(basemaps.alpha)) basemaps.alpha <- gt$basemaps.alpha
-		# 	#if (identical(basemaps, NA)) basemaps <- gt$basemaps
-		# 	if (identical(basemaps, TRUE)) basemaps <- c("OpenStreetMap", "OpenStreetMap.Mapnik", "OpenTopoMap", "Stamen.Watercolor", "Esri.WorldTopoMap", "Esri.WorldImagery", "CartoDB.Positron", "CartoDB.DarkMatter")
-		# 	basemaps.alpha <- rep(basemaps.alpha, length.out=length(basemaps))
-		# 	if (is.na(alpha)) alpha <- 1
-		# }
 		if (is.na(alpha)) alpha <- 1
 		
 		if (!is.logical(set.bounds)) if (!length(set.bounds)==4 || !is.numeric(set.bounds)) stop("Incorrect set_bounds argument", call.=FALSE)

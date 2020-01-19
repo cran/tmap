@@ -43,7 +43,7 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 	names(shp.sim)[names(shp.sim)=="simplify"] <- "fact"
 	shp.sim <- shp.sim[!vapply(shp.sim, is.null, logical(1))]
 	
-	if (inherits(shp, c("Raster", "SpatialPixels", "SpatialGrid"))) {
+	if (inherits(shp, c("Raster", "SpatialPixels", "SpatialGrid", "stars"))) {
 		is.RGB <- attr(raster_facets_vars, "is.RGB") # true if tm_rgb is used (NA if qtm is used)
 		rgb.vars <- attr(raster_facets_vars, "rgb.vars")
 		to.Cat <- attr(raster_facets_vars, "to.Cat") # true if tm_raster(..., style = "cat) is specified
@@ -52,7 +52,10 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 		if (interactive) gm$shape.master_crs <- .crs_merc
 		
 		if (inherits(shp, "Spatial")) shp <- brick(shp)
-			
+		if (inherits(shp, "stars")) {
+			if (attr(attr(shp, "dimensions"), "raster")$curvilinear) stop("Curvilinear grid are not supperted in tmap... yet.")
+			shp <- as(shp, "Raster")
+		}
 		
 		
 		# attribute get from read_osm
@@ -91,6 +94,8 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 			
 			shpnames <- names(rdata) #get_raster_names(shp)
 			
+			if (is.na(maxValue(shp)[1])) shp <- raster::setMinMax(shp)
+
 			mxdata <- suppressWarnings(max(maxValue(shp)))
 			if (is.na(mxdata)) mxdata <- 0
 
@@ -406,7 +411,7 @@ split_geometry_collection <- function(sfc) {
 			list(list(g), id)
 		}
 	}, sfc, types, 1:length(sfc), SIMPLIFY = FALSE)			
-	gnew <- st_sfc(do.call(c, lapply(lapply(res, "[[", 1), "[[", 1)), crs = st_crs(sfc))
+	gnew <- st_sfc(do.call(st_sfc, lapply(lapply(res, "[[", 1), "[[", 1)), crs = st_crs(sfc))
 	ids <- do.call(c, lapply(res, "[[", 2))
 	attr(gnew, "ids") <- ids
 	gnew

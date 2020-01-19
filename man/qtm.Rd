@@ -4,12 +4,31 @@
 \alias{qtm}
 \title{Quick thematic map plot}
 \usage{
-qtm(shp, fill = NA, symbols.size = NULL, symbols.col = NULL,
-  symbols.shape = NULL, dots.col = NULL, text = NULL,
-  text.size = 1, text.col = NA, lines.lwd = NULL, lines.col = NULL,
-  raster = NA, borders = NA, by = NULL, scale = NA, title = NA,
-  projection = NULL, bbox = NULL, basemaps = NA, overlays = NA,
-  style = NULL, format = NULL, ...)
+qtm(
+  shp,
+  fill = NA,
+  symbols.size = NULL,
+  symbols.col = NULL,
+  symbols.shape = NULL,
+  dots.col = NULL,
+  text = NULL,
+  text.size = 1,
+  text.col = NA,
+  lines.lwd = NULL,
+  lines.col = NULL,
+  raster = NA,
+  borders = NA,
+  by = NULL,
+  scale = NA,
+  title = NA,
+  projection = NULL,
+  bbox = NULL,
+  basemaps = NA,
+  overlays = NA,
+  style = NULL,
+  format = NULL,
+  ...
+)
 }
 \arguments{
 \item{shp}{One of
@@ -49,7 +68,7 @@ qtm(shp, fill = NA, symbols.size = NULL, symbols.col = NULL,
 
 \item{title}{main title. For legend titles, use \code{X.style}, where X is the layer name (see \code{...}).}
 
-\item{projection}{Either a \code{\link[sf:st_crs]{crs}} object or a character value. If it is a character, it can either be a \code{PROJ.4} character string or a shortcut. See \code{\link[tmaptools:get_proj4]{get_proj4}} for a list of shortcut values. By default, the projection is used that is defined in the \code{shp} object itself, which can be obtained with \code{\link[tmaptools:get_projection]{get_projection}}.}
+\item{projection}{Either a \code{\link[sf:st_crs]{crs}} object or a character value (\code{PROJ.4} character string). By default, the projection is used that is defined in the \code{shp} object itself.}
 
 \item{bbox}{bounding box. Arugment passed on to \code{\link{tm_shape}}}
 

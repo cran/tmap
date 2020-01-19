@@ -7,27 +7,89 @@
 \alias{tm_format}
 \title{Layout of cartographic maps}
 \usage{
-tm_layout(title, scale, title.size, bg.color, aes.color, aes.palette,
-  attr.color, sepia.intensity, saturation, frame, frame.lwd,
-  frame.double.line, asp, outer.margins, inner.margins, between.margin,
-  outer.bg.color, fontface, fontfamily, compass.type, earth.boundary,
-  earth.boundary.color, earth.boundary.lwd, earth.datum, space.color,
-  legend.show, legend.only, legend.outside, legend.outside.position,
-  legend.outside.size, legend.position, legend.stack, legend.just,
-  legend.width, legend.height, legend.hist.height, legend.hist.width,
-  legend.title.color, legend.title.size, legend.title.fontface,
-  legend.title.fontfamily, legend.text.color, legend.text.size,
-  legend.text.fontface, legend.text.fontfamily, legend.hist.size,
-  legend.format, legend.frame, legend.frame.lwd, legend.bg.color,
-  legend.bg.alpha, legend.hist.bg.color, legend.hist.bg.alpha,
-  title.snap.to.legend, title.position, title.color, title.fontface,
-  title.fontfamily, title.bg.color, title.bg.alpha, panel.show,
-  panel.labels, panel.label.size, panel.label.color, panel.label.fontface,
-  panel.label.fontfamily, panel.label.bg.color, panel.label.height,
-  panel.label.rot, main.title, main.title.size, main.title.color,
-  main.title.fontface, main.title.fontfamily, main.title.position,
-  attr.outside, attr.outside.position, attr.outside.size, attr.position,
-  attr.just, design.mode)
+tm_layout(
+  title,
+  scale,
+  title.size,
+  bg.color,
+  aes.color,
+  aes.palette,
+  attr.color,
+  sepia.intensity,
+  saturation,
+  frame,
+  frame.lwd,
+  frame.double.line,
+  asp,
+  outer.margins,
+  inner.margins,
+  between.margin,
+  outer.bg.color,
+  fontface,
+  fontfamily,
+  compass.type,
+  earth.boundary,
+  earth.boundary.color,
+  earth.boundary.lwd,
+  earth.datum,
+  space.color,
+  legend.show,
+  legend.only,
+  legend.outside,
+  legend.outside.position,
+  legend.outside.size,
+  legend.position,
+  legend.stack,
+  legend.just,
+  legend.width,
+  legend.height,
+  legend.hist.height,
+  legend.hist.width,
+  legend.title.color,
+  legend.title.size,
+  legend.title.fontface,
+  legend.title.fontfamily,
+  legend.text.color,
+  legend.text.size,
+  legend.text.fontface,
+  legend.text.fontfamily,
+  legend.hist.size,
+  legend.format,
+  legend.frame,
+  legend.frame.lwd,
+  legend.bg.color,
+  legend.bg.alpha,
+  legend.hist.bg.color,
+  legend.hist.bg.alpha,
+  title.snap.to.legend,
+  title.position,
+  title.color,
+  title.fontface,
+  title.fontfamily,
+  title.bg.color,
+  title.bg.alpha,
+  panel.show,
+  panel.labels,
+  panel.label.size,
+  panel.label.color,
+  panel.label.fontface,
+  panel.label.fontfamily,
+  panel.label.bg.color,
+  panel.label.height,
+  panel.label.rot,
+  main.title,
+  main.title.size,
+  main.title.color,
+  main.title.fontface,
+  main.title.fontfamily,
+  main.title.position,
+  attr.outside,
+  attr.outside.position,
+  attr.outside.size,
+  attr.position,
+  attr.just,
+  design.mode
+)
 
 tm_legend(...)
 
@@ -82,7 +144,7 @@ tm_format(format, ...)
 
 \item{earth.boundary.lwd}{Line width of the earth boundary.}
 
-\item{earth.datum}{Geodetic datum to determine the earth boundary. By default \code{"WGS84"}, other frequently used datums are \code{"NAD83"} and \code{"NAD27"}. Any other \code{PROJ.4} character string can be used.}
+\item{earth.datum}{Geodetic datum to determine the earth boundary. By default epsg \code{4326} (long/lat).}
 
 \item{space.color}{Color of the space, i.e. the region inside the frame, and outside the earth boundary.}
 
@@ -102,7 +164,7 @@ tm_format(format, ...)
 
 \item{legend.just}{Justification of the legend relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{legend.position} is specified by numeric coordinates.}
 
-\item{legend.width}{width of the legend. If it is a negative number, it will be the exact legend width. If it is a positive number (by default), it will be the maximum legend width; the actual legend width will be decreased automatically based on the legend content and font sizes.}
+\item{legend.width}{width of the legend. This number is relative to the map area (so 1 means the whole map width). If it is a negative number, it will be the exact legend width. If it is a positive number (by default), it will be the maximum legend width; the actual legend width will be decreased automatically based on the legend content and font sizes.or Default color value for map attributes}
 
 \item{legend.height}{height of the legend. If it is a negative number, it will be the exact legend height. If it is a positive number (by default), it will be the maximum legend height; the actual legend height will be decreased automatically based on the legend content and font sizes.}
 
@@ -273,10 +335,10 @@ tm_legend(position = c("left", "bottom"),
 	bg.color="lightblue")
 }
 	
-tm_shape(World, projection="robin") +
+tm_shape(World, projection="+proj=robin") +
 	tm_polygons("HPI", palette="div", n=7, 
 			title = "Happy Planet Index") +
-tm_credits("Winkel Tripel projection", position = c("right", "BOTTOM")) +
+tm_credits("Robinson projection", position = c("right", "BOTTOM")) +
 tm_style("natural", earth.boundary = c(-180, -87, 180, 87), inner.margins = .05) +
 tm_legend(position=c("left", "bottom"), bg.color="grey95", frame=TRUE)
 

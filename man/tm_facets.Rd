@@ -4,20 +4,33 @@
 \alias{tm_facets}
 \title{Small multiples}
 \usage{
-tm_facets(by = NULL, along = NULL, as.layers = FALSE, ncol = NA,
-  nrow = NA, free.coords = !as.layers, drop.units = TRUE,
-  drop.empty.facets = TRUE, drop.NA.facets = FALSE, sync = NA,
-  showNA = NA, textNA = "Missing", free.scales = is.null(by) &&
-  is.null(along), free.scales.fill = free.scales,
+tm_facets(
+  by = NULL,
+  along = NULL,
+  as.layers = FALSE,
+  ncol = NA,
+  nrow = NA,
+  free.coords = !as.layers,
+  drop.units = TRUE,
+  drop.empty.facets = TRUE,
+  drop.NA.facets = FALSE,
+  sync = NA,
+  showNA = NA,
+  textNA = "Missing",
+  free.scales = is.null(by) && is.null(along),
+  free.scales.fill = free.scales,
   free.scales.symbol.size = free.scales,
   free.scales.symbol.col = free.scales,
   free.scales.symbol.shape = free.scales,
   free.scales.text.size = free.scales,
   free.scales.text.col = free.scales,
   free.scales.line.col = free.scales,
-  free.scales.line.lwd = free.scales, free.scales.raster = free.scales,
-  inside.original.bbox = FALSE, scale.factor = 2,
-  drop.shapes = drop.units)
+  free.scales.line.lwd = free.scales,
+  free.scales.raster = free.scales,
+  inside.original.bbox = FALSE,
+  scale.factor = 2,
+  drop.shapes = drop.units
+)
 }
 \arguments{
 \item{by}{data variable name by which the data is split, or a vector of two variable names to split the data by two variables (where the first is used for the rows and the second for the columns).}
@@ -152,7 +165,7 @@ World$GDP3 <- cut(World$gdp_cap_est, breaks = c(0, 5000, 20000, Inf),
 
 tm_shape(World) + 
 	tm_fill("HPI3", palette="Dark2", colorNA="grey90", legend.show = FALSE) + 
-	tm_facets(c("HPI3", "GDP3"), showNA=FALSE, free.coords = FALSE)
+	tm_facets(c("HPI3", "GDP3"), showNA=FALSE, free.coords = FALSE, drop.units = FALSE)
 
 metro_edited <- metro \%>\% 
 	mutate(pop1950cat = cut(pop1950, breaks=c(0.5, 1, 1.5, 2, 3, 5, 10, 40)*1e6),

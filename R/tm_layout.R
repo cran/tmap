@@ -49,7 +49,7 @@
 #' @param earth.boundary Logical that determines whether the boundaries of the earth are shown or an object that specifies the boundaries. This object can be a vector of size four, a 2 by 2 matrix (bounding box), or an \code{\link[raster:extent]{extent}} object. By default, the boundaries are \code{c(-180, -90, 180, 90)}. Useful for projected world maps. Often, it is useful to crop both poles (e.g., with \code{c(-180, -88, 180, 88)}).
 #' @param earth.boundary.color Color of the earth boundary.
 #' @param earth.boundary.lwd Line width of the earth boundary.
-#' @param earth.datum Geodetic datum to determine the earth boundary. By default \code{"WGS84"}, other frequently used datums are \code{"NAD83"} and \code{"NAD27"}. Any other \code{PROJ.4} character string can be used.
+#' @param earth.datum Geodetic datum to determine the earth boundary. By default epsg \code{4326} (long/lat).
 #' @param space.color Color of the space, i.e. the region inside the frame, and outside the earth boundary.
 #' @param legend.show Logical that determines whether the legend is shown.
 #' @param legend.only logical. Only draw the legend (without map)? Particularly useful for small multiples with a common legend.
@@ -59,7 +59,7 @@
 #' @param legend.position Position of the legend. Vector of two values, specifying the x and y coordinates. Either this vector contains \code{"left"}, \code{"LEFT"}, \code{"center"}, \code{"right"}, or \code{"RIGHT"} for the first value and \code{"top"}, \code{"TOP"}, \code{"center"}, \code{"bottom"}, or \code{"BOTTOM"} for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y coordinates of the left bottom corner of the legend. The uppercase values correspond to the position without margins (so tighter to the frame). By default, it is automatically placed in the corner with most space based on the (first) shape object. If \code{legend.outside=TRUE}, this argument specifies the legend position within the outside panel.
 #' @param legend.stack Value that determines how different legends are stacked: \code{"vertical"} or \code{"horizontal"}. To stack items within a same legend, look at \code{"legend.is.portrait"} in the specific layer calls. 
 #' @param legend.just Justification of the legend relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{legend.position} is specified by numeric coordinates.
-#' @param legend.width width of the legend. If it is a negative number, it will be the exact legend width. If it is a positive number (by default), it will be the maximum legend width; the actual legend width will be decreased automatically based on the legend content and font sizes.
+#' @param legend.width width of the legend. This number is relative to the map area (so 1 means the whole map width). If it is a negative number, it will be the exact legend width. If it is a positive number (by default), it will be the maximum legend width; the actual legend width will be decreased automatically based on the legend content and font sizes.or Default color value for map attributes
 #' @param legend.height height of the legend. If it is a negative number, it will be the exact legend height. If it is a positive number (by default), it will be the maximum legend height; the actual legend height will be decreased automatically based on the legend content and font sizes.
 #' @param legend.hist.height height of the histogram. This height is initial. If the total legend is downscaled to \code{legend.height}, the histogram is downscaled as well.
 #' @param legend.hist.width width of the histogram. By default, it is equal to the \code{legend.width}.
@@ -135,11 +135,11 @@ tm_layout <- function(title,
 					  aes.color,
 					  aes.palette,
 					  attr.color,
-  					  sepia.intensity, 
-  					  saturation, 
+					  sepia.intensity, 
+					  saturation, 
 					  frame,
-  					  frame.lwd,
-  					  frame.double.line,
+					  frame.lwd,
+					  frame.double.line,
 					  asp,
 					  outer.margins,
 					  inner.margins,
@@ -147,7 +147,7 @@ tm_layout <- function(title,
 					  outer.bg.color,
 					  fontface, 
 					  fontfamily,
- 					  compass.type,
+					  compass.type,
 					  earth.boundary,
 					  earth.boundary.color,
 					  earth.boundary.lwd,
@@ -209,7 +209,7 @@ tm_layout <- function(title,
 					  attr.position,
 					  attr.just,
 					  design.mode) {
-
+	
 	e1 <- parent.frame()
 	args <- lapply(as.list(match.call()[-1]), eval, envir = e1)
 	args$style <- NA
@@ -223,13 +223,13 @@ tm_layout <- function(title,
 #' @export
 tm_legend <- function(...) {
 	x <- list(...)
-
+	
 	tl_names <- names(formals("tm_layout"))
 	is_leg <- which(substr(tl_names, 1, 3)=="leg")
 	
 	legend_x <- which(names(x) %in% substr(tl_names[is_leg], 8, nchar(tl_names[is_leg])))
 	names(x)[legend_x] <- paste("legend", names(x)[legend_x], sep=".")
-
+	
 	do.call("tm_layout", x)
 }
 

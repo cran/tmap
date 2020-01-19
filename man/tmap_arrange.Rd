@@ -6,8 +6,16 @@
 \alias{print.tmap_arrange}
 \title{Arrange small multiples in grid layout}
 \usage{
-tmap_arrange(..., ncol = NA, nrow = NA, widths = NA, heights = NA,
-  sync = FALSE, asp = 0, outer.margins = 0.02)
+tmap_arrange(
+  ...,
+  ncol = NA,
+  nrow = NA,
+  widths = NA,
+  heights = NA,
+  sync = FALSE,
+  asp = 0,
+  outer.margins = 0.02
+)
 
 knit_print.tmap_arrange(x, ..., options = NULL)
 
@@ -44,10 +52,10 @@ The global option \code{tmap.limits} controls the limit of the number of facets 
 }
 \examples{
 data(World)
-w1 <- qtm(World, projection = "eck4", title="Eckert IV")
-w2 <- qtm(World, projection = "merc", title="Mercator")
-w3 <- qtm(World, projection = "gall", title="Gall stereographic")
-w4 <- qtm(World, projection = "robin", title="Robinsin")
+w1 <- qtm(World, projection = "+proj=eck4", title="Eckert IV")
+w2 <- qtm(World, projection = 3857, title="Mercator")
+w3 <- qtm(World, projection = "+proj=gall", title="Gall stereographic")
+w4 <- qtm(World, projection = "+proj=robin", title="Robinsin")
 
 current.mode <- tmap_mode("plot")
 tmap_arrange(w1, w2, w3, w4, widths = c(.25, .75))

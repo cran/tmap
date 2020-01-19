@@ -1,7 +1,7 @@
-## ---- echo = FALSE, message = FALSE--------------------------------------
+## ---- echo = FALSE, message = FALSE-------------------------------------------
 knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  ###########################################################################
 #  ## This script will replicate the figures (except the screenshots)
 #  ## and write them to files.
@@ -15,7 +15,7 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #  data("World", "metro", package = "tmap")
 #  metro$growth <- (metro$pop2020 - metro$pop2010) / (metro$pop2010 * 10) * 100
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  #############################
 #  ## Figure 1
 #  #############################
@@ -37,7 +37,7 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #    tm_format("World", frame.lwd = 2)
 #  tmap_save(m1, "bubble.png", width = 6.125, height = 3, scale = .75, dpi = 300, asp = 0, outer.margins = 0)
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  #############################
 #  ## Figure 2
 #  #############################
@@ -48,21 +48,21 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #    tm_format("World")
 #  tmap_save(m0, "metro2030.png", width = 6.125, scale = .5, dpi = 300, outer.margins = 0)
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  #############################
 #  ## Figure 3
 #  #############################
 #  m21 <- tm_shape(World) + tm_polygons(c("blue", "red")) + tm_layout(frame.lwd = 1.5)
 #  tmap_save(m21, "facets1.png", width = 6.125, height = 1.54, scale = .75, dpi = 300, outer.margins = 0)
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  #############################
 #  ## Figure 4
 #  #############################
 #  m22 <- tm_shape(World) + tm_polygons("red") + tm_facets(by = "continent", free.coords = FALSE)
 #  tmap_save(m22, "facets2.png", width = 6.125, height = 1.8, scale = .75, dpi = 300, outer.margins = 0)
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  #############################
 #  ## Figure 5
 #  #############################
@@ -72,7 +72,7 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #    tmap_arrange(tm1, tm2, outer.margins = .01)
 #  dev.off()
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  #############################
 #  ## Figure 6
 #  #############################
@@ -80,7 +80,7 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #  tmap_mode("view")
 #  m1
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  #############################
 #  ## Figure 7
 #  #############################
@@ -106,7 +106,7 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #              bg.color = "lightblue")
 #  tmap_save(m2, "classic.png", width = 6.125, scale = .7, dpi = 300, outer.margins = 0)
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  #############################
 #  ## Figure 8
 #  #############################
@@ -123,7 +123,7 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #  
 #  tmap_save(m3, "world_facets2.png", width = 5, scale = .7, dpi = 300, outer.margins = 0)
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  #############################
 #  ## Figure 9
 #  #############################
@@ -181,7 +181,7 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #  tmap_mode("view")
 #  qtm(US, fill = "PCT_OBESE_ADULTS10")
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  #############################
 #  ## Figure 11
 #  #############################
@@ -235,7 +235,7 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #            insets_tm = list(m_AK, m_HI),
 #            insets_vp = list(vp_AK, vp_HI))
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  #############################
 #  ## Figure 12a
 #  #############################
@@ -264,7 +264,7 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #  c1 <- qtm(crimes)
 #  tmap_save(c1, "crimes1.png", scale = .6, width = 3, units = "in", outer.margins = 0)
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  #############################
 #  ## Figure 12b
 #  #############################
@@ -272,7 +272,7 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #  c2 <- qtm(crimes_osm) + qtm(crimes, symbols.col = "red", symbols.size = 0.5)
 #  tmap_save(c2, "crimes2.jpg", scale = .6, width = 3, units = "in", outer.margins = 0)
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  #############################
 #  ## Figure 13
 #  #############################
@@ -281,7 +281,7 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #    tm_legend(outside = TRUE)
 #  tmap_save(c3, "crimes3.png", scale = .8, width = 5, height = 4, units = "in", outer.margins = 0)
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  #############################
 #  ## Figure 14
 #  #############################
@@ -297,7 +297,7 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #    tm_borders()
 #  tmap_save(c3b, "crimes3b.png", scale = .7, width = 6.125, units = "in", outer.margins = 0)
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  #############################
 #  ## Figure 15
 #  #############################
@@ -320,7 +320,7 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #    tm_style("gray", title = "Crimes in Greater London\nOctober 2015")
 #  tmap_save(c4, "crimes4.png", scale = .7, width = 6.125, units = "in", outer.margins = 0)
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  #############################
 #  ## Figure 16
 #  #############################
@@ -334,7 +334,7 @@ knitr::opts_chunk$set(collapse = T, fig.width=6, fig.height=3)
 #    tm_facets("Crime.type", free.coords = FALSE)
 #  tmap_save(c5, "crimes5.png", scale = 1, width = 6.125, asp = NA, outer.margins = 0)
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  #############################
 #  ## Figure 17
 #  #############################
