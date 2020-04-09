@@ -132,14 +132,14 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 		}
 		zi
 	})
-	zids_vec <- unlist(zids)
+	zids_vec <- unlist(zids, use.names = FALSE)
 	
 	# For tmapProxy: only use pane with a higher z number than existing ones
 	# Only use free panes: every layer must be in a different pane
 	z_free <- setdiff(start_pane_id:(start_pane_id+length(zids_vec)*2-1), na.omit(zids_vec))
 	zids_vec[is.na(zids_vec)] <- rep(z_free, length.out = sum(is.na(zids_vec)))
 	zids_len <- sapply(zids, length)
-	zindices <- split(zids_vec, unlist(mapply(rep, 1:length(zids), each = zids_len, SIMPLIFY = FALSE)))
+	zindices <- split(zids_vec, unlist(mapply(rep, 1:length(zids), each = zids_len, SIMPLIFY = FALSE), use.names = FALSE))
 	tmap_zindices <- sort(unique(unname(setdiff(zids_vec, 0))))
 
 	## get/set existing panes
@@ -512,25 +512,40 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 			pal <- na.omit(unique(gpl$raster))
 			pal <- pal[substr(pal, 8,10)!="00"] ## remove transparant colors
 			
-			shp@data@values <- match(gpl$raster, pal)
-			
-			res <- split_alpha_channel(pal, alpha)
-			pal_col <- res$col
-			pal_opacity <- if (length(res$opacity) == 0L) 0 else max(res$opacity)
-			
-			mappal <- function(x) {
-				if (all(is.na(shp@data@values))) return(rep("#00000000", length(x)))
-				
-				y <- pal_col[x]
-				y[is.na(y)] <- "#00000000"
-				y
-			}
-			
+
 			pane <- paneName(zi)
 			
 			layerId <- submit_labels(pane, "raster", pane, group_name, e)
+			
+			
+			col_ids <- match(gpl$raster, pal)
 
-			lf <- lf %>% addRasterImage(x=shp, colors=mappal, opacity = pal_opacity, group=group_name, project = FALSE, layerId = layerId)
+			if (!is_regular_grid(shp) || has_rotate_or_shear(shp)) {
+				shp <- sf::st_transform(sf::st_as_sf(shp), crs = 4326)
+				
+				res <- split_alpha_channel(pal, alpha)
+				pal_col <- res$col
+				pal_opacity <- if (length(res$opacity) == 0L) 0 else max(res$opacity)
+				
+				pal_col2 <- pal_col[col_ids]
+				
+				# TO DO: add layerId = layerId, was 1 ("tmap401"), but should be number of polygons
+				lf <- lf %>% addPolygons(data=shp, stroke=FALSE, weight=0, color=NULL, fillColor = pal_col2, opacity=0, fillOpacity = pal_opacity, popup = NULL, options = pathOptions(clickable=FALSE, pane=pane), group=group_name)
+				
+			} else {
+				shp[[1]] <- matrix(col_ids, ncol = ncol(shp))
+				
+				res <- split_alpha_channel(pal, alpha)
+				pal_col <- res$col
+				pal_opacity <- if (length(res$opacity) == 0L) 0 else max(res$opacity)
+				
+				
+				lf <- lf %>% leafem::addStarsImage(shp, band = 1, colors = pal_col, opacity = pal_opacity, group = group_name, project = FALSE, layerId = layerId)
+			}
+			
+			
+			
+			# lf <- lf %>% addRasterImage(x=as(shp, "Raster"), colors=mappal, opacity = pal_opacity, group=group_name, project = FALSE, layerId = layerId)
 			
 			if (!is.na(gpl$xraster[1])) {
 				if (gpl$raster.legend.show) lf <- lf %>% add_legend(gpl, gt, aes="raster", alpha=alpha, group = if (gt$free.scales.raster) group_name else NULL, zindex = zi)
@@ -634,7 +649,7 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 
 		layer_selection <- unlist(mapply(function(fn, zi) {
 			do.call(fn, list(zi = zi), envir = e2)
-		}, fnames, zindex, SIMPLIFY = FALSE))
+		}, fnames, zindex, SIMPLIFY = FALSE), use.names = FALSE)
 			
 		any(layer_selection)
 	}, shps, gp, gt$shp_name, zindices, SIMPLIFY = TRUE)
@@ -658,7 +673,13 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 					message("only legends of type \"fill\" supported in view mode")
 				}
 			} else {
-				RGBA <- col2rgb(gali$col, alpha = TRUE)
+				nitems <- length(gali$labels)
+				revfun <- if (gali$reverse) rev else function(x)x
+				palette_colors <- revfun(if (is.null(gali$col)) rep("grey50", nitems) else rep(gali$col, length.out=nitems))
+				legend.palette <- do.call("process_color", c(list(col=palette_colors, alpha = gali$alpha), gt$pc))
+				
+				
+				RGBA <- col2rgb(legend.palette, alpha = TRUE)
 				col <- rgb(RGBA[1,], RGBA[2,], RGBA[3,], maxColorValue = 255)
 				opacity <- unname(RGBA[4,1]/255) * alpha
 				
@@ -778,7 +799,7 @@ set_bounds_view <- function(lf, gt) {
 	# }
 	
 	if (is.logical(gt$set.bounds) && !is.null(lf$x$limits)) {
-		lims <- unname(unlist(lf$x$limits)[c(3,1,4,2)])
+		lims <- unname(unlist(lf$x$limits, use.names = FALSE)[c(3,1,4,2)])
 	} else {
 		lims <- gt$set.bounds
 	}
@@ -787,11 +808,11 @@ set_bounds_view <- function(lf, gt) {
 	}
 	if (!is.na(gt$set.zoom.limits[1])) {
 		if (is.na(gt$set.view[1])) {
-			gt$set.view <- c(mean(lims[c(1,3)]), mean(lims[c(2,4)]), gt$set.zoom.limits[1])
+			gt$set.view <- c(mean.default(lims[c(1,3)]), mean.default(lims[c(2,4)]), gt$set.zoom.limits[1])
 		}
 	}
 	if (length(gt$set.view) == 1 && !is.na(gt$set.view[1])) {
-		gt$set.view <- c(mean(lims[c(1,3)]), mean(lims[c(2,4)]), gt$set.view)
+		gt$set.view <- c(mean.default(lims[c(1,3)]), mean.default(lims[c(2,4)]), gt$set.view)
 	}
 	
 	if (!is.na(gt$set.view[1]) && !gt$global_bbox_specified) {
@@ -942,7 +963,7 @@ add_legend <- function(map, gpl, gt, aes, alpha, group, list.only=FALSE, zindex 
 		orig <- unlist(lapply(pal, function(x) {
 			p <- strsplit(x, split = "-", fixed=TRUE)[[1]]
 			if (length(p) == 1) NULL else p[p!="NA"]
-		}))
+		}), use.names = FALSE)
 		
 		
 		pal <- vapply(pal, function(x) {
@@ -1111,7 +1132,7 @@ submit_labels <- function(labels, cls, pane, group_name, e) {
 	types <- attr(layerIds, "types")
 	groups <- attr(layerIds, "groups")
 	
-	labels_all <- unlist(layerIds)
+	labels_all <- unlist(layerIds, use.names = FALSE)
 	
 	pos <- length(labels_all)
 	

@@ -1,4 +1,12 @@
-version 2.3-2 (devel)
+version 3.0
+- [!] spatial rasters/arrays now implemented using the stars package (instead of the raster package)
+- as.count argument added to layer functions; numeric variables can be treated as count variables (integers)
+- drop.levels argument added to layer functions which allows to drop unused levels
+- new style added for color classes: "dpih" and "headtails"; also added style.args to pass on arguments to classIntervals
+- grid labels specification per axis
+- fixed bug with geometry collection
+
+version 2.3-2
 - probably last version before release of tmap 3.0
 - many small improvements and bug fixes (see github)
 - first stars supported (full support expected in tmap 3.0)

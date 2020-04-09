@@ -150,7 +150,7 @@ qtm <- function(shp,
 	fns <- c("tm_shape", "tm_fill", "tm_borders", "tm_polygons", "tm_symbols", "tm_dots", "tm_lines", "tm_raster", "tm_text", "tm_layout", "tm_grid", "tm_facets", "tm_view")
 	fns_prefix <- c("shape", "fill", "borders", "polygons", "symbols", "dots", "lines", "raster", "text", "layout", "grid", "facets", "view")
 	
-	argnames <- unlist(lapply(fns, function(f) names(formals(f))))
+	argnames <- unlist(lapply(fns, function(f) names(formals(f))), use.names = FALSE)
 	dupl <- setdiff(unique(argnames[duplicated(argnames)]), "...")
 	
 	skips <- list(tm_shape=c("shp", "projection", "bbox"), tm_fill="col", tm_borders="col", tm_polygons="col", tm_symbols=c("size", "col", "shape"), tm_dots=c("size", "col", "shape"), tm_lines=c("col", "lwd"), tm_raster="raster", tm_text=c("text", "size", "col"), tm_layout="scale", tm_grid=NULL, tm_facets="by", tm_view = NULL)
@@ -183,8 +183,7 @@ qtm <- function(shp,
 		arg
 	}, fns, fns_prefix, skips, MoreArgs = list(args=args, dupl=dupl), SIMPLIFY=FALSE)
 
-	g <- do.call("tm_shape", c(list(shp=shp, projection=projection, bbox = bbox), args2[["tm_shape"]]))
-	g$tm_shape$shp_name <- shp_name
+	g <- do.call("tm_shape", c(list(shp=shp, name = shp_name, projection=projection, bbox = bbox), args2[["tm_shape"]]))
 	g$tm_shape$check_shape <- FALSE
 
 	g <- g + tm_basemap(basemaps)

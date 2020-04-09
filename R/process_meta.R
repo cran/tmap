@@ -229,7 +229,7 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, nx, nxa, pan
 						lapply(panel.names[[2]], function(n2) {
 							paste(n1, n2, sep = " / ")
 						})
-					}))
+					}), use.names = FALSE)
 				} else {
 					title <- panel.names
 				}
@@ -446,11 +446,14 @@ process_meta_grid <- function(gg, gt, interactive) {
 			grid.lwd <- grid.lwd * gt$scale
 			grid.is.projected <- !(grid.projection=="longlat" || tryCatch(sf::st_is_longlat(grid.projection), error = function(e) TRUE))
 			
-			grid.projection <- get_proj4(grid.projection, output = "crs")
+			grid.projection <- sf::st_crs(grid.projection)
 			
 			if (!interactive && !grid.labels.inside.frame && any(gt$outer.margins[1:2]==0)) stop("When grid labels are plotted outside the frame, outer.margins (the bottom and the left) should be greater than 0. When using tmap_save, notice that outer.margins are set to 0 by default, unless set to NA.")
 			if (!"scientific" %in% names(grid.labels.format)) grid.labels.format$scientific <- FALSE
 			if (!"digits" %in% names(grid.labels.format)) grid.labels.format$digits <- NA
+			
+			grid.labels.show <- rep(grid.labels.show, length.out = 2)
+			grid.ticks <- rep(grid.ticks, length.out = 2)
 			
 		})
 	} else {

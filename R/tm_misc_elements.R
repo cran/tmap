@@ -16,7 +16,7 @@
 #' @param sync logical. Should the navigation in view mode (zooming and panning) be synchronized? By default \code{TRUE} if the facets have the same bounding box. This is generally the case when \code{\link[raster:raster-package]{raster}}s are plotted, or when free.coords is \code{FALSE}.
 #' @param showNA If the \code{by} argument is specified, should missing values of the \code{by}-variable be shown in a facet? If two \code{by}-variables are specified, should missing values be shown in an additional row and column? If \code{NA}, missing values only are shown if they exist. Similar to the \code{useNA} argument of \code{\link[base:table]{table}}, where \code{TRUE}, \code{FALSE}, and \code{NA} correspond to \code{"always"}, \code{"no"}, and \code{"ifany"} respectively.
 #' @param textNA text used for facets of missing values.
-#' @param free.scales logical. Should all scales of the plotted data variables be free, i.e. independent of each other? Possible data variables are color from \code{\link{tm_fill}}, color and size from \code{\link{tm_symbols}} and line color from \code{\link{tm_lines}}.
+#' @param free.scales logical. Should all scales of the plotted data variables be free, i.e. independent of each other? Specific scales can be set with \code{free.scales.x}, where \code{x} is the name of the aesthetic, e.g. \code{"symbol.col"}. By default, \code{free.scales} is \code{TRUE}, unless the \code{by} argument is used, the \code{along} argument is used, or a \code{stars} object with a third dimension is shown.
 #' @param free.scales.fill logical. Should the color scale for the choropleth be free?
 #' @param free.scales.symbol.size logical. Should the symbol size scale for the symbol map be free?
 #' @param free.scales.symbol.col logical. Should the color scale for the symbol map be free?
@@ -45,16 +45,16 @@ tm_facets <- function(by=NULL,
 					  sync=NA,
 					  showNA=NA,
 					  textNA="Missing",
-					  free.scales=is.null(by) && is.null(along),
-					  free.scales.fill=free.scales,
-					  free.scales.symbol.size=free.scales,
-					  free.scales.symbol.col=free.scales,
-					  free.scales.symbol.shape=free.scales,
-					  free.scales.text.size=free.scales,
-					  free.scales.text.col=free.scales,
-					  free.scales.line.col=free.scales,
-					  free.scales.line.lwd=free.scales,
-					  free.scales.raster=free.scales,
+					  free.scales=NULL, #is.null(by) && is.null(along),
+					  free.scales.fill=NULL, #free.scales,
+					  free.scales.symbol.size=NULL, #free.scales,
+					  free.scales.symbol.col=NULL, #free.scales,
+					  free.scales.symbol.shape=NULL, #free.scales,
+					  free.scales.text.size=NULL, #free.scales,
+					  free.scales.text.col=NULL, #free.scales,
+					  free.scales.line.col=NULL, #free.scales,
+					  free.scales.line.lwd=NULL, #free.scales,
+					  free.scales.raster=NULL, #free.scales,
 					  inside.original.bbox=FALSE,
 					  scale.factor=2,
 					  drop.shapes=drop.units) {
@@ -80,7 +80,7 @@ tm_facets <- function(by=NULL,
 #' @param col color of the grid lines.
 #' @param lwd line width of the grid lines
 #' @param alpha alpha transparency of the grid lines. Number between 0 and 1. By default, the alpha transparency of \code{col} is taken. 
-#' @param labels.show show tick labels
+#' @param labels.show show tick labels. Either one value for both \code{x} and \code{y} axis, or a vector two: the first for \code{x} and latter for \code{y}.
 #' @param labels.size font size of the tick labels
 #' @param labels.col font color of the tick labels
 #' @param labels.rot Rotation angles of the labels. Vector of two values: the first is the rotation angle (in degrees) of the tick labels on the x axis and the second is the rotation angle of the tick labels on the y axis. Only \code{0}, \code{90}, \code{180}, and \code{270} are valid values.
@@ -98,7 +98,7 @@ tm_facets <- function(by=NULL,
 #' @param labels.space.x space that is used for the labels and ticks for the x-axis when \code{labels.inside.frame == FALSE}. By default, it is determined automatically using the widths and heights of the tick labels. The unit of this parameter is text line height.
 #' @param labels.space.y space that is used for the labels and ticks for the y-axis when \code{labels.inside.frame == FALSE}. By default, it is determined automatically using the widths and heights of the tick labels. The unit of this parameter is text line height.
 #' @param labels.inside.frame Show labels inside the frame? By default \code{FALSE}
-#' @param ticks If \code{labels.inside.frame = FALSE}, should ticks can be drawn between the labels and the frame?
+#' @param ticks If \code{labels.inside.frame = FALSE}, should ticks can be drawn between the labels and the frame? Either one value for both \code{x} and \code{y} axis, or a vector two: the first for \code{x} and latter for \code{y}.
 #' @param lines If \code{labels.inside.frame = FALSE}, should grid lines can be drawn?
 #' @param ndiscr number of points to discretize a parallel or meridian (only applicable for curved grid lines)
 #' @param zindex zindex of the pane in view mode. By default, it is set to the layer number plus 400. By default, the tmap layers will therefore be placed in the custom panes \code{"tmap401"}, \code{"tmap402"}, etc., except for the base tile layers, which are placed in the standard \code{"tile"}. This parameter determines both the name of the pane and the z-index, which determines the pane order from bottom to top. For instance, if \code{zindex} is set to 500, the pane will be named \code{"tmap500"}.
@@ -124,7 +124,7 @@ tm_grid <- function(x=NA,
 					labels.space.x=NA,
 					labels.space.y=NA,
 					labels.inside.frame=FALSE,
-					ticks = labels.show && !labels.inside.frame,
+					ticks = labels.show & !labels.inside.frame,
 					lines = TRUE,
 					ndiscr = 100,
 					zindex = NA) {

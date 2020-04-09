@@ -69,8 +69,6 @@ process_aes <- function(type, xs, xlabels, colname, data, g, gt, gby, z, interac
 	
 	nx_fill <- if (is.na(fill[1])) 1 else if (is.matrix(fill)) ncol(fill) else 1 # backgrond for tm_text
 	
-	
-	
 	nx <- max(xlen, nx_fill)
 	
 	## make aesthetics same length and check whether they specified with variable names (e.g. vary...)
@@ -171,9 +169,9 @@ process_aes <- function(type, xs, xlabels, colname, data, g, gt, gby, z, interac
 		if (nlevels(by)>1) if (is.na(g$shape.showNA) && !gby[[fsnames[[3]]]]) g$shape.showNA <- any(attr(dts[[3]], "anyNA") & !(gby$drop.NA.facets & attr(dts[[3]], "allNA")))
 	}
 	
-	if (type == "raster") {
-		attr(dts[[1]], "raster.projected") <- attr(data, "raster.projected")
-	}
+	# if (type == "raster") {
+	# 	attr(dts[[1]], "raster.projected") <- attr(data, "raster.projected")
+	# }
 	
 	
 	## output: matrix=colors, list=free.scales, vector=!freescales
@@ -199,16 +197,16 @@ process_aes <- function(type, xs, xlabels, colname, data, g, gt, gby, z, interac
 		areas <- NULL
 		
 		if (type == "line") {
-			sel <- !is.na(unname(unlist(dts[["line.lwd"]])))
+			sel <- !is.na(unname(unlist(dts[["line.lwd"]], use.names = FALSE)))
 		} else if (type == "symbol") {
-			sel <- !is.na(unname(unlist(dts[["symbol.size"]])))
+			sel <- !is.na(unname(unlist(dts[["symbol.size"]], use.names = FALSE)))
 		} else {
 			sel <- NA	
 		}
 	}
 	
 	if (type == "text") {
-		text <- if (nx > 1) matrix(unlist(lapply(data[, xtext], as.character)), nrow=npol, ncol=nx) else as.character(data[[xtext]])
+		text <- if (nx > 1) matrix(unlist(lapply(data[, xtext], as.character), use.names = FALSE), nrow=npol, ncol=nx) else as.character(data[[xtext]])
 		if (!is.na(g$case)) text <- if(g$case=="upper") toupper(text) else tolower(text)
 	} else {
 		text <- NULL
@@ -272,7 +270,16 @@ process_aes <- function(type, xs, xlabels, colname, data, g, gt, gby, z, interac
 		# 	dcr$legend.text <- dcr$legend.misc$legend.text
 		# }
 		
-		legend.title <- rep(if (is.ena(g[[aname("title", xname)]])[1]) paste0(x, dcr$title_append) else g[[aname("title", xname)]], length.out = nx)
+		
+		legend.title <- rep(
+			if (attr(data, "treat_as_by")) {
+				attr(data, "by_var")
+			} else if (is.ena(g[[aname("title", xname)]])[1]) {
+				paste0(x, dcr$title_append)
+			} else {
+				g[[aname("title", xname)]]
+			}, 
+			length.out = nx)
 		legend.z <- if (is.na(g[[aname("legend.z", xname)]])) z else g[[aname("legend.z", xname)]]
 
 		# if (nx > 1 && gby[[fsname]]) {

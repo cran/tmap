@@ -3,7 +3,11 @@ check_aes_args <- function(g) {
 	if ("style" %in% nms) {
 		if (length(g$style) != 1) stop("Only one value for style allowed per small multiple (unless free.scales=TRUE)", call.=FALSE)
 		if (!is.character(g$style)) stop("Style is not a character", call.=FALSE)
-		if (!g$style %in% c("cat", "fixed", "sd", "equal", "pretty", "quantile", "kmeans", "hclust", "bclust", "fisher", "jenks", "cont", "order", "log10", "log10_pretty")) stop("Invalid style value(s)", call.=FALSE)
+		if (!g$style %in% c("cat", "fixed", "sd", "equal", "pretty", "quantile", "kmeans", "hclust", "bclust", "fisher", "jenks", "dpih", "headtails", "cont", "order", "log10", "log10_pretty")) stop("Invalid style value(s)", call.=FALSE)
+	}
+	
+	if (!is.null(g$shapes.style)) {
+		if (!g$shapes.style %in% c("cat", "fixed", "sd", "equal", "pretty", "quantile", "kmeans", "hclust", "bclust", "fisher", "jenks", "dpih", "headtails", "cont", "order", "log10", "log10_pretty")) stop("Invalid style value(s)", call.=FALSE)
 	}
 	
 	if (!is.null(g$palette)) {
@@ -60,8 +64,14 @@ process_col_vector <- function(x, sel, g, gt, reverse) {
 	if (is.factor(x) || g$style=="cat") {
 		
 		if (is.null(g$palette)) {
-			palette.type <- ifelse(is.ordered(x) || (isNUM), "seq", "cat")
-			palette <- gt$aes.palette[[palette.type]] 
+			clrs <- attr(x, "clrs") # stars color table
+			if (!is.null(clrs)) {
+				palette <- clrs
+				palette.type <- "cat"
+			} else {
+				palette.type <- ifelse(is.ordered(x) || (isNUM), "seq", "cat")
+				palette <- gt$aes.palette[[palette.type]] 
+			}
 		} else if (g$palette[1] %in% c("seq", "div", "cat")) {
 			palette.type <- g$palette[1]
 			palette <- gt$aes.palette[[palette.type]]
@@ -72,6 +82,7 @@ process_col_vector <- function(x, sel, g, gt, reverse) {
 		colsLeg <- cat2pal(x,
 						   var = g$col,
 						   palette = palette,
+						   drop.levels = g$drop.levels,
 						   stretch.palette = g$stretch.palette,
 						   contrast = g$contrast,
 						   colorNA = g$colorNA,
@@ -100,7 +111,10 @@ process_col_vector <- function(x, sel, g, gt, reverse) {
 		colsLeg <- num2pal(x, 
 						   var = g$col,
 						   call = g$call,
-						   g$n, style=g$style, breaks=g$breaks, 
+						   g$n, style=g$style, 
+						   style.args=g$style.args,
+						   as.count = g$as.count,
+						   breaks=g$breaks, 
 						   interval.closure=g$interval.closure,
 						   palette = palette,
 						   midpoint = g$midpoint, #auto.palette.mapping = g$auto.palette.mapping,
@@ -150,9 +164,6 @@ process_dtcol <- function(xname, dtcol, sel=NA, g, gt, nx, npol, areas=NULL, are
 	## return as color matrix (object col)
 	if (is.na(sel[1])) sel <- rep(TRUE, npol * nx)
 	sel[is.na(sel)] <- TRUE
-	
-
-
 	
 	is.constant <- is.matrix(dtcol)
 	if (is.constant) {

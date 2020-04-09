@@ -17,7 +17,8 @@ check_fill_specials <- function(x, g, gt, shpcols, data, nx) {
 			} else if (g$palette[1] %in% c("seq", "div", "cat")) {
 				gt$aes.palette[[g$palette[1]]] 
 			} else g$palette
-			mapcols <- do.call("map_coloring", args = c(list(x=attr(data, "NB"), palette=palette, contrast = g$contrast), g$map_coloring))
+			map_coloring_args <- g$extra_args[names(g$extra_args) %in% names(formals("map_coloring"))]
+			mapcols <- do.call("map_coloring", args = c(list(x=attr(data, "NB"), palette=palette, contrast = g$contrast), map_coloring_args))
 			mapcols <- do.call("process_color", c(list(col=mapcols, alpha=g$alpha), gt$pc))
 			
 			for (i in 1:nx) data[[paste("COLOR", i, sep="_")]] <- mapcols
@@ -50,7 +51,7 @@ check_poly_sizes <- function(g, data, nx, islist, show.messages) {
 			warning("Some polygon areas cannot be determined. Therefore, convert2density is set to FALSE.", call. = FALSE)
 		}
 		areas_na_inf <- is.na(areas) | is.infinite(areas)
-		areas[areas_na_inf] <- mean(areas[!areas_na_inf])
+		areas[areas_na_inf] <- mean.default(areas[!areas_na_inf])
 		
 	}
 	areas_prop <- as.numeric(areas/sum(areas, na.rm=TRUE))

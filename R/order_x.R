@@ -27,7 +27,6 @@ order_x <- function(x, shps, datasets, types, gm) {
 					shp_poly <- shp[sel_poly, ]
 					shp_poly$tmapID <- seq_len(cnts[1])
 					attr(shp_poly, "bbox") <- attr(shp, "bbox")
-					attr(shp_poly, "proj4string") <- attr(shp, "proj4string")
 					attr(shp_poly, "projected") <- attr(shp, "projected")
 					attr(shp_poly, "point.per") <- attr(shp, "point.per")
 					attr(shp_poly, "line.center") <- attr(shp, "line.center")
@@ -37,6 +36,7 @@ order_x <- function(x, shps, datasets, types, gm) {
 					
 					attr(data_poly, "kernel_density") <- attr(dataset, "kernel_density")
 					attr(data_poly, "shpnames") <- attr(dataset, "shpnames")
+					attr(data_poly, "treat_as_by") <- attr(dataset, "treat_as_by")
 					
 					data_poly$SHAPE_AREAS <- tmaptools::approx_areas(shp=shp_poly, target = paste(gm$shape.unit, gm$shape.unit, sep=" "))
 					if (gm$shape.apply_map_coloring) attr(data_poly, "NB") <- if (length(shp_poly)==1) list(0) else get_neighbours(shp_poly) #poly2nb(as(shp, "Spatial"))
@@ -63,7 +63,6 @@ order_x <- function(x, shps, datasets, types, gm) {
 					shp_lines <- shp[sel_lines, ]
 					shp_lines$tmapID <- seq_len(cnts[2])
 					attr(shp_lines, "bbox") <- attr(shp, "bbox")
-					attr(shp_lines, "proj4string") <- attr(shp, "proj4string")
 					attr(shp_lines, "projected") <- attr(shp, "projected")
 					attr(shp_lines, "point.per") <- attr(shp, "point.per")
 					attr(shp_lines, "line.center") <- attr(shp, "line.center")
@@ -71,6 +70,7 @@ order_x <- function(x, shps, datasets, types, gm) {
 					data_lines <- dataset[sel_lines, , drop = FALSE]
 					attr(data_lines, "isolines") <- attr(dataset, "isolines")
 					attr(data_lines, "shpnames") <- attr(dataset, "shpnames")
+					attr(data_lines, "treat_as_by") <- attr(dataset, "treat_as_by")
 					
 					xp_lines[[1]]$type <- "lines"
 					xp_lines[[1]]$data <- data_lines
@@ -92,13 +92,13 @@ order_x <- function(x, shps, datasets, types, gm) {
 					shp_points <- shp[sel_points, ]
 					shp_points$tmapID <- seq_len(cnts[3])
 					attr(shp_points, "bbox") <- attr(shp, "bbox")
-					attr(shp_points, "proj4string") <- attr(shp, "proj4string")
 					attr(shp_points, "projected") <- attr(shp, "projected")
 					attr(shp_points, "point.per") <- attr(shp, "point.per")
 					attr(shp_points, "line.center") <- attr(shp, "line.center")
 					
 					data_points <- dataset[sel_points, , drop = FALSE]
 					attr(data_points, "shpnames") <- attr(dataset, "shpnames")
+					attr(data_points, "treat_as_by") <- attr(dataset, "treat_as_by")
 					
 					xp_points[[1]]$type <- "points"
 					xp_points[[1]]$data <- data_points
@@ -118,11 +118,11 @@ order_x <- function(x, shps, datasets, types, gm) {
 			# subset elements when tm_sf is called
 			if (("tm_fill" %in% names(xp)) && from_sf) {
 				if (type == "polygons") {
-					xp <- xp[c("tm_shape", "tm_fill", "tm_borders", "tm_tiles")]
+					xp <- xp[names(xp) %in% c("tm_shape", "tm_fill", "tm_borders", "tm_tiles")]
 				} else if (type == "lines") {
-					xp <- xp[c("tm_shape", "tm_lines", "tm_tiles")]
+					xp <- xp[names(xp) %in% c("tm_shape", "tm_lines", "tm_tiles")]
 				} else if (type == "points") {
-					xp <- xp[c("tm_shape", "tm_symbols", "tm_tiles")]
+					xp <- xp[names(xp) %in% c("tm_shape", "tm_symbols", "tm_tiles")]
 				}
 			}
 			xp[[1]]$type <- type
@@ -138,9 +138,9 @@ order_x <- function(x, shps, datasets, types, gm) {
 	xs2 <- lapply(xs_shp, "[[", 1)
 	shps2 <- do.call(c, lapply(xs_shp, "[[", 2))
 	
-	k <- unname(unlist(lapply(xs2, attr, "k")))
+	k <- unname(unlist(lapply(xs2, attr, "k"), use.names = FALSE))
 	
-	nms <- unname(unlist(lapply(xs2, attr, "names")))
+	nms <- unname(unlist(lapply(xs2, attr, "names"), use.names = FALSE))
 	
 	gm$shape.id <- unname(which(nms == "tm_shape"))
 	gm$shape.nshps <- length(gm$shape.id)
