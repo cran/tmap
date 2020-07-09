@@ -1,4 +1,4 @@
-gather_shape_info <- function(x, interactive) {
+pre_gather_shape_info <- function(x, interactive) {
 	## identify shape blocks
 	shape.id <- which(names(x)=="tm_shape")
 	nshps <- length(shape.id)
@@ -23,8 +23,10 @@ gather_shape_info <- function(x, interactive) {
 	## find master projection (and set to longlat when in view mode)
 	master_crs <- sf::st_crs(x[[shape.id[masterID]]]$projection)
 	mshp_raw <- x[[shape.id[masterID]]]$shp
+	if (!inherits(mshp_raw, c("stars", "Raster", "sf", "sfc", "Spatial"))) stop("Object ", x[[shape.id[masterID]]]$shp_name, " is neither from class sf, stars, Spatial, nor Raster.", call. = FALSE) # shapes are later checked in pre_check_shape
+	
 	mshp_crs <- sf::st_crs(mshp_raw)
-	bbx_raw <- bb(mshp_raw)
+	bbx_raw <- sf::st_bbox(mshp_raw)
 	
 	# Checks whether master shape has no crs and has coordinates outside -180-180, -90-90. The crss is futher checked in preprocess_shapes 
 	if (is.na(mshp_crs)) {
@@ -38,7 +40,26 @@ gather_shape_info <- function(x, interactive) {
 	if (is.na(master_crs)) master_crs <- mshp_crs
 	orig_crs <- master_crs # needed for adjusting bbox in process_shapes
 	
-	if (interactive) master_crs <- .crs_longlat
+	
+	if (interactive) {
+		# Set master projection to 4326 if projection != 0 (L.CRS.Simple)
+		# Find out whether projection == 0:
+		option_prj = get("tmapOptions", envir = .TMAP_CACHE)$projection
+		crsSimple <- inherits(option_prj, "leaflet_crs") || option_prj == 0
+		if (any(names(x)=="tm_layout")) {
+			crsSimples <- vapply(x[which(names(x)=="tm_layout")], function(xi) {
+				if (any(names(xi) == "projection")) {
+					xi$projection == 0
+				} else {
+					as.logical(NA)
+				}
+			}, FUN.VALUE = logical(1))
+			if (!all(is.na(crsSimples))) {
+				crsSimple <- tail(na.omit(crsSimples), 1)
+			}
+		}
+		if (!crsSimple) master_crs <- .crs_longlat
+	}
 	
 	## get raster and group by variable name (needed for eventual reprojection of raster shapes)
 	raster_facets_vars <- lapply(1:nshps, function(i) {
@@ -80,7 +101,7 @@ gather_shape_info <- function(x, interactive) {
 	# units_args <- units_args[!sapply(units_args, is.null)]
 	
 	## get arguments related to bb
-	bb_args <- x[[shape.id[masterID]]][intersect(names(x[[shape.id[masterID]]]), c("ext", "cx", "cy", "width", "height", "xlim", "ylim", "relative"))]
+	bb_args <- x[[shape.id[masterID]]][intersect(names(x[[shape.id[masterID]]]), c("ext", "cx", "cy", "width", "height", "xlim", "ylim", "relative", "asp.limit"))]
 	bb_args$x <- x[[shape.id[masterID]]]$bbox
 	
 	## add other shape arguments

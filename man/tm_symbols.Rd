@@ -123,7 +123,7 @@ tm_markers(
 )
 }
 \arguments{
-\item{size}{a single value or a \code{shp} data variable that determines the symbol sizes. The reference value \code{size=1} corresponds to the area of symbols that have the same height as one line of text. If a data variable is provided, the symbol sizes are scaled proportionally (or perceptually, see \code{perceptual}) where by default the symbol with the largest data value will get \code{size=1} (see also \code{size.max}). If multiple values are specified, small multiples are drawn (see details).}
+\item{size}{a single value or a \code{shp} data variable that determines the symbol sizes. The reference value \code{size=1} corresponds to the area of symbols that have the same height as one line of text. If a data variable (which should be numeric) is provided, the symbol area sizes are scaled proportionally (or perceptually, see \code{perceptual}) where by default the symbol with the largest data value will get \code{size=1} (see also \code{size.max}). If multiple values are specified, small multiples are drawn (see details).}
 
 \item{col}{color(s) of the symbol. Either a color (vector), or categorical variable name(s). If multiple values are specified, small multiples are drawn (see details).}
 
@@ -139,7 +139,7 @@ tm_markers(
 
 \item{scale}{symbol size multiplier number.}
 
-\item{perceptual}{logical that determines whether symbols are scales with a perceptually (\code{TRUE}) or mathematically (\code{FALSE}, default value). The perceived area of larger symbols is often underestimated. Flannery (1971) experimentally derived a method to compensate this for symbols, which is enabled by this argument.}
+\item{perceptual}{by default (with \code{perceptual = FALSE}), the symbol area sizes are scaled proportionally to the data variables. This is done by taking the square root of the (normalized) data variable, since the plotting system (\code{grid} package) expects size in radius rather than area. However, the perceived area of larger symbols is often underestimated. Flannery (1971) experimentally derived a method to compensate this for symbols, which is enabled by this argument; if \code{perceptual = TRUE}, not the suqare root (power exponent 0.5) is taken, but power exponent 0.5716.}
 
 \item{clustering}{value that determines whether the symbols are clustered in \code{"view"} mode. It does not work proportional bubbles (i.e. \code{tm_bubbles}). One of: \code{TRUE}, \code{FALSE}, or the output of \code{\link[leaflet:markerClusterOptions]{markerClusterOptions}}.}
 
@@ -185,7 +185,7 @@ tm_markers(
 
 \item{shapes}{palette of symbol shapes. Only applicable if \code{shape} is a (vector of) categorical variable(s). See details for the shape specification. By default, the filled symbols 21 to 25 are taken.}
 
-\item{shapes.legend}{symbol shapes that are used in the legend (instead of the symbols specified with \code{shape}. These shapes will be used in the legends regarding the \code{size} and \code{col} of the symbols. Especially useful when \code{shapes} consist of grobs that have to be represented by neutrally colored shapes (see also \code{shapes.legend.fill}.}
+\item{shapes.legend}{symbol shapes that are used in the legend (instead of the symbols specified with \code{shape}). These shapes will be used in the legends regarding the \code{size} and \code{col} of the symbols. Especially useful when \code{shapes} consist of grobs that have to be represented by neutrally colored shapes. See also \code{shapes.legend.fill}.}
 
 \item{shapes.legend.fill}{Fill color of legend shapes. These colors will be used in the legends regarding the \code{size} and \code{shape} of the symbols. See also \code{shapes.legend}.}
 
@@ -249,7 +249,7 @@ tm_markers(
 \item{text.separator}{Character string to use to separate numbers in the legend (default: "to").}
 \item{text.less.than}{Character value(s) to use to translate "Less than". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
 \item{text.or.more}{Character value(s) to use to translate "or more". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
-\item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}}. By default \code{"left"} for legends in portrait format (\code{legend.is.protrait = TRUE}), and \code{"center"} otherwise.
+\item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}. By default \code{"left"} for legends in portrait format (\code{legend.is.protrait = TRUE}), and \code{"center"} otherwise.}
 \item{text.to.columns}{Logical that determines whether the text is aligned to three columns (from, text.separator, to). By default \code{FALSE}.}
 \item{...}{Other arguments passed on to \code{\link[base:formatC]{formatC}}}
 }}
@@ -397,7 +397,7 @@ tm_format("NLD")
 \dontrun{
 if (require(rnaturalearth)) {
 
-airports <- ne_download(scale=10, type="airports")
+airports <- ne_download(scale=10, type="airports", returnclass = "sf")
 airplane <- tmap_icons(system.file("img/airplane.png", package = "tmap"))
 
 current.mode <- tmap_mode("view")

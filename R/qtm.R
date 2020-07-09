@@ -8,7 +8,7 @@
 #' 
 #' @param shp One of
 #' \itemize{
-#' \item shape object, which is an object from a class defined by the \code{\link[sf:sf]{sf}}, \code{\link[sp:sp]{sp}}, or \code{\link[raster:raster-package]{raster}} package. For instance, an \code{\link[sf:sf]{sf}} object, an \code{\link[sp:SpatialPolygonsDataFrame]{SpatialPolygons(DataFrame)}}, or a \code{\link[raster:Raster-class]{RasterBrick}}.
+#' \item shape object, which is an object from a class defined by the \code{\link[sf:sf]{sf}} or \code{\link[stars:st_as_stars]{stars}} package. Objects from the packages \code{sp} and \code{raster} are also supported, but discouraged.
 #' \item Not specified, i.e. \code{qtm()} is executed. In this case a plain interactive map is shown.
 #' \item A OSM search string, e.g. \code{qtm("Amsterdam")}. In this case a plain interactive map is shown positioned according to the results of the search query (from OpenStreetMap nominatim)
 #' }
@@ -88,22 +88,39 @@ qtm <- function(shp,
 	
 	isRaster <- (inherits(shp, c("SpatialGrid", "SpatialPixels", "Raster", "stars")))
 	
+	
+	if ((inherits(shp, "stars") && !has_raster(shp))) {
+		d = dim(shp)
+		v = lapply(1L:length(d), function(i) stars::st_get_dimension_values(shp, which = i))
+		
+		sfc = v[[which(vapply(v, inherits, logical(1), "sfc"))[1]]]
+		isRaster <- FALSE
+		sfcarray <- TRUE
+	} else {
+		sfcarray <- FALSE
+	}
+	
+	
 	if (isRaster) {
 		fill <- NULL
 		borders <- NULL
 		showPoints <- FALSE
 	} else {
-		shp <- check_shape(shp, shp_name)
-
-		if (inherits(shp, "sfc")) shp <- st_sf(shp)
-
-		if (any(st_geometry_type(shp) == "GEOMETRYCOLLECTION")) {
-			geom <- split_geometry_collection(st_geometry(shp))
-			shp <- shp[attr(geom, "ids"), ]
-			shp <- st_set_geometry(shp, geom)
+		if (sfcarray) {
+			types <- get_types(sfc)
+		} else {
+			shp <- pre_check_shape(shp, shp_name)
+			
+			if (inherits(shp, "sfc")) shp <- st_sf(shp)
+			
+			if (any(st_geometry_type(shp) == "GEOMETRYCOLLECTION")) {
+				geom <- split_geometry_collection(st_geometry(shp))
+				shp <- shp[attr(geom, "ids"), ]
+				shp <- st_set_geometry(shp, geom)
+			}
+			
+			types <- get_types(st_geometry(shp))
 		}
-		
-		types <- get_types(st_geometry(shp))
 		
 		raster <- NULL
 		hasPolys <- any(types == "polygons")

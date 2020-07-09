@@ -2,8 +2,6 @@ process_tm <- function(x, gt, gm, interactive) {
 	fill <- NULL; xfill <- NULL; xraster <- NULL; text <- NULL; raster <- NULL
 	## fill meta info
 	
-	#gt <- preprocess_gt(x, interactive=interactive, orig_crs = gm$shape.orig_crs)
-	
 	## get grid element
 	gridid <- which(names(x)=="tm_grid")[1]
 	if (length(gridid)>1) gridid <- gridid[length(gridid)]
@@ -53,6 +51,11 @@ process_tm <- function(x, gt, gm, interactive) {
 	# get minimap element
 	gmmid <- which(names(x)=="tm_minimap")[1]
 	gmm <- x[[gmmid]]
+	
+	# get mouse coordinates element
+	gmmcid <- which(names(x)=="tm_mouse")[1]
+	gmmc <- x[[gmmcid]]
+	
 
 	## get facets element
 	shape.id.orig <- which(names(x)=="tm_shape")
@@ -191,7 +194,7 @@ process_tm <- function(x, gt, gm, interactive) {
 	
 	## for each 'grouped by' shape, where drop.units=TRUE, get order ids (used by split_tm) 
 	order_by <- mapply(function(d, isr) {
-		if (levels(d)[1]=="_NA_" || !gf$drop.units || isr) {
+		if (levels(d)[1]=="___NA___" || !gf$drop.units || isr) {
 			NULL
 		} else {
 			lapply(1:nlevels(d), function(i)which(as.numeric(d)==i))
@@ -201,7 +204,7 @@ process_tm <- function(x, gt, gm, interactive) {
 	
 	
 	## get treat_by_counts vector
-	treat_by_counts <- lapply(gp, function(i)i$treat_by_count)
+	treat_by_counts <- vapply(gp, function(i)i$treat_by_count, integer(1))
 
 	## check if by is consistent among groups
 	by_counts <- vapply(data_by, nlevels, integer(1))
@@ -262,13 +265,13 @@ process_tm <- function(x, gt, gm, interactive) {
 		nxa <- nx
 	} else {
 		nxa <- nx / length(along.names)
-		nxa <- limit_nx(nxa)
+		nxa <- process_limit_nx(nxa)
 		nx <- nxa * length(along.names)
 	}
 	
 
 
-	gmeta <- process_meta(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, nx, nxa, panel.names, along.names, layer_vary, gm, any.legend, interactive)
+	gmeta <- process_meta(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, gmmc, nx, nxa, panel.names, along.names, layer_vary, gm, any.legend, interactive)
 	panel.mode <- if (!gmeta$panel.show) {
 		"none"
 	} else if (is.list(panel.names)) {

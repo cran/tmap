@@ -13,7 +13,7 @@
 #' @param drop.units logical. If the \code{by} argument is specified, should non-selected spatial units be dropped? If \code{FALSE}, they are plotted where mapped aesthetics are regarded as missing values. Not applicable for raster shapes. By default \code{TRUE}.
 #' @param drop.empty.facets logical. If the \code{by} argument is specified, should empty facets be dropped? Empty facets occur when the \code{by}-variable contains unused levels. When \code{TRUE} and two \code{by}-variables are specified, empty rows and columns are dropped.
 #' @param drop.NA.facets logical. If the \code{by} argument is specified, and all values of the defined aesthetic variables (e.g. \code{col} from \code{\link{tm_fill}}) for specific facets, should these facets be dropped? \code{FALSE} by default.
-#' @param sync logical. Should the navigation in view mode (zooming and panning) be synchronized? By default \code{TRUE} if the facets have the same bounding box. This is generally the case when \code{\link[raster:raster-package]{raster}}s are plotted, or when free.coords is \code{FALSE}.
+#' @param sync logical. Should the navigation in view mode (zooming and panning) be synchronized? By default \code{TRUE} if the facets have the same bounding box. This is generally the case when rasters are plotted, or when free.coords is \code{FALSE}.
 #' @param showNA If the \code{by} argument is specified, should missing values of the \code{by}-variable be shown in a facet? If two \code{by}-variables are specified, should missing values be shown in an additional row and column? If \code{NA}, missing values only are shown if they exist. Similar to the \code{useNA} argument of \code{\link[base:table]{table}}, where \code{TRUE}, \code{FALSE}, and \code{NA} correspond to \code{"always"}, \code{"no"}, and \code{"ifany"} respectively.
 #' @param textNA text used for facets of missing values.
 #' @param free.scales logical. Should all scales of the plotted data variables be free, i.e. independent of each other? Specific scales can be set with \code{free.scales.x}, where \code{x} is the name of the aesthetic, e.g. \code{"symbol.col"}. By default, \code{free.scales} is \code{TRUE}, unless the \code{by} argument is used, the \code{along} argument is used, or a \code{stars} object with a third dimension is shown.
@@ -223,6 +223,8 @@ tm_logo <- function(file,
 #' @param color.light color of the light parts of the scale bar, typically (and by default) white.
 #' @param lwd line width of the scale bar
 #' @param position position of the scale bar Vector of two values, specifying the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left bottom corner of the scale bar. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
+#' @param bg.color Background color
+#' @param bg.alpha Transparency of the background color. Number between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of the \code{bg.color} is used (normally 1).
 #' @param just Justification of the attribute relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{position} is specified by numeric coordinates. The default value is controlled by the argument \code{"attr.just"} of \code{\link{tm_layout}}.
 #' @param size deprecated: renamed to text.size
 #' @export
@@ -235,6 +237,8 @@ tm_scale_bar <- function(breaks=NULL,
 						 color.light="white",
 						 lwd=1,
 						 position=NA,
+						 bg.color=NA,
+						 bg.alpha=NA,
 						 just=NA,
 						 size = NULL) {
 	if (!missing(size)) {
@@ -266,6 +270,8 @@ tm_scale_bar <- function(breaks=NULL,
 #' @param color.light color of the light parts of the compass, typically (and by default) white.
 #' @param lwd line width of the compass
 #' @param position position of the compass. Vector of two values, specifying the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the left bottom corner of the compass. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
+#' @param bg.color Background color
+#' @param bg.alpha Transparency of the background color. Number between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of the \code{bg.color} is used (normally 1).
 #' @param just Justification of the attribute relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{position} is specified by numeric coordinates. The default value is controlled by the argument \code{"attr.just"} of \code{\link{tm_layout}}.
 #' @param fontsize deprecated: renamed to text.size
 #' @export
@@ -281,6 +287,8 @@ tm_compass <- function(north=0,
 					   color.light=NA,
 					   lwd=1,
 					   position=NA,
+					   bg.color=NA,
+					   bg.alpha=NA,
 					   just=NA,
 					   fontsize = NULL) {
 	if (!missing(fontsize)) {
@@ -351,6 +359,19 @@ tm_minimap <- function(server = NA, position= c("left", "bottom"), toggle = TRUE
 }
 
 
+#' Mouse coordinates
+#' 
+#' Adds mouse coordinates in view mode. See \code{\link[leafem:addMouseCoordinates]{addMouseCoordinates}}.
+#' 
+#' @seealso \code{\link[leafem:addMouseCoordinates]{addMouseCoordinates}}
+#' @export
+tm_mouse_coordinates <- function() {
+	g <- list(tm_mouse=list(mouse.show = TRUE))
+	class(g) = "tmap"
+	g	
+}
+
+
 
 #' Stacking of tmap elements
 #' 
@@ -389,9 +410,9 @@ tm_minimap <- function(server = NA, position= c("left", "bottom"), toggle = TRUE
 #' @export
 #' @seealso \code{\link{tmap_save}}
 tmap_last <- function() {
-	x <- get("last_map", envir = .TMAP_CACHE)
-	if (is.null(x)) warning("A map has not been created yet")
-	eval(x)
+	.x <- get("last_map", envir = .TMAP_CACHE)
+	if (is.null(.x)) warning("A map has not been created yet")
+	eval(.x)
 }
 
 save_last_map <- function() {

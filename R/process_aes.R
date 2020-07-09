@@ -21,7 +21,7 @@ check_g <- function(g, gt) {
 	if (is.null(g$colorNULL)) g$colorNULL <- "#00000000"
 	if (is.na(g$colorNULL)[1]) g$colorNULL <- gt$aes.colors["null"]
 	if (g$colorNA=="#00000000") g$showNA <- FALSE
-	if (!is.na(g$alpha) && !is.numeric(g$alpha)) stop("alpha argument in tm_polygons/tm_fill is not a numeric", call. = FALSE)
+	if (!is.na(g$alpha) && !is.numeric(g$alpha)) stop("alpha argument in tm_XXX is not a numeric", call. = FALSE)
 	g
 }
 
@@ -43,10 +43,26 @@ process_aes <- function(type, xs, xlabels, colname, data, g, gt, gby, z, interac
 	## general variables
 	npol <- nrow(data)
 	by <- data$GROUP_BY
-	shpcols <- names(data)[1:(ncol(data)-2)]
+	shpcols <- setdiff(names(data), c("tmapfilter", "GROUP_BY", "ALONG"))
+	
+	treat_as_by = attr(data, "treat_as_by")
 	
 	xs <- mapply(function(x, nm) {
-		if (length(x)==1 && is.na(x)[1] && type != "text") gt$aes.colors[nm] else x
+		#if (length(x)==1 && is.na(x)[1] && !any(type == c("raster", "text")) && !treat_as_by) gt$aes.colors[nm] else x
+		if (treat_as_by) {
+			if (!is.na(x[1])) {
+				if (type == "raster") {
+					warning("col specification in tm_raster is ignored, since stars object contains a 3rd dimension, where its values are used to create facets", call. = FALSE)		
+				} else {
+					warning("col specification in tm_fill/tm_polygons is ignored, since stars object contains another dimension, where its values are used to create facets", call. = FALSE)
+				}
+			} 
+			attr(data, "shpnames")
+		} else if (length(x)==1 && is.na(x[1]) && !any(type == c("raster", "text"))) {
+			gt$aes.colors[nm]
+		} else {
+			x
+		}
 	}, xs, colname, SIMPLIFY = FALSE)
 	
 	## put symbol shapes in list
@@ -102,6 +118,8 @@ process_aes <- function(type, xs, xlabels, colname, data, g, gt, gby, z, interac
 	if (type == "fill") {
 		res <- check_fill_specials(xs[["fill"]], g, gt, shpcols, data, nx)
 		xs[["fill"]] <- res$x
+		nx <- res$nx
+		
 		data <- res$data
 		is.colors <- res$is.colors
 		split.by <- TRUE
@@ -272,12 +290,12 @@ process_aes <- function(type, xs, xlabels, colname, data, g, gt, gby, z, interac
 		
 		
 		legend.title <- rep(
-			if (attr(data, "treat_as_by")) {
+			if (!is.ena(g[[aname("title", xname)]])[1]) {
+				g[[aname("title", xname)]]
+			} else if (attr(data, "treat_as_by")) {
 				attr(data, "by_var")
 			} else if (is.ena(g[[aname("title", xname)]])[1]) {
 				paste0(x, dcr$title_append)
-			} else {
-				g[[aname("title", xname)]]
 			}, 
 			length.out = nx)
 		legend.z <- if (is.na(g[[aname("legend.z", xname)]])) z else g[[aname("legend.z", xname)]]
@@ -350,6 +368,8 @@ process_aes <- function(type, xs, xlabels, colname, data, g, gt, gby, z, interac
 	res <- do.call(c, res)
 	
 	if (type == "line") {
+		
+		if (!is.na(g$lwd.legeld.col)[1]) res$line.lwd.legend.palette <- g$lwd.legeld.col
 		res$line.col.legend.misc$line.legend.lwd <- assign_legend_line_widths(res$line.lwd.legend.misc$legend.lwds, res$line.lwd, nx)
 		res$line.lty <- g$lty
 		res$line.alpha <- g$alpha

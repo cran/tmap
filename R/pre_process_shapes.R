@@ -1,4 +1,4 @@
-preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
+pre_process_shapes <- function(y, raster_facets_vars, gm, interactive) {
 	shp <- y$shp
 	
 	show.messages <- get("tmapOptions", envir = .TMAP_CACHE)$show.messages
@@ -15,20 +15,32 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 	names(shp.sim)[names(shp.sim)=="simplify"] <- "fact"
 	shp.sim <- shp.sim[!vapply(shp.sim, is.null, logical(1))]
 	
-	if (inherits(shp, c("stars", "Raster", "SpatialPixels", "SpatialGrid"))) {
-		if (inherits(shp, "stars_proxy")) {
-			shp <- st_as_stars(shp, downsample = get_downsample(dim(shp)))
-			# lvls_init <- levels(shp[[1]])
-			# if (!is.null(lvls_init) && anyDuplicated(lvls_init)) {
-			# 	shp <- droplevels(shp)
-			# }
-		} #else {
-			# lvls_init <- levels(shp[[1]])
-			# if (!is.null(lvls_init) && anyDuplicated(lvls_init)) {
-			# 	shp <- droplevels(shp)
-			# }
-		#}
+	
+	# process spatiotemporal array
+	if (inherits(shp, c("sf", "sfc", "Spatial"))) {
+		by_var = NULL
+		treat_as_by = FALSE
+	} else if (inherits(shp, "stars") && !has_raster(shp)) {
+		# d = dim(shp)
+		# v = lapply(1L:length(d), function(i) stars::st_get_dimension_values(shp, which = i))
+		# is_sfc = vapply(v, inherits, logical(1), "sfc")
+		# if (!any(is_sfc)) stop(y$shp_name, " is a stars object without raster nor geometry dimension", call. = FALSE)
+		# vars = v[[which(!is_sfc)[1]]]
+		# 
 
+		by_var = names(shp)[1]
+		
+		if (length(shp) > 1L) {
+			warning("Only the first attribute \"", by_var, "\" of ", y$shp_name, " will be plotted", call. = FALSE)
+		}
+		treat_as_by = TRUE
+		
+		shp = sf::st_as_sf(shp[by_var])
+		shpnames = setdiff(names(shp), "geom")
+	}
+	
+	
+	if (inherits(shp, c("stars", "Raster", "SpatialPixels", "SpatialGrid"))) {
 		is.RGB <- attr(raster_facets_vars, "is.RGB") # true if tm_rgb is used (NA if qtm is used)
 		rgb.vars <- attr(raster_facets_vars, "rgb.vars")
 		to.Cat <- attr(raster_facets_vars, "to.Cat") # true if tm_raster(..., style = "cat) is specified
@@ -40,9 +52,29 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 
 		if (!has_raster(shp)) stop("object ", y$shp_name, " does not have a spatial raster", call. = FALSE)
 		
+		max.raster <- get("tmapOptions", envir = .TMAP_CACHE)$max.raster[if(interactive) "view" else "plot"]
+
 		
 		dxy <- attr(st_dimensions(shp), "raster")$dimensions
 		dvars <- setdiff(names(dim(shp)), dxy)
+		
+		bandnames <- stars::st_get_dimension_values(shp, dvars[1])
+		treat_as_by <- !is.null(bandnames)
+		
+		if (treat_as_by) {
+			by_var <- names(shp)[1]
+			shpnames <- as.character(bandnames)
+		} else {
+			shpnames <- names(shp)
+			by_var <- NULL
+		}
+		
+
+		# estimate number of facets (for max.raster)
+		# nfacets = if (identical(is.RGB, TRUE)) 1 else if (treat_as_by || is.na(raster_facets_vars[1])) length(shpnames) else length(na.omit(raster_facets_vars))
+		# Not used yet, since it is hard to determine facets created with tm_facets(group = ...)
+		if ((inherits(shp, "stars_proxy")) || y$raster.downsample) shp <- downsample_stars(shp, max.raster)
+		
 		
 		# attribute get from read_osm
 		is.OSM <- attr(shp, "is.OSM")
@@ -71,47 +103,29 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 		if (interactive) {
 			if (sf::st_is_longlat(shp_crs)) {
 				shp_bbox <- sf::st_bbox(shp)
-				
-				shp <- tryCatch({
-					stars::st_warp(shp, crs = .crs_merc)
-				}, error = function(e) {
-					sf::st_transform(shp, crs = .crs_merc)	
-				})
-				
+				shp <- transwarp(shp, crs = .crs_merc, y$raster.warp)
 			} else  if (st_is_merc(shp_crs)) {
 				shp_bbox <- sf::st_bbox(sf::st_transform(sf::st_as_sfc(sf::st_bbox(shp)), crs = .crs_longlat))
 			} else {
 				shp_bbox <- sf::st_bbox(sf::st_transform(sf::st_as_sfc(sf::st_bbox(shp)), crs = .crs_longlat))
-				shp <- sf::st_transform(shp, crs = gm$shape.master_crs) #transform to 4326
+				shp <- transwarp(shp, crs = gm$shape.master_crs, y$raster.warp)
 			}
 		} else {
 			if (!identical(shp_crs$proj4string, gm$shape.master_crs$proj4string)) {
-				shp <- sf::st_transform(shp, crs = gm$shape.master_crs)
+				shp <- transwarp(shp, crs = gm$shape.master_crs, y$raster.warp)
 			}
 			shp_bbox <- sf::st_bbox(shp)
 		}
 		
-		
-		
-		
-		bandnames <- stars::st_get_dimension_values(shp, dvars[1])
-		treat_as_by <- !is.null(bandnames)
-		
-		if (treat_as_by) {
-			by_var <- names(shp)[1]
-			shpnames <- bandnames
-		} else {
-			shpnames <- names(shp)
-			by_var <- NULL
-		}
 		
 		if (length(shp) == 1) {
 			# one attribute (may contain multiple bands/times)
 			isF <- is.factor(shp[[1]])
 			if (isF) {
 				lvls <- levels(shp[[1]])
-				clrs <- attr(shp[[1]], "colors")
+				clrs <- rep(attr(shp[[1]], "colors"), length.out = length(lvls))
 				m <- matrix(as.integer(shp[[1]]), ncol = length(shpnames))	
+				if (!length(lvls)) isF <- FALSE
 			} else {
 				m <- matrix(shp[[1]], ncol = length(shpnames))
 			}
@@ -127,7 +141,6 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 			# multiple attributes (assumed: one band)
 			data <- as.data.frame(shp)[shpnames]
 		}
-		
 		isnum <- sapply(data, is.numeric)
 		
 		if (is.na(is.RGB)) {
@@ -161,7 +174,7 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 			
 			if (!all(rgb.vars %in% 1:ncol(data))) stop("Specified rgb(a) bands are ", paste(rgb.vars, collapse = ", "), " whereas the number of layers is ", ncol(data), call. = FALSE)
 			
-			if  (!mndata>=0 || mxdata <= max.value) {
+			if  (!(mndata>=0 || mxdata <= max.value)) {
 				m[m < 0] <- 0
 				m[m > max.value] <- max.value
 				warning("Raster values found that are outside the range [0, ", max.value, "]", call. = FALSE)
@@ -209,21 +222,23 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 		#attr(data, "raster.projected") <- raster.projected
 		
 		attr(data, "is.RGB") <- is.RGB
-		attr(data, "treat_as_by") <- treat_as_by
-		attr(data, "by_var") <- by_var
+		#attr(data, "treat_as_by") <- treat_as_by
+		#attr(data, "by_var") <- by_var
 		
 		
 		type <- "raster"
 		
 	} else {
 		# save_bbox (sp objects allow for custom bboxes, sf objects don't)
-		shp_bbx <- sf::st_bbox(shp)
+		
 		
 		kernel_density <- ("kernel_density" %in% names(attributes(shp)))
 		isolines <- ("isolines" %in% names(attributes(shp)))
 		
-		if (y$check_shape) shp <- check_shape(shp, y$shp_name)
+		if (y$check_shape) shp <- pre_check_shape(shp, y$shp_name)
 
+		shp_bbx <- sf::st_bbox(shp)
+		
 		## get data.frame from shapes, and store ID numbers in shape objects (needed for cropping)
 		if (inherits(shp, "sfc")) {
 			data <- data.frame(tmapID = seq_len(length(shp)))
@@ -252,7 +267,7 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 		}
 
 		# reproject if nessesary
-		if (!identical(shp_crs$proj4string, gm$shape.master_crs$proj4string)) {
+		if (shp_crs != gm$shape.master_crs) {
 			shp2 <- sf::st_transform(shp, crs = gm$shape.master_crs)
 
 			# override bounding box (since it now is projected)
@@ -305,15 +320,15 @@ preprocess_shapes <- function(y, raster_facets_vars, gm, interactive) {
 		
 		#attr(shp2, "bbox") <- shp_bbx
 		#attr(shp2, "proj4string") <- st_crs(shp2)
-		
-		shpnames <- names(data)
-		treat_as_by <- FALSE
+
+		if (!treat_as_by) shpnames <- names(data)
 	}
 	
 	point.per <- if (is.na(y$point.per)) ifelse(type %in% c("points", "geometrycollection"), "segment", "feature") else y$point.per
 
 	attr(data, "shpnames") <- shpnames
 	attr(data, "treat_as_by") <- treat_as_by
+	attr(data, "by_var") <- by_var
 	
 	attr(shp2, "point.per") <- point.per
 	attr(shp2, "line.center") <- y$line.center

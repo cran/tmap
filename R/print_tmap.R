@@ -9,11 +9,17 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	interactive <- (mode == "view") || proxy
 	
 	tmapOptions <- get("tmapOptions", envir = .TMAP_CACHE)
-	
 	show.messages <- tmapOptions$show.messages
+
+	# reset symbol shape / shape just/anchor lists
+	assign("shapeLib", list(), envir = .TMAP_CACHE)
+	assign("justLib", list(), envir = .TMAP_CACHE)
 	
-	qtm_shortcut <- attr(x, "qtm_shortcut")
+	###################################################################################################################
+	########################################## qtm shortcut ###########################################################
+	###################################################################################################################
 	
+	qtm_shortcut <- attr(x, "qtm_shortcut") # TRUE when qtm(), FALSE when qtm(...), NULL when tm_shape(...) + ...
 	if (!is.null(qtm_shortcut) && !proxy) {
 		if (qtm_shortcut) {
 			if (!interactive) {
@@ -21,39 +27,32 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 				options(tmap.mode="view")
 				interactive <- TRUE
 			}
-			
-			if (!("tm_minimap" %in% names(x)) && !identical(tmapOptions$qtm.minimap, FALSE)) x <- c(x, tm_minimap())
 		}
 		if (interactive && !("tm_scale_bar" %in% names(x)) && tmapOptions$qtm.scalebar) x <- c(x, tm_scale_bar())
-		if (!qtm_shortcut && interactive && !("tm_minimap" %in% names(x)) && identical(tmapOptions$qtm.minimap, TRUE)) x <- c(x, tm_minimap())
+		if (interactive && !("tm_minimap" %in% names(x)) && tmapOptions$qtm.minimap) x <- c(x, tm_minimap())
+		if (interactive && !("tm_mouse" %in% names(x)) && tmapOptions$qtm.mouse.coordinates) x <- c(x, tm_mouse_coordinates())
 	}
 	
-	# reset symbol shape / shape just/anchor lists
-	assign("shapeLib", list(), envir = .TMAP_CACHE)
-	assign("justLib", list(), envir = .TMAP_CACHE)
-
-
-	## process proxy
+	###################################################################################################################
+	########################################## proxy ##################################################################
+	###################################################################################################################
+	
 	if (proxy) {
-		layerIds <- if (".layerIdsNew" %in% ls(envir = .TMAP_CACHE)) {
+		layerIds <- if ("layerIdsNew" %in% ls(envir = .TMAP_CACHE)) {
 			get("layerIdsNew", envir = .TMAP_CACHE)
 		} else {
 			get("layerIds", envir = .TMAP_CACHE)
 		}
 		assign("layerIds", layerIds, envir = .TMAP_CACHE)
-		
 
 		overlays <- get("overlays", envir = .TMAP_CACHE)
 		overlays_tiles <- get("overlays_tiles", envir = .TMAP_CACHE)
-		
-		#browser()
 		
 		typesList <- as.list(attr(layerIds, "types"))
 		names(typesList) <- names(layerIds)
 		
 		groupsList <- as.list(attr(layerIds, "groups"))
 		names(groupsList) <- names(layerIds)
-		
 		rem_lay_id <- which(names(x) == "tm_remove_layer")
 		if (length(rem_lay_id) > 0L) {
 			for (id in rem_lay_id) {
@@ -92,13 +91,16 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	
 		
 	
-	x <- prearrange_element_order(x, add.basemap = !(is.null(tmapOptions$basemaps) || proxy), add.overlay = !(is.null(tmapOptions$overlays) || proxy))
+	x <- pre_order_x(x, add.basemap = !(is.null(tmapOptions$basemaps) || proxy), add.overlay = !(is.null(tmapOptions$overlays) || proxy))
+	
+	###################################################################################################################
+	########################################## tiles only shortcut (view mode) ########################################
+	###################################################################################################################
 	
 	if (!any(names(x) %in% c("tm_fill", "tm_borders", "tm_lines", "tm_symbols", "tm_raster", "tm_text"))) {
 		lf <- print_shortcut(x, interactive, in.shiny, args, knit)
 		if (knit) {
 			return(do.call("knit_print", c(list(x=lf), args, list(options=options))))
-			#return(knit_print(lf, ..., options=options))
 		} else {
 			return(print(lf))
 		}
@@ -108,12 +110,15 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	## remove non-supported elements if interactive
 	if (interactive) x <- x[supported_elem_view_mode(names(x))]
 	
+	###################################################################################################################
+	########################################## pre ####################################################################
+	###################################################################################################################
 	
 	## gather shape info
-	gm <- gather_shape_info(x, interactive)
+	gm <- pre_gather_shape_info(x, interactive)
 
 	## split data.frames from shape/raster objects, and determine shape types
-	shps_dts <- mapply(preprocess_shapes, x[gm$shape.id], gm$shape.raster_facets_vars, MoreArgs = list(gm=gm, interactive=interactive), SIMPLIFY = FALSE)
+	shps_dts <- mapply(pre_process_shapes, x[gm$shape.id], gm$shape.raster_facets_vars, MoreArgs = list(gm=gm, interactive=interactive), SIMPLIFY = FALSE)
 	shps <- lapply(shps_dts, "[[", 1)
 	datasets <- lapply(shps_dts, "[[", 2)
 	types <- lapply(shps_dts, "[[", 3)
@@ -126,7 +131,7 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 
 
 	# split x and datasets into multiple layers if shape(s) are geometrycollection 
-	res <- order_x(x, shps, datasets, types, gm)
+	res <- pre_split_x(x, shps, datasets, types, gm)
 
 	x <- res$x
 	gm <- res$gm
@@ -138,9 +143,15 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	
 	## prepare viewport (needed to determine asp_ratio for facet layout)
 	
-	gt <- preprocess_gt(x, interactive=interactive, orig_crs = gm$shape.orig_crs)
+	gt <- pre_process_gt(x, interactive=interactive, orig_crs = gm$shape.orig_crs)
+	gm  <- c(gm, pre_prepare_vp(vp, gm, interactive, gt))
 	
-	gm  <- c(gm, prepare_vp(vp, gm, interactive, gt))
+	
+	###################################################################################################################
+	########################################## process ################################################################
+	###################################################################################################################
+	
+	
 
 	## process tm objects
 	#  - get all non-layer elements, (tm_layout, tm_grid, ...)
@@ -169,7 +180,7 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	gm$shape.shps_lengths <- vapply(datasets, function(d) if (is.null(d)) 0L else nrow(d), integer(1))
 
 	## arranges aspect ratios, the grid layout of the map/facets, etc
-	gm <- c(gm, determine_asp_ratios(gm, interactive))
+	gm <- c(gm, process_determine_asp_ratios(gm, interactive))
 	
 	## process shapes (bbox and crop)
 	shps <- process_shapes(shps, x[gm$shape.id], gm, data_by, allow.crop = FALSE, interactive=interactive) # allow.crop was !interactive
@@ -202,7 +213,13 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	}
 	
 	## adds data to gps (needed for view mode)
-	gps2 <- add_data_to_gps(g$gps, gm, datasets, g$matchIDs, interactive)
+	gps2 <- process_add_data_to_gps(g$gps, gm, datasets, g$matchIDs, interactive)
+	
+	
+	###################################################################################################################
+	########################################## plot ###################################################################
+	###################################################################################################################
+	
 	
 	## plot
 	if (interactive) {
@@ -224,7 +241,7 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 		}
 		lf <- if (nx==1) lfs[[1]] else lfmv <- do.call(leafsync::latticeView, c(lfs, lVargs))
 		
-		lf2 <- if (interactive_titles) add_leaflet_titles(lf) else lf
+		lf2 <- if (interactive_titles) view_add_leaflet_titles(lf) else lf
 		
 		if (show) {
 			save_last_map()
@@ -238,13 +255,13 @@ print_tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode")
 	} else {
 		if (show) {
 			if (nx > 1) sasp <- gm$shape.dasp
-			#  gridplot:   - makes small multiples grid
+			#  plot_n:     - makes small multiples grid
 			#              - calls plot_all for grob trees
 			#              - plot the grob trees
-			#  plot_all:   - calls plot_map to create grob tree of map itself
+			#  plot_1:     - calls plot_map to create grob tree of map itself
 			#              - calls legend_prepare and plot_legend to create grob tree of legend
 			#              - creates grob tree for whole plot
-			gridplot(gm, "plot_all", nx, g$gps, gal, shps, gm$shape.dasp, gm$shape.sasp, gm$shape.inner.margins, gm$shape.legend_pos, g$gp_leg, g$gp_attr)
+			plot_n(gm, "plot_1", nx, g$gps, gal, shps, gm$shape.dasp, gm$shape.sasp, gm$shape.inner.margins, gm$shape.legend_pos, g$gp_leg, g$gp_attr)
 			## if vp is specified, go 1 viewport up, else go to root viewport
 			upViewport(n=as.integer(!is.null(vp)))
 			save_last_map()

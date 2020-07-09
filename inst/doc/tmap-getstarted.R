@@ -98,12 +98,11 @@ tmap_options_reset()
 
 ## ---- eval = FALSE------------------------------------------------------------
 #  # in UI part:
-#  leafletOutput("my_tmap")
+#  tmapOutput("my_tmap")
 #  
 #  # in server part
-#  output$my_tmap = renderLeaflet({
-#      tm <- tm_shape(World) + tm_polygons("HPI", legend.title = "Happy Planet Index")
-#      tmap_leaflet(tm)
+#  output$my_tmap = renderTmap({
+#      tm_shape(World) + tm_polygons("HPI", legend.title = "Happy Planet Index")
 #  })
 
 ## -----------------------------------------------------------------------------

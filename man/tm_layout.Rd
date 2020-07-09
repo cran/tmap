@@ -138,7 +138,7 @@ tm_format(format, ...)
 
 \item{compass.type}{type of compass, one of: \code{"arrow"}, \code{"4star"}, \code{"8star"}, \code{"radar"}, \code{"rose"}. Of course, only applicable if a compass is shown. The compass type can also be set within \code{\link{tm_compass}}.}
 
-\item{earth.boundary}{Logical that determines whether the boundaries of the earth are shown or an object that specifies the boundaries. This object can be a vector of size four, a 2 by 2 matrix (bounding box), or an \code{\link[raster:extent]{extent}} object. By default, the boundaries are \code{c(-180, -90, 180, 90)}. Useful for projected world maps. Often, it is useful to crop both poles (e.g., with \code{c(-180, -88, 180, 88)}).}
+\item{earth.boundary}{Logical that determines whether the boundaries of the earth are shown or a bounding box that specifies the boundaries (an \code{\link[sf:sf]{sf}} bbox object, see \code{\link[sf:st_bbox]{st_bbox}}, or any object that can be read by \code{\link[tmaptools:bb]{bb}}). By default, the boundaries are \code{c(-180, -90, 180, 90)}. Useful for projected world maps. Often, it is useful to crop both poles (e.g., with \code{c(-180, -88, 180, 88)}).}
 
 \item{earth.boundary.color}{Color of the earth boundary.}
 
@@ -274,7 +274,7 @@ By default the title is placed on top of the legend (determined by \code{legend.
 
 \item{attr.just}{Justification of the attributes relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{attr.position} is specified by numeric coordinates. It can also be specified per attribute function.}
 
-\item{design.mode}{Logical that enables the design mode. If \code{TRUE}, inner and outer margins, legend position, aspect ratio are explicitly shown. Also, feedback text in the console is given.}
+\item{design.mode}{Not used anymore, since it is now only a tmap option: see \code{\link{tmap_options}}.}
 
 \item{...}{other arguments from \code{tm_layout}}
 

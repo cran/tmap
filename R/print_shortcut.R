@@ -4,7 +4,7 @@ print_shortcut <- function(x, interactive, in.shiny, args, knit) {
 	} else {
 		xtiles <- which(names(x) == "tm_tiles")
 		
-		gt <- preprocess_gt(x, interactive=interactive)
+		gt <- pre_process_gt(x, interactive=interactive)
 		gt$shp_name <- rep("dummy", length(xtiles))
 		
 		gt$shape.units <- list(unit = get("tmapOptions", envir = .TMAP_CACHE)$unit)
@@ -30,7 +30,11 @@ print_shortcut <- function(x, interactive, in.shiny, args, knit) {
 		gmm <- x[[gmmid]]
 		gmm <- process_meta_minimap(gmm, interactive = TRUE, gt)
 		
-		gt <- c(gt, gsb, gg, gmm)
+		gmmcid <- which(names(x)=="tm_mouse")[1]
+		gmmc <- x[[gmmcid]]
+		if (is.null(gmmc)) gmmc = list(mouse.show = FALSE)
+		
+		gt <- c(gt, gsb, gg, gmm, gmmc)
 		
 		
 		#gt$scale.show <- FALSE
@@ -48,7 +52,7 @@ print_shortcut <- function(x, interactive, in.shiny, args, knit) {
 		
 		x[names(x) == "tm_shape"] <- NULL
 		
-		x <- x[!(names(x) %in% c("tm_layout", "tm_view", "tm_style", "tm_grid", "tm_facets", "tm_credits", "tm_logo", "tm_compass", "tm_scale_bar", "tm_xlab", "tm_ylab", "tm_minimap"))]
+		x <- x[!(names(x) %in% c("tm_layout", "tm_view", "tm_style", "tm_grid", "tm_facets", "tm_credits", "tm_logo", "tm_compass", "tm_scale_bar", "tm_xlab", "tm_ylab", "tm_minimap", "tm_mouse"))]
 		
 		x$tm_layout <- gt
 		

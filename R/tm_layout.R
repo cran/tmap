@@ -46,7 +46,7 @@
 #' @param fontface global font face for the text in the map. It can also be set locally per element (see e.g. \code{title.fontface}).
 #' @param fontfamily global font family for the text in the map. It can also be set locally per  (see e.g. \code{title.fontfamily}).
 #' @param compass.type type of compass, one of: \code{"arrow"}, \code{"4star"}, \code{"8star"}, \code{"radar"}, \code{"rose"}. Of course, only applicable if a compass is shown. The compass type can also be set within \code{\link{tm_compass}}.
-#' @param earth.boundary Logical that determines whether the boundaries of the earth are shown or an object that specifies the boundaries. This object can be a vector of size four, a 2 by 2 matrix (bounding box), or an \code{\link[raster:extent]{extent}} object. By default, the boundaries are \code{c(-180, -90, 180, 90)}. Useful for projected world maps. Often, it is useful to crop both poles (e.g., with \code{c(-180, -88, 180, 88)}).
+#' @param earth.boundary Logical that determines whether the boundaries of the earth are shown or a bounding box that specifies the boundaries (an \code{\link[sf:sf]{sf}} bbox object, see \code{\link[sf:st_bbox]{st_bbox}}, or any object that can be read by \code{\link[tmaptools:bb]{bb}}). By default, the boundaries are \code{c(-180, -90, 180, 90)}. Useful for projected world maps. Often, it is useful to crop both poles (e.g., with \code{c(-180, -88, 180, 88)}).
 #' @param earth.boundary.color Color of the earth boundary.
 #' @param earth.boundary.lwd Line width of the earth boundary.
 #' @param earth.datum Geodetic datum to determine the earth boundary. By default epsg \code{4326} (long/lat).
@@ -122,7 +122,7 @@
 #' @param attr.outside.size Numeric value that determines the relative height of the attribute viewport, when \code{attr.outside=TRUE}.
 #' @param attr.position Position of the map attributes, which are \code{\link{tm_credits}}, \code{\link{tm_scale_bar}}, \code{\link{tm_compass}}, and \code{\link{tm_minimap}}. Vector of two values, specifying the x and y coordinates. The first value is \code{"left"}, \code{"LEFT"}, \code{"center"}, \code{"right"}, or \code{"RIGHT"}, and the second value \code{"top"}, \code{"TOP"}, \code{"center"}, \code{"bottom"}, or \code{"BOTTOM"}. The uppercase values correspond to the position without margins (so tighter to the frame). Positions can also be set separately in the map attribute functions. If \code{attr.outside=TRUE}, this argument specifies the position of the attributes within the outside panel.
 #' @param attr.just Justification of the attributes relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{attr.position} is specified by numeric coordinates. It can also be specified per attribute function.
-#' @param design.mode Logical that enables the design mode. If \code{TRUE}, inner and outer margins, legend position, aspect ratio are explicitly shown. Also, feedback text in the console is given.
+#' @param design.mode Not used anymore, since it is now only a tmap option: see \code{\link{tmap_options}}.
 #' @param ... other arguments from \code{tm_layout}
 #' @seealso \href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}}
 #' @references Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \href{https://doi.org/10.18637/jss.v084.i06}{DOI}
@@ -213,6 +213,7 @@ tm_layout <- function(title,
 	e1 <- parent.frame()
 	args <- lapply(as.list(match.call()[-1]), eval, envir = e1)
 	args$style <- NA
+	args$design.mode <- NULL
 	
 	g <- list(tm_layout=args)
 	class(g) <- "tm"

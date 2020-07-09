@@ -1,6 +1,6 @@
 #' Set tmap mode to static plotting or interactive viewing
 #' 
-#' Set tmap mode to static plotting or interactive viewing. The global option \code{tmap.mode} determines the whether thematic maps are plot in the graphics device, or shown as an interactive leaflet map (see also \code{\link{tmap_options}}. The function \code{tmap_mode} is a wrapper to set this global option. The convenient function \code{ttm} is a toggle switch between the two modes. Tip 1: use \code{tmap_mode} in scripts and \code{ttm} in the console. Tip 2: use \code{ttm} in combination with \code{\link{tmap_last}} to redraw the last map in the other mode.
+#' Set tmap mode to static plotting or interactive viewing. The global option \code{tmap.mode} determines the whether thematic maps are plot in the graphics device, or shown as an interactive leaflet map (see also \code{\link{tmap_options}}. The function \code{tmap_mode} is a wrapper to set this global option. The convenient function \code{ttm}, which stands for toggle thematic map, is a toggle switch between the two modes. The function \code{ttmp} stands for toggle thematic map and print last map: it does the same as \code{ttm} followed by \code{tmap_last}; in order words, it shows the last map in the other mode. It is recommended to use \code{tmap_mode} in scripts and \code{ttm}/\code{ttmp} in the console.
 #' 
 #' @param mode one of
 #' \describe{
@@ -39,12 +39,32 @@ tmap_mode <- function(mode=c("plot", "view")) {
 	invisible(current.mode)
 }	
 
+#' Toggle design mode
+#' 
+#' When the so-called "design mode" is enabled, inner and outer margins, legend position, and aspect ratio are shown explicitly in plot mode. Also, information about aspect ratios is printed in the console. This function toggles the tmap option `design.mode`.
+#' 
+#' @seealso \code{\link{tmap_options}}
+#' @export
+tmap_design_mode = function() {
+	dm = get("tmapOptions", envir = .TMAP_CACHE)$design.mode
+	tmap_options(design.mode = !dm)
+	message("design.mode: ", if (dm) "OFF" else "ON", if ((!dm) && getOption("tmap.mode") == "view") " (only effective in plot mode)" else "")
+}
+
+
 #' @rdname tmap_mode
 #' @export
 ttm <- function() {
 	current.mode <- getOption("tmap.mode")
 	tmap_mode(ifelse(current.mode=="plot", "view", "plot"))
 	invisible(current.mode)
+}
+
+#' @rdname tmap_mode
+#' @export
+ttmp <- function() {
+	ttm()
+	tmap_last()
 }
 
 check_mode <- function(mode) {

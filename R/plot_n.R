@@ -1,4 +1,4 @@
-gridplot <- function(gmeta, fun, nx, gps, gal, shps, dasp, sasp, inner.margins.new, legend_pos, gp_leg, gp_attr) {
+plot_n <- function(gmeta, fun, nx, gps, gal, shps, dasp, sasp, inner.margins.new, legend_pos, gp_leg, gp_attr) {
 	mfrow <- gmeta$nrow
 	mfcol <- gmeta$ncol
 
@@ -23,7 +23,7 @@ gridplot <- function(gmeta, fun, nx, gps, gal, shps, dasp, sasp, inner.margins.n
 	if (multi_shapes) {
 		bbxproj <- lapply(shps, function(s) {
 			s2 <- s[[masterID]]
-			if (is.null(s2)) NULL else list(bbx = bb(s2), proj = sf::st_crs(s2))
+			if (is.null(s2)) NULL else list(bbx = attr(s2, "bbox"), proj = sf::st_crs(s2))
 		})
 	} else {
 		bbxproj <- list(bbx = attr(shps[[masterID]], "bbox"), proj = sf::st_crs(shps[[masterID]]))
@@ -116,14 +116,18 @@ gridplot <- function(gmeta, fun, nx, gps, gal, shps, dasp, sasp, inner.margins.n
 					bbx <- bbxproj$bbx
 				}
 				gt <- gps[[i]]$tm_layout
-				if (gt$grid.show) {
-					gt <- process_grid(gt, bbx, proj, sasp)
-				}
+				# if (gt$grid.show) {
+				# 	print("---plot_n---")
+				# 	print(bbx)
+				# 	print(proj$input)
+				# 	print(sasp)
+				# 	gt <- process_grid(gt, bbx, proj, sasp)
+				# }
 				gTree(children=gList(
 					#cellplot((rw+1),cl, e=rectGrob(gp=gpar(fill="purple")), name="gridLabelsX"),
-					#cellplot(rw,(cl-1), e=rectGrob(gp=gpar(fill="grey")), name="gridLabelsY")), name=paste("gridLabels", i, sep="_"))
-					if (gmeta$grid.labels.show[1]) cellplot((rw+1),cl, clip = FALSE, e=plot_grid_labels_x(gt, scale=gt$scale), name="gridLabelsX") else NULL,
-					if (gmeta$grid.labels.show[2]) cellplot(rw,(cl-1), clip = FALSE, e=plot_grid_labels_y(gt, scale=gt$scale), name="gridLabelsY") else NULL), name=paste("gridLabels", i, sep="_"))
+					#cellplot(rw,(cl-1), e=rectGrob(gp=gpar(fill="pink")), name="gridLabelsY"),
+					if (gt$grid.labels.show[1]) cellplot((rw+1),cl, clip = FALSE, e=plot_grid_labels_x(gt, scale=gt$scale), name="gridLabelsX") else NULL,
+					if (gt$grid.labels.show[2]) cellplot(rw,(cl-1), clip = FALSE, e=plot_grid_labels_y(gt, scale=gt$scale), name="gridLabelsY") else NULL), name=paste("gridLabels", i, sep="_"))
 			}, istart:iend, 
 			rep(gmeta$rowrange, each=mfcol, length.out=ni), 
 			rep(gmeta$colrange, times=mfrow, length.out=ni), SIMPLIFY=FALSE)

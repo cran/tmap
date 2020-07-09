@@ -1,6 +1,4 @@
-maybe_longlat <- function (bb) (bb[1] >= -180.1 && bb[3] <= 180.1 && bb[2] >= -90.1 && bb[4] <= 90.1)
-
-preprocess_gt <- function(x, interactive, orig_crs) {
+pre_process_gt <- function(x, interactive, orig_crs) {
 	set.bounds <- bg.color <- set.zoom.limits <- legend.position <- colorNA <- NULL
 	
 	
@@ -98,10 +96,17 @@ preprocess_gt <- function(x, interactive, orig_crs) {
 		
 		if (!is.null(bbox)) {
 			if (is.character(bbox)) {
-				res <- geocode_OSM(bbox)
-				bbox <- res$bbox
-				center <- res$coords
-				res <- NULL
+				res <- suppressMessages(geocode_OSM(bbox, as.data.frame = TRUE))
+				if (is.null(res)) {
+					message("tmaptools::geocode_OSM didn't found any results for: \"", paste(bbox, collapse = "\" ,\""), "\".")
+					bbox <- NULL
+					center <- NULL
+				} else {
+					bbox <- sf::st_bbox(c(xmin = min(res$lon_min), ymin = min(res$lat_min), xmax = max(res$lon_max), ymax = max(res$lat_max)), crs = st_crs(4326))
+					center <- res[, c("query", "lat", "lon")]
+					res <- NULL
+				}
+				
 			} else {
 				bbox <- bb(bbox)
 				if (is.na(attr(bbox, "crs"))) {
@@ -121,7 +126,9 @@ preprocess_gt <- function(x, interactive, orig_crs) {
 		if (!is.na(set.zoom.limits[1])) {
 			if (!is.numeric(set.zoom.limits)) stop("set.zoom.limits is not numeric")
 			if (!length(set.zoom.limits)==2) stop("set.zoom.limits does not have length 2")
-			if (set.zoom.limits[1]<0 || set.zoom.limits[1] >= set.zoom.limits[2]) stop("incorrect set.zoom.limits")
+			if (set.zoom.limits[1] >= set.zoom.limits[2]) stop("incorrect set.zoom.limits")
+		} else {
+			set.zoom.limits <- c(NA, NA)
 		}
 		if (!is.na(set.view[1]) && !is.na(set.zoom.limits[1])) {
 			if (set.view[length(set.view)] < set.zoom.limits[1]) {
@@ -133,6 +140,7 @@ preprocess_gt <- function(x, interactive, orig_crs) {
 				set.view[length(set.view)] <- set.zoom.limits[2]
 			}
 		}
+			
 		view.legend.position <- if (is.na(view.legend.position)[1]) {
 			if (is.null(legend.position)) {
 				"topright"
@@ -150,37 +158,39 @@ preprocess_gt <- function(x, interactive, orig_crs) {
 		}
 		
 		if (!inherits(projection, "leaflet_crs")) {
+			if (!is.numeric(projection)) stop("projection in tm_view must be either a leaflet_crs object (recommended) or an EPSG number", call. = FALSE)
 			
-			projection <- 3857
+			if (projection==0) {
+				projection <- leaflet::leafletCRS(crsClass = "L.CRS.Simple")
+				if (is.na(set.zoom.limits)[1]) set.zoom.limits[1] <- -1000
+			} else if (projection %in% c(3857, 4326, 3395)) {
+				projection <- leaflet::leafletCRS(crsClass = paste("L.CRS.EPSG", projection, sep=""))	
+			} else {
+				warning("Scaling levels may be incorrect for this projection. Please specify a leaflet projection with leafletCRS for more control")
+				projection <- leaflet::leafletCRS(crsClass = "L.Proj.CRS", 
+												  code= paste("EPSG", projection, sep=":"),
+												  proj4def=sf::st_crs(projection)$proj4string,
+												  resolutions = 2^(17:0))
+			}
+				
 			# if (projection==0) {
-			# 	#epsg <- get_epsg_number(orig_crs)
+			# 	epsg <- get_epsg_number(orig_crs)
 			# 	if (is.na(epsg)) {
+			# 		if (interactive) warning("No EPSG code found. Map will be shown in standard Web-Mercator projection.")
 			# 		projection <- 3857
 			# 	} else {
 			# 		projection <- epsg
 			# 	}
 			# }
 			
-			if (projection %in% c(3857, 4326, 3395)) {
-				projection <- leaflet::leafletCRS(crsClass = paste("L.CRS.EPSG", projection, sep=""))	
-			} else {
-				projection <- leaflet::leafletCRS(crsClass = "L.Proj.CRS", 
-												  code= paste("EPSG", projection, sep=":"),
-												  proj4def=sf::st_crs(projection)$proj4string,
-												  resolutions = c(65536, 32768, 16384, 8192, 4096, 2048,1024, 512, 256, 128))	
-			}
+			
+			
 			
 			
 		}
 
 				
 	})
-	
-
-	# append view to layout
-	# gt[c("basemaps", "basemaps.alpha")] <- NULL
-	# gv[c("colorNA", "call", "legend.position")] <- NULL
-	# gt <- c(gt, gv)
 	
 	gtnull <- names(which(vapply(gt, is.null, logical(1))))
 	gt[gtnull] <- list(NULL)

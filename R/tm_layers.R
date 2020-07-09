@@ -72,7 +72,7 @@ check_deprecated_layer_fun_args <- function(auto.palette.mapping, max.categories
 #' \item{text.separator}{Character string to use to separate numbers in the legend (default: "to").}
 #' \item{text.less.than}{Character value(s) to use to translate "Less than". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
 #' \item{text.or.more}{Character value(s) to use to translate "or more". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
-#' \item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}}. By default \code{"left"} for legends in portrait format (\code{legend.is.portrait = TRUE}), and \code{"center"} otherwise.
+#' \item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}. By default \code{"left"} for legends in portrait format (\code{legend.is.portrait = TRUE}), and \code{"center"} otherwise.}
 #' \item{text.to.columns}{Logical that determines whether the text is aligned to three columns (from, text.separator, to). By default \code{FALSE}.}
 #' \item{...}{Other arguments passed on to \code{\link[base:formatC]{formatC}}}
 #' }
@@ -185,6 +185,7 @@ tm_iso <- function(col=NA, text="level", size=.5,
 #' @param scale line width multiplier number. 
 #' @param lwd.legend vector of line widths that are shown in the legend. By default, this is determined automatically.
 #' @param lwd.legend.labels vector of labels for that correspond to \code{lwd.legend}.
+#' @param lwd.legeld.col color of lines that are shown in the legend for the lwd aesthetic. By default, the middle color of the \code{palette} is taken.
 #' @param n preferred number of color scale classes. Only applicable when \code{lwd} is the name of a numeric variable.
 #' @param style method to process the color scale when \code{col} is a numeric variable. Discrete gradient options are \code{"cat"}, \code{"fixed"}, \code{"sd"}, \code{"equal"}, \code{"pretty"}, \code{"quantile"}, \code{"kmeans"}, \code{"hclust"}, \code{"bclust"}, \code{"fisher"}, \code{"jenks"}, \code{"dpih"}, \code{"headtails"}, and \code{"log10_pretty"}. A numeric variable is processed as a categorical variable when using \code{"cat"}, i.e. each unique value will correspond to a distinct category. For the other discrete gradient options (except \code{"log10_pretty"}), see the details in \code{\link[classInt:classIntervals]{classIntervals}} (extra arguments can be passed on via \code{style.args}). Continuous gradient options are \code{"cont"}, \code{"order"}, and \code{"log10"}. The first maps the values of \code{col} to a smooth gradient, the second maps the order of values of \code{col} to a smooth gradient, and the third uses a logarithmic transformation. The numeric variable can be either regarded as a continuous variable or a count (integer) variable. See \code{as.count}.
 #' @param style.args arguments passed on to \code{\link[classInt:classIntervals]{classIntervals}}, the function that determine color classes (see also \code{style}).
@@ -217,7 +218,7 @@ tm_iso <- function(col=NA, text="level", size=.5,
 #' \item{text.separator}{Character string to use to separate numbers in the legend (default: "to").}
 #' \item{text.less.than}{Character value(s) to use to translate "Less than". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
 #' \item{text.or.more}{Character value(s) to use to translate "or more". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
-#' \item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}}. By default \code{"left"} for legends in portrait format (\code{legend.is.protrait = TRUE}), and \code{"center"} otherwise.
+#' \item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}. By default \code{"left"} for legends in portrait format (\code{legend.is.protrait = TRUE}), and \code{"center"} otherwise.}
 #' \item{text.to.columns}{Logical that determines whether the text is aligned to three columns (from, text.separator, to). By default \code{FALSE}.}
 #' \item{...}{Other arguments passed on to \code{\link[base:formatC]{formatC}}}
 #' }
@@ -247,6 +248,7 @@ tm_lines <- function(col=NA, lwd=1, lty="solid", alpha=NA,
 					 scale=1,
 					 lwd.legend = NULL,
 					 lwd.legend.labels = NULL,
+					 lwd.legeld.col = NA,
 					 n = 5, style = ifelse(is.null(breaks), "pretty", "fixed"),
 					 style.args = list(),
 					 as.count = NA,
@@ -341,7 +343,7 @@ tm_lines <- function(col=NA, lwd=1, lty="solid", alpha=NA,
 #' \item{text.separator}{Character string to use to separate numbers in the legend (default: "to").}
 #' \item{text.less.than}{Character value(s) to use to translate "Less than". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
 #' \item{text.or.more}{Character value(s) to use to translate "or more". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
-#' \item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}}. By default \code{"left"} for legends in portrait format (\code{legend.is.protrait = TRUE}), and \code{"center"} otherwise.
+#' \item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}. By default \code{"left"} for legends in portrait format (\code{legend.is.protrait = TRUE}), and \code{"center"} otherwise.}
 #' \item{text.to.columns}{Logical that determines whether the text is aligned to three columns (from, text.separator, to). By default \code{FALSE}.}
 #' \item{...}{Other arguments passed on to \code{\link[base:formatC]{formatC}}}
 #' }
@@ -415,7 +417,7 @@ tm_fill <- function(col=NA,
 #' @param lwd border line width (see \code{\link[graphics:par]{par}})
 #' @param lty border line type (see \code{\link[graphics:par]{par}})
 #' @export
-tm_borders <- function(col=NA, lwd=1, lty="solid", alpha=NA, group = NA) {
+tm_borders <- function(col=NA, lwd=1, lty="solid", alpha=NA, zindex = NA, group = NA) {
 	g <- list(tm_borders=as.list(environment()))
 	class(g) <- "tmap"
 	g
@@ -430,10 +432,11 @@ tm_polygons <- function(col=NA,
 						alpha=NA,
 						border.col=NA,
 						border.alpha=NA,
+						zindex = NA,
 						group = NA,
 						...) {
 	args <- list(...)
-	argsFill <- c(list(col=col, alpha=alpha, group=group), args[setdiff(names(args), c("lwd", "lty"))])
+	argsFill <- c(list(col=col, alpha=alpha, zindex = zindex, group=group), args[setdiff(names(args), c("lwd", "lty"))])
 	argsBorders <- c(list(col=border.col, alpha=border.alpha), args[intersect(names(args), names(formals("tm_borders")))])
 	g <- do.call("tm_fill", argsFill) + do.call("tm_borders", argsBorders)
 	g$tm_fill$call <- names(match.call(expand.dots = TRUE)[-1])
@@ -485,7 +488,7 @@ tm_polygons <- function(col=NA,
 #' \item{text.separator}{Character string to use to separate numbers in the legend (default: "to").}
 #' \item{text.less.than}{Character value(s) to use to translate "Less than". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
 #' \item{text.or.more}{Character value(s) to use to translate "or more". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
-#' \item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}}. By default \code{"left"} for legends in portrait format (\code{legend.is.protrait = TRUE}), and \code{"center"} otherwise.
+#' \item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}. By default \code{"left"} for legends in portrait format (\code{legend.is.protrait = TRUE}), and \code{"center"} otherwise.}
 #' \item{text.to.columns}{Logical that determines whether the text is aligned to three columns (from, text.separator, to). By default \code{FALSE}.}
 #' \item{...}{Other arguments passed on to \code{\link[base:formatC]{formatC}}}
 #' }
@@ -590,7 +593,7 @@ tm_rgba <- function(r = 1, g = 2, b = 3, a = 4, alpha = NA, saturation = 1, inte
 #' 
 #' @name tm_symbols
 #' @rdname tm_symbols
-#' @param size a single value or a \code{shp} data variable that determines the symbol sizes. The reference value \code{size=1} corresponds to the area of symbols that have the same height as one line of text. If a data variable is provided, the symbol sizes are scaled proportionally (or perceptually, see \code{perceptual}) where by default the symbol with the largest data value will get \code{size=1} (see also \code{size.max}). If multiple values are specified, small multiples are drawn (see details).
+#' @param size a single value or a \code{shp} data variable that determines the symbol sizes. The reference value \code{size=1} corresponds to the area of symbols that have the same height as one line of text. If a data variable (which should be numeric) is provided, the symbol area sizes are scaled proportionally (or perceptually, see \code{perceptual}) where by default the symbol with the largest data value will get \code{size=1} (see also \code{size.max}). If multiple values are specified, small multiples are drawn (see details).
 #' @param col color(s) of the symbol. Either a color (vector), or categorical variable name(s). If multiple values are specified, small multiples are drawn (see details).
 #' @param shape shape(s) of the symbol. Either direct shape specification(s) or a data variable name(s) that is mapped to the symbols specified by the \code{shapes} argument. Note that the default shapes (specified by \code{shapes}) is not supported in \code{"view"} mode. See details for the shape specification.
 #' @param alpha transparency number between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of the \code{col} is used (normally 1).
@@ -598,7 +601,7 @@ tm_rgba <- function(r = 1, g = 2, b = 3, a = 4, alpha = NA, saturation = 1, inte
 #' @param border.lwd line width of the symbol borders. If \code{NA}, no symbol borders are drawn.
 #' @param border.alpha transparency number, regarding the symbol borders, between 0 (totally transparent) and 1 (not transparent). By default, the alpha value of the \code{col} is used (normally 1).
 #' @param scale symbol size multiplier number. 
-#' @param perceptual logical that determines whether symbols are scales with a perceptually (\code{TRUE}) or mathematically (\code{FALSE}, default value). The perceived area of larger symbols is often underestimated. Flannery (1971) experimentally derived a method to compensate this for symbols, which is enabled by this argument.
+#' @param perceptual by default (with \code{perceptual = FALSE}), the symbol area sizes are scaled proportionally to the data variables. This is done by taking the square root of the (normalized) data variable, since the plotting system (\code{grid} package) expects size in radius rather than area. However, the perceived area of larger symbols is often underestimated. Flannery (1971) experimentally derived a method to compensate this for symbols, which is enabled by this argument; if \code{perceptual = TRUE}, not the suqare root (power exponent 0.5) is taken, but power exponent 0.5716.
 #' @param clustering value that determines whether the symbols are clustered in \code{"view"} mode. It does not work proportional bubbles (i.e. \code{tm_bubbles}). One of: \code{TRUE}, \code{FALSE}, or the output of \code{\link[leaflet:markerClusterOptions]{markerClusterOptions}}.
 #' @param size.max value that is mapped to \code{size=1}. By default (\code{NA}), the maximum data value is chosen. Only applicable when \code{size} is the name of a numeric variable of \code{shp}
 #' @param size.lim vector of two limit values of the \code{size} variable. Only symbols are drawn whose value is greater than or equal to the first value. Symbols whose values exceed the second value are drawn at the size of the second value. Only applicable when \code{size} is the name of a numeric variable of \code{shp}
@@ -621,7 +624,7 @@ tm_rgba <- function(r = 1, g = 2, b = 3, a = 4, alpha = NA, saturation = 1, inte
 #' @param showNA logical that determines whether missing values are named in the legend. By default (\code{NA}), this depends on the presence of missing values.
 #' @param colorNULL colour for polygons that are shown on the map that are out of scope 
 #' @param shapes palette of symbol shapes. Only applicable if \code{shape} is a (vector of) categorical variable(s). See details for the shape specification. By default, the filled symbols 21 to 25 are taken.
-#' @param shapes.legend symbol shapes that are used in the legend (instead of the symbols specified with \code{shape}. These shapes will be used in the legends regarding the \code{size} and \code{col} of the symbols. Especially useful when \code{shapes} consist of grobs that have to be represented by neutrally colored shapes (see also \code{shapes.legend.fill}.
+#' @param shapes.legend symbol shapes that are used in the legend (instead of the symbols specified with \code{shape}). These shapes will be used in the legends regarding the \code{size} and \code{col} of the symbols. Especially useful when \code{shapes} consist of grobs that have to be represented by neutrally colored shapes. See also \code{shapes.legend.fill}.
 #' @param shapes.legend.fill Fill color of legend shapes. These colors will be used in the legends regarding the \code{size} and \code{shape} of the symbols. See also \code{shapes.legend}.
 #' @param shapes.labels Legend labels for the symbol shapes
 #' @param shapes.drop.levels should unused symbol classes be omitted? \code{FALSE} by default.
@@ -659,7 +662,7 @@ tm_rgba <- function(r = 1, g = 2, b = 3, a = 4, alpha = NA, saturation = 1, inte
 #' \item{text.separator}{Character string to use to separate numbers in the legend (default: "to").}
 #' \item{text.less.than}{Character value(s) to use to translate "Less than". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
 #' \item{text.or.more}{Character value(s) to use to translate "or more". When a character vector of length 2 is specified, one for each word, these words are aligned when \code{text.to.columns = TRUE}}
-#' \item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}}. By default \code{"left"} for legends in portrait format (\code{legend.is.protrait = TRUE}), and \code{"center"} otherwise.
+#' \item{text.align}{Value that determines how the numbers are aligned, \code{"left"}, \code{"center"} or \code{"right"}. By default \code{"left"} for legends in portrait format (\code{legend.is.protrait = TRUE}), and \code{"center"} otherwise.}
 #' \item{text.to.columns}{Logical that determines whether the text is aligned to three columns (from, text.separator, to). By default \code{FALSE}.}
 #' \item{...}{Other arguments passed on to \code{\link[base:formatC]{formatC}}}
 #' }

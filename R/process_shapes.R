@@ -23,6 +23,15 @@ process_shapes <- function(shps, g, gm, data_by, allow.crop, interactive) {
 		} else if (is.character(args$x)) {
 			args$projection <- gm$shape.master_crs
 			args$current.projection <- .crs_longlat
+		} else if (inherits(args$x, c("bbox", "sf", "sfc", "stars", "sp", "Raster"))) {
+			crs <- sf::st_crs(args$x)
+			if (!is.na(crs)) {
+				args$projection <- if (interactive) gm$shape.master_crs else gm$shape.orig_crs
+				args$current.projection <- crs
+			} else {
+				args$projection <- NULL
+				args$current.projection <- NULL	
+			}
 		} else if (interactive) {
 			args$projection <- gm$shape.master_crs
 			args$current.projection <- gm$shape.orig_crs
@@ -123,18 +132,18 @@ process_shapes <- function(shps, g, gm, data_by, allow.crop, interactive) {
 	} else {
 		shp.bbox <- attr(shp, "bbox")
 		if (!("x" %in% names(args))) args$x <- shp.bbox
-		
+		if (!("asp.limit" %in% names(args))) args$asp.limit <- 10
+
 		bbox <- do.call("bb", args)  #bbox <- get_bbox_lim(shp.bbox, relative, bbox, xlim, ylim, ext)
-		
-		if (any((bbox[3:4] - bbox[1:2]) < 1e-8)) bbox <- bb(cx = bbox[1], cy = bbox[2], width = 1, height = 1)
-		
-		
+
 		bbox_asp <- get_bbox_asp(bbox, gm$inner.margins, longlat, pasp, interactive=interactive)
 		bbx <- bbox_asp$bbox
 		if (drop_shapes) bboxes <- rep(list(bbx), nplots)
 		same_bbx <- TRUE
 		sasp <- bbox_asp$sasp
 		inner.margins <- bbox_asp$inner.margins
+		
+		bboxes <- list(bbx)
 		#shp_by_name <- ""
 	}
 
@@ -224,10 +233,10 @@ process_shapes <- function(shps, g, gm, data_by, allow.crop, interactive) {
 		xn <- (co[,1]-bbx[1])/(bbx[3]-bbx[1])
 		yn <- (co[,2]-bbx[2])/(bbx[4]-bbx[2])
 		legend_pos <- which.max(c(
-			min(sqrt((xn^2) + (yn^2))),
-			min(sqrt((xn^2) + ((1-yn)^2))),
-			min(sqrt(((1-xn)^2) + ((1-yn)^2))),
-			min(sqrt(((xn-1)^2) + (yn^2)))))
+			min(sqrt((xn^2) + (yn^2)), na.rm = TRUE),
+			min(sqrt((xn^2) + ((1-yn)^2)), na.rm = TRUE),
+			min(sqrt(((1-xn)^2) + ((1-yn)^2)), na.rm = TRUE),
+			min(sqrt(((xn-1)^2) + (yn^2)), na.rm = TRUE)))
 	} else {
 		legend_pos <- 2
 	}
@@ -263,6 +272,7 @@ process_shapes <- function(shps, g, gm, data_by, allow.crop, interactive) {
 	attr(shps2, "info") <-
 		list(shape.sasp = ifelse(is.na(pasp), sasp, pasp),
 			 shape.bbx = bbx,
+			 shape.bboxes = bboxes,
 			 shape.same_bbx = same_bbx,
 			 shape.legend_pos = legend_pos,
 			 shape.diff_shapes = diff_shapes,
@@ -271,14 +281,7 @@ process_shapes <- function(shps, g, gm, data_by, allow.crop, interactive) {
 	shps2
 }
 
-get_centroids <- function(shp, of_largest_polygon = FALSE) {
-	co <- try(suppressWarnings(st_coordinates(st_centroid(shp, of_largest_polygon = of_largest_polygon))), silent = TRUE)
-	if (inherits(co, "try-error")) {
-		shp <- sf::st_make_valid(shp)
-		co <- try(suppressWarnings(st_coordinates(st_centroid(shp, of_largest_polygon = of_largest_polygon))))
-	}
-	co
-}
+
 
 get_bbox_asp <- function(bbox, inner.margins, longlat, pasp, interactive) {
 	

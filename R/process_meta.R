@@ -1,4 +1,4 @@
-process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, nx, nxa, panel.names, along.names, layer_vary, gm, any.legend, interactive) {
+process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, gmmc, nx, nxa, panel.names, along.names, layer_vary, gm, any.legend, interactive) {
 	attr.color <- aes.colors <- aes.color <- pc <- NULL
 	xlab.rotation <- xlab.text <- ylab.rotation <- ylab.text <- NULL
 	fontface <- fontfamily <- NULL
@@ -12,7 +12,7 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, nx, nxa, pan
 	gf <- within(gf, {
 		by <- NULL
 		if (is.na(ncol) && is.na(nrow)) {
-			nrowcol <- get_arrangement(nx = nxa, asp_ratio = gm$shape.asp_ratio)
+			nrowcol <- process_get_arrangement(nx = nxa, asp_ratio = gm$shape.asp_ratio)
 			nrow <- nrowcol[1]
 			ncol <- nrowcol[2]
 		} else {
@@ -360,8 +360,9 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, nx, nxa, pan
 	gt[c("compass.type", "compass.size")] <- NULL
 	
 	gmm <- process_meta_minimap(gmm, interactive, gt)
+	if (is.null(gmmc)) gmmc = list(mouse.show = FALSE)
 	
-	c(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, gm)
+	c(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, gmmc, gm)
 }
 
 process_meta_minimap <- function(gmm, interactive, gt) {
