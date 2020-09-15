@@ -5,10 +5,11 @@
 		max.categories = 30,
 		max.raster = c(plot = 1e6, view = 1e6),
 		show.messages = TRUE,
+		show.warnings = TRUE,
 		output.format = "png",
 		output.size = 49,
 		output.dpi = 300,
-		design.mode = FALSE,
+		output.dpi.animation = 100,
 		check.and.fix = FALSE,
 		title = NA,
 		scale = 1,
@@ -131,7 +132,7 @@
 		set.zoom.limits = NA,
 		view.legend.position = c("right", "top"),
 		control.position = c("left", "top"),
-		popup.all.data = NULL
+		leaflet.options = list()
 	),
 	style = "white"
 )
@@ -327,7 +328,7 @@
 #' @param limits this option determines how many facets (small multiples) are allowed for per mode. It should be a vector of two numeric values named \code{facets.view} and \code{facets.plot}. By default (i.e. when loading the package), it is set to \code{c(facets.view = 4, facets.plot = 64)}
 #' @param max.categories in case \code{col} is the name of a categorical variable in the layer functions (e.g. \code{\link{tm_polygons}}), this value determines how many categories (levels) it can have maximally. If the number of levels is higher than \code{max.categories}, then levels are combined.
 #' @param max.raster the maximum size of rasters, in terms of number of raster cells. It should be a vector of two numeric values named \code{plot} and \code{view}, which determines the size in plotting and viewing mode. The default values are \code{c(plot = 1e7, view = 1e6)}. Rasters that are larger will be shown at a decreased resolution.
-#' @param basemaps default basemaps. Basemaps are normally configured with \code{\link{tm_basemap}}. When this is not done, the basemaps specified by this option are shown (in view mode). Vector of one or more names of baselayer maps, or \code{NULL} if basemaps should be omitted. For options see the list \code{leaflet::providers}, which can be previewed at \url{http://leaflet-extras.github.io/leaflet-providers/preview}. Also supports URL's for tile servers, such as \code{"http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}. If a named vector is provided, the names are used in the layer control legend (similar to the \code{group} argument of \code{\link{tm_basemap}}. See also \code{overlays}, which is the default option for overlay tiles.
+#' @param basemaps default basemaps. Basemaps are normally configured with \code{\link{tm_basemap}}. When this is not done, the basemaps specified by this option are shown (in view mode). Vector of one or more names of baselayer maps, or \code{NULL} if basemaps should be omitted. For options see the list \code{leaflet::providers}, which can be previewed at \url{https://leaflet-extras.github.io/leaflet-providers/preview/}. Also supports URL's for tile servers, such as \code{"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}. If a named vector is provided, the names are used in the layer control legend (similar to the \code{group} argument of \code{\link{tm_basemap}}. See also \code{overlays}, which is the default option for overlay tiles.
 #' @param basemaps.alpha default transparency (opacity) value for the basemaps. Can be a vector of values, one for each basemap.
 #' @param overlays default overlay tilemaps. Overlays tilemaps are shown as front layer (in contrast to basemaps, which are background layers), so they are only useful when they are semi-transparent. Like basemaps, a vector of tilemaps is expected, or \code{NULL} is overlays should be omitted.
 #' @param overlays.alpha default transparency (opacity) value for the overlay maps. Can be a vector of values, one for each overlay map.
@@ -335,10 +336,12 @@
 #' @param qtm.minimap should a minimap be added to interactive maps created with \code{\link{qtm}}. In other words, should \code{tm_minimap()} be added automatically? The default value is \code{FALSE}.
 #' @param qtm.mouse.coordinates should mouse coordinates (and zoom level) be shown in view mode with \code{\link{qtm}}? In other words, should \code{tm_mouse_coordinates()} be added automatically? \code{TRUE} by default.
 #' @param show.messages should messages be shown?
+#' @param show.warnings should warnings be shown?
 #' @param output.format The format of the static maps saved with \code{\link{tmap_save}} without specification of the filename. The default is \code{"png"}.
 #' @param output.size The size of the static maps saved with \code{\link{tmap_save}} without specification of width and height. The unit is squared inch and the default is 49. This means that square maps (so with aspect ratio 1) will be saved as 7 by 7 inch images and a map with aspect ratio 2 (e.g. most world maps) will be saved as approximately 10 by 5 inch.
-#' @param output.dpi The default number of dots per inch for \code{\link{tmap_save}} and \code{\link{tmap_animation}}.
-#' @param design.mode Logical that enables the design mode. If \code{TRUE}, inner and outer margins, legend position, aspect ratio are explicitly shown. Also, information about aspect ratios is printed in the console.
+#' @param output.dpi The default number of dots per inch for \code{\link{tmap_save}}.
+#' @param output.dpi.animation The default number of dots per inch for \code{\link{tmap_animation}}.
+#' @param design.mode Not used anymore; the design mode can now be set with \code{\link{tmap_design_mode}}
 #' @param check.and.fix Logical that determines whether shapes (\code{sf} objects) are checked for validity with \code{\link[sf:st_is_valid]{st_is_valid}} and fixed with \code{\link[sf:st_make_valid]{st_make_valid}} if needed.
 #' @param style style name
 #' @example ./examples/tmap_options.R
@@ -346,12 +349,13 @@
 #' @name tmap_options
 #' @export
 #' @seealso \code{\link{tm_layout}}, \code{\link{tm_view}}, and \code{\link{tmap_style}}
-tmap_options <- function(..., unit, limits, max.categories, max.raster, basemaps, basemaps.alpha, overlays, overlays.alpha, qtm.scalebar, qtm.minimap, qtm.mouse.coordinates, show.messages, output.format, output.size, output.dpi, design.mode, check.and.fix) {
+tmap_options <- function(..., unit, limits, max.categories, max.raster, basemaps, basemaps.alpha, overlays, overlays.alpha, qtm.scalebar, qtm.minimap, qtm.mouse.coordinates, show.messages, show.warnings, output.format, output.size, output.dpi, output.dpi.animation, design.mode = NULL, check.and.fix) {
 
 	
-	#if (!identical( parent.frame(n = 1) , globalenv() )) warning("test4322t6")
-	
+
 	.tmapOptions <- get("tmapOptions", envir = .TMAP_CACHE)	
+	show.warnings = .tmapOptions$show.warnings
+	
 	current.style <- getOption("tmap.style")
 	newstyle <- if (substr(current.style, nchar(current.style) - 9, nchar(current.style)) == "(modified)") {
 		current.style
@@ -377,11 +381,11 @@ tmap_options <- function(..., unit, limits, max.categories, max.raster, basemaps
 				set_new_style <- TRUE
 			}
 			
-			if (length(lst) > 1) warning("The first argument is used, but the other arguments are ignored.")
+			if (length(lst) > 1 && show.warnings) warning("The first argument is used, but the other arguments are ignored.")
 		} else {
 			## case 2: option name is given
 			args <- sapply(lst, "[", 1)
-			if (!all(args %in% optnames)) warning("the following options do not exist: ", paste(setdiff(args, optnames), collapse = ", "))
+			if (!all(args %in% optnames) && show.warnings) warning("the following options do not exist: ", paste(setdiff(args, optnames), collapse = ", "))
 			args <- intersect(args, optnames)
 			return(.tmapOptions[args])
 		}
@@ -390,6 +394,13 @@ tmap_options <- function(..., unit, limits, max.categories, max.raster, basemaps
 		## case 4: tmap_options is called without arguments
 		args <- lapply(as.list(match.call()[-1]), eval, envir = e1)	
 	}
+	
+	design_mode_specified = ("design.mode" %in% names(args))
+	if (design_mode_specified) {
+		if (show.warnings) warning("design.mode is not a tmap option anymore. As of version > 3.1, it can be set with tmap_design_mode", call. = FALSE)	
+		args$design.mode = NULL
+	} 
+	
 
 	unknown_args <- setdiff(names(args), names(.defaultTmapOptions))
 	if (length(unknown_args) == 1) {
@@ -398,8 +409,7 @@ tmap_options <- function(..., unit, limits, max.categories, max.raster, basemaps
 		stop("the following options do not exist: ", paste(unknown_args, collapse = ", "))
 	}
 	
-	
-	if (!length(args)) {
+	if (!length(args) && !design_mode_specified) {
 		# case 4
 		return(.tmapOptions)	
 	} else {
@@ -429,6 +439,8 @@ check_named_items <- function(a, b) {
 	
 	dynamic_vec_names <- c("basemaps", "overlays")
 	
+	show.warnings = get("tmapOptions", envir = .TMAP_CACHE)$show.warnings
+	
 	if (length(named_items) != 0L) {
 		a[named_items] <- mapply(function(an, bn, nm) {
 			if (nm %in% dynamic_vec_names) {
@@ -437,7 +449,7 @@ check_named_items <- function(a, b) {
 				res <- bn
 				cls <- ifelse(is.list(bn), "list", "vector")
 				if (is.null(names(an))) {
-					warning("tmap option ", nm, " requires a named ", cls, call. = FALSE)
+					if (show.warnings) warning("tmap option ", nm, " requires a named ", cls, call. = FALSE)
 				} else if (!all(names(an) %in% names(bn))) {
 					formatC_names <- setdiff(names(formals(formatC)), "x")
 					if (nm == "legend.format") {
@@ -445,7 +457,8 @@ check_named_items <- function(a, b) {
 					} else {
 						invalid <- setdiff(names(an), names(bn))
 					}
-					if (length(invalid) > 0) warning("invalid ", cls, " names of tmap option ", nm, ": ", paste(invalid, collapse = ", "), call. = FALSE)
+					
+					if (length(invalid) > 0 && show.warnings) warning("invalid ", cls, " names of tmap option ", nm, ": ", paste(invalid, collapse = ", "), call. = FALSE)
 					
 				}
 				res[names(an)] <- an

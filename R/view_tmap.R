@@ -5,7 +5,7 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 	
 	proxy <- !is.null(lf)
 	
-	leaflet_opts <- leaflet::leafletOptions(crs=gt$projection)
+	leaflet_opts <- do.call(leaflet::leafletOptions, c(list(crs=gt$projection), gt$leaflet.options))
 	if (!is.na(gt$set.zoom.limits[1])) leaflet_opts$minZoom <- gt$set.zoom.limits[1]
 	if (!is.na(gt$set.zoom.limits[2])) leaflet_opts$maxZoom <- gt$set.zoom.limits[2]
 	
@@ -31,7 +31,7 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 
 	warns <- c(symbol=FALSE, text=FALSE, raster=FALSE, symbol_legend=FALSE, linelwd_legend=FALSE) # to prevent a warning for each shape
 	
-	if (inherits(shps, "sf")) shps <- list(shps)
+	if (inherits(shps, c("sf", "stars"))) shps <- list(shps)
 
 	bases <- if ("bases" %in% ls(envir = .TMAP_CACHE)) get("bases", envir = .TMAP_CACHE) else NA
 	overlays <- if ("overlays" %in% ls(envir = .TMAP_CACHE)) get("overlays", envir = .TMAP_CACHE) else NA
@@ -184,24 +184,21 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 			}
 			
 			pane <- paneName(zi)
-			
-			# pane <- nextPane(pane)
-			# lf <- addPane(lf, pane)
-			
+
 			shp$tmapID <- if (!is.null(labels)) as.character(labels) else shp$tmapID
 			shp$tmapID2 <- submit_labels(shp$tmapID, "polygons", pane, group_name, e)
 			
 			suppressWarnings({
 				if (is.null(labels)) {
-					lf <- lf %>% addPolygons(data=shp, layerId = shp$tmapID2, stroke=stroke, weight=gpl$lwd, color=bcol, fillColor = fcol, opacity=bopacity, fillOpacity = fopacity, dashArray = dashArray, popup = popups, options = pathOptions(clickable=!is.null(popups), pane=pane), group=group_name)	
+					lf <- lf %>% addPolygons(data=shp, layerId = shp$tmapID2, stroke=stroke, weight=gpl$lwd, color=bcol, fillColor = fcol, opacity=bopacity, fillOpacity = fopacity, dashArray = dashArray, popup = popups, options = pathOptions(interactive = gpl$fill.interactive, pane=pane), group=group_name)	
 				} else {
-					lf <- lf %>% addPolygons(data=shp, label = ~tmapID, layerId = shp$tmapID2, stroke=stroke, weight=gpl$lwd, color=bcol, fillColor = fcol, opacity=bopacity, fillOpacity = fopacity, dashArray = dashArray, popup = popups, options = pathOptions(clickable=!is.null(popups), pane=pane), group=group_name)	
+					lf <- lf %>% addPolygons(data=shp, label = ~tmapID, layerId = shp$tmapID2, stroke=stroke, weight=gpl$lwd, color=bcol, fillColor = fcol, opacity=bopacity, fillOpacity = fopacity, dashArray = dashArray, popup = popups, options = pathOptions(interactive = gpl$fill.interactive, pane=pane), group=group_name)	
 				}
 				
 			})
 			
 			# if (!is.null(labels)) {
-			# 	lf <- lf %>% 
+			# 	lf <- lf %>%
 			# 		addSearchFeatures(targetGroups  = shp_name, options = searchFeaturesOptions(zoom = 7, openPopup=FALSE))
 			# }
 
@@ -237,17 +234,15 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 			}
 
 			pane <- paneName(zi)
-			# pane <- nextPane(pane)
-			# lf <- addPane(lf, pane)
-			
+
 			shp$tmapID <- if (!is.null(labels)) as.character(labels) else shp$tmapID
 			shp$tmapID2 <- submit_labels(shp$tmapID, "lines", pane, group_name, e)
 			
 			suppressWarnings({
 				if (is.null(labels)) {
-					lf <- lf %>% addPolylines(data=shp, layerId = shp$tmapID2, stroke=TRUE, weight=gpl$line.lwd, color=lcol, opacity = lopacity, popup = popups, options = pathOptions(clickable=!is.null(popups), pane=pane), dashArray=dashArray, group=group_name) 
+					lf <- lf %>% addPolylines(data=shp, layerId = shp$tmapID2, stroke=TRUE, weight=gpl$line.lwd, color=lcol, opacity = lopacity, popup = popups, options = pathOptions(interactive = gpl$line.interactive, pane=pane), dashArray=dashArray, group=group_name) 
 				} else {
-					lf <- lf %>% addPolylines(data=shp, label = ~tmapID, layerId = shp$tmapID2, stroke=TRUE, weight=gpl$line.lwd, color=lcol, opacity = lopacity, popup = popups, options = pathOptions(clickable=!is.null(popups), pane=pane), dashArray=dashArray, group=group_name) 	
+					lf <- lf %>% addPolylines(data=shp, label = ~tmapID, layerId = shp$tmapID2, stroke=TRUE, weight=gpl$line.lwd, color=lcol, opacity = lopacity, popup = popups, options = pathOptions(interactive = gpl$line.interactive, pane=pane), dashArray=dashArray, group=group_name) 	
 				}
 				
 			})
@@ -295,12 +290,18 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 			# return NULL is no symbols are selected (see tm_facets example)
 			if (!any(sel)) return(FALSE)
 			
+			popups <- get_popups(gpl, type="symbol")
+			labels <- as.character(get_labels(gpl, type="symbol"))
+			
+			
 			if (!all(sel)) {
 				co <- co[sel, , drop=FALSE]
 				fcol <- fcol[sel]
 				fopacity <- fopacity[sel]
 				symbol.size <- symbol.size[sel]
 				symbol.shape <- symbol.shape[sel]
+				popups = popups[sel]
+				labels = labels[sel]
 			}
 			
 			if (gpl$symbol.misc$symbol.are.markers) {
@@ -311,8 +312,6 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 			}
 
 			pane <- paneName(zi)
-			# pane <- nextPane(pane)
-			# lf <- addPane(lf, pane)
 			
 			if (is.null(gpl$symbol.group)) {
 				group_name <- NULL
@@ -325,14 +324,10 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 				addOverlayGroup(group_name)
 			}
 
-			popups <- get_popups(gpl, type="symbol")
-			labels <- as.character(get_labels(gpl, type="symbol"))
 			ids <- submit_labels(labels, "symbols", pane, group_name, e)
 			
-			
 
-			popups <- popups[sel]
-			
+
 			# sort symbols
 			if (length(symbol.size)!=1) {
 				decreasing <- order(-symbol.size)
@@ -365,7 +360,6 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 			
 			
 			if (are.icons) {
-				#symbol.size2 <- symbol.size2 / 3 # Correct for the fact that markers are larger than circle markers. This is good, but for static plots the icon size was already increased by icon.size=3, so this is to revert it for view mode
 				if (any(symbol.shape2<1000)) {
 					icons <- NULL
 				} else {
@@ -381,7 +375,7 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 				}
 				
 				suppressWarnings({
-					lf <- lf %>% addMarkers(lng = co2[,1], lat=co2[,2], popup=popups2, label = labels2, layerId = ids2, group=group_name, icon=icons, clusterOptions=clustering, options = markerOptions(clickable=!is.null(popups), pane=pane))
+					lf <- lf %>% addMarkers(lng = co2[,1], lat=co2[,2], popup=popups2, label = labels2, layerId = ids2, group=group_name, icon=icons, clusterOptions=clustering, options = markerOptions(interactive = gpl$symbol.interactive, pane=pane))
 				})
 			} else {
 				if (!all(symbol.shape2 %in% c(1, 16, 19, 20, 21))) {
@@ -391,12 +385,18 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 				
 				suppressWarnings({
 					if (fixed) {
-						lf <- lf %>% addCircleMarkers(lng=co2[,1], lat=co2[,2], label = labels2, layerId = ids2, fill = any(!is.na(fcol2)), fillColor = fcol2, fillOpacity=fopacity, color = bcol, stroke = !is.na(bcol) && bopacity!=0, radius = 20*symbol.size2, weight = gpl$symbol.border.lwd, popup=popups2, group=group_name, clusterOptions=clustering, options = pathOptions(clickable=!is.null(popups), pane=pane))
+						lf <- lf %>% addCircleMarkers(lng=co2[,1], lat=co2[,2], label = labels2, layerId = ids2, fill = any(!is.na(fcol2)), fillColor = fcol2, fillOpacity=fopacity, color = bcol, stroke = !is.na(bcol) && bopacity!=0, radius = 20*symbol.size2, weight = gpl$symbol.border.lwd, popup=popups2, group=group_name, clusterOptions=clustering, options = pathOptions(interactive = gpl$symbol.interactive, pane=pane))
 					} else {
-						lf <- lf %>% addCircles(lng=co2[,1], lat=co2[,2], label = labels2, layerId = ids2, fill = any(!is.na(fcol2)), fillColor = fcol2, fillOpacity=fopacity, color = bcol, stroke = !is.na(bcol) && bopacity!=0, radius=rad, weight =gpl$symbol.border.lwd, popup=popups2, group=group_name, options = pathOptions(clickable=!is.null(popups), pane=pane))
+						lf <- lf %>% addCircles(lng=co2[,1], lat=co2[,2], label = labels2, layerId = ids2, fill = any(!is.na(fcol2)), fillColor = fcol2, fillOpacity=fopacity, color = bcol, stroke = !is.na(bcol) && bopacity!=0, radius=rad, weight =gpl$symbol.border.lwd, popup=popups2, group=group_name, options = pathOptions(interactive = gpl$symbol.interactive, pane=pane))
 					}
 				})
 			}
+			
+			# if (!is.null(labels)) {
+			# 	lf <- lf %>% 
+			# 		addSearchFeatures(targetGroups  = shp_name, options = searchFeaturesOptions(zoom = 7, openPopup=FALSE))
+			# }
+			
 				
 			if (!is.na(gpl$xcol[1])) {
 				if (gpl$symbol.col.legend.show) lf <- lf %>% add_legend(gpl, gt, aes="symbol.col", alpha=alpha, group = if (gt$free.scales.symbol.col) group_name else NULL, zindex = zi)
@@ -430,12 +430,18 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 			# return NULL is no symbols are selected (see tm_facets example)
 			if (!any(gpl$text_sel)) return(FALSE)
 			
+			labels = get_labels(gpl, type="text")
+
+			
 			if (!all(gpl$text_sel)) {
 				co <- co[gpl$text_sel, , drop=FALSE]
 				text <- text[gpl$text_sel]
 				col <- col[gpl$text_sel]
 				size <- size[gpl$text_sel]
+				labels = labels[gpl$text_sel]
 			}
+			
+			
 			
 			sizeChar <- paste(round(size * 12), "px", sep="")
 			colsize <- paste(col, sizeChar, sep="_^_")
@@ -463,10 +469,14 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 			
 			pane <- paneName(zi)
 
+			ids <- submit_labels(labels, "text", pane, group_name, e)
+			
+			
 			suppressWarnings({
 				if (length(cs_set)==1) {
 					lf <- lf %>% addLabelOnlyMarkers(lng = co[,1], lat = co[,2], label=text,
 													 group=group_name, 
+													 layerId = ids, 
 													 labelOptions = labelOptions(noHide = TRUE, textOnly = TRUE, direction = direction, 
 													 							opacity=opacity,
 													 							textsize=sizeChar[1],
@@ -477,6 +487,7 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 					for (i in 1:length(text)) {
 						lf <- lf %>% addLabelOnlyMarkers(lng = co[i,1], lat = co[i,2], label=text[i],
 														 group=group_name, 
+														 layerId = ids[i], 
 														 labelOptions = labelOptions(noHide = TRUE, textOnly = TRUE, direction = direction, 
 														 							opacity=opacity,
 														 							textsize=sizeChar[i],
@@ -544,7 +555,7 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 				pal_col2 <- pal_col[col_ids]
 				
 				# TO DO: add layerId = layerId, was 1 ("tmap401"), but should be number of polygons
-				lf <- lf %>% addPolygons(data=shp, stroke=FALSE, weight=0, color=NULL, fillColor = pal_col2, opacity=0, fillOpacity = pal_opacity, popup = NULL, options = pathOptions(clickable=FALSE, pane=pane), group=group_name)
+				lf <- lf %>% addPolygons(data=shp, stroke=FALSE, weight=0, color=NULL, fillColor = pal_col2, opacity=0, fillOpacity = pal_opacity, popup = NULL, options = pathOptions(interactive=FALSE, pane=pane), group=group_name)
 				
 			} else {
 				shp[[1]] <- matrix(col_ids, ncol = ncol(shp))
@@ -557,10 +568,7 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 				lf <- lf %>% leafem::addStarsImage(shp, band = 1, colors = pal_col, opacity = pal_opacity, group = group_name, project = FALSE, layerId = layerId)
 			}
 			
-			
-			
-			# lf <- lf %>% addRasterImage(x=as(shp, "Raster"), colors=mappal, opacity = pal_opacity, group=group_name, project = FALSE, layerId = layerId)
-			
+
 			if (!is.na(gpl$xraster[1])) {
 				if (gpl$raster.legend.show) lf <- lf %>% add_legend(gpl, gt, aes="raster", alpha=alpha, group = if (gt$free.scales.raster) group_name else NULL, zindex = zi)
 			}
@@ -580,19 +588,19 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 			basemaps.alpha <- gpl$tile.alpha
 			type <- gpl$tile.gtype
 			tms <- gpl$tile.tms
-			
+
 			if (is.null(basemaps)) {
 				return(FALSE)
 			}
-			
+
 			if (is.na(basemaps[1])) {
 				if (type == "base") eraseBaseGroup() else eraseOverlayTiles()
-				return(FALSE) 
+				return(FALSE)
 			}
-			
 
-			
-			
+
+
+
 			group_names <- if (is.null(gpl$tile.group)) {
 				NULL
 			} else if (is.na(gpl$tile.group[1])) {
@@ -608,15 +616,15 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 				if (type == "base") assign("basename.specified", TRUE, envir = e)
 				rep(gpl$tile.group, length.out = length(basemaps))
 			}
-			
+
 			if (!is.null(group_names)) {
 				if (type == "base") {
-					addBaseGroup(group_names)	
+					addBaseGroup(group_names)
 				} else {
 					addOverlayGroup(group_names, are.tiles = TRUE)
 				}
 			}
-			
+
 			if(type == "base") {
 				pane <- "tilePane"
 			} else {
@@ -624,34 +632,35 @@ view_tmap <- function(gp, shps=NULL, leaflet_id=1, showWarns=TRUE, gal = NULL, i
 				# pane <- nextPane(pane)
 				# lf <- addPane(lf, pane)
 			}
-				
+
 			if (!is.na(gt$set.zoom.limits[1])) {
 				tileOptions <- mapply(function(a, tmsi) {
 					tileOptions(minZoom=gt$set.zoom.limits[1], maxZoom=gt$set.zoom.limits[2], opacity=a, pane=pane, tms = tmsi)
 				}, basemaps.alpha, tms, SIMPLIFY = FALSE)
-				
+
 			} else {
 				tileOptions <- mapply(function(a, tmsi) {
 					tileOptions(opacity=a, pane=pane, tms = tmsi)
 				}, basemaps.alpha, tms, SIMPLIFY = FALSE)
 			}
-			
-			allLettersOrDots <- function(x) grepl("^[A-Za-z\\.]*$", x)
-			
+
+
 			# add base layer(s)
 			if (length(basemaps)) {
 				for (i in 1:length(basemaps)) {
 					bm <- unname(basemaps[i])
 					bmname <- unname(group_names[i])
-					bm4 <- substr(bm, 1, 4)
-					if (allLettersOrDots(bm4) && bm4 != "http") {
-						# it is not possible to check provider options, since leaflet::providers is not exported
+					
+					if (bm %in% names(providers)) {
 						lf <- lf %>% addProviderTiles(bm, group=bmname, options = tileOptions[[i]])
 					} else {
+						if (substr(bm, 1, 4) != "http" && gt$show.warnings) warning("basemap ", bm, "does not exist in the providers list nor does it seem a valid url", call. = FALSE)
 						lf <- lf %>% addTiles(bm, group=bmname, options=tileOptions[[i]])
 					}
 				}
 			}
+			
+			#lf = lf %>% addTiles()
 			assign("lf", lf, envir = e)
 
 			TRUE

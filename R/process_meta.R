@@ -317,12 +317,13 @@ process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, gmmc, nx, nx
 			compass.color.dark <- do.call("process_color", c(list(col=compass.color.dark), gt$pc))
 			compass.color.light <- do.call("process_color", c(list(col=compass.color.light), gt$pc))
 			
-			compass.fontsize <- compass.text.size * gt$scale
+			compass.text.size <- compass.text.size * gt$scale
 			compass.lwd <- compass.lwd * gt$scale
 			
 			compass.show <- TRUE
 			if (is.na(compass.type)) compass.type <- gt$compass.type
 			if (is.na(compass.size)) compass.size <- switch(compass.type, arrow=2, radar=6, rose=6, 4)
+			#compass.size = compass.size * gt$scale
 			compass.nlines <- compass.size + ifelse(compass.show.labels==0, 0, ifelse(compass.show.labels==1, 1, 2))
 		})
 	} else {
@@ -389,13 +390,14 @@ find_leaflet_position <- function(position) {
 
 
 process_meta_scale_bar <- function(gsb, interactive, gt) {
-	show.messages <- get("tmapOptions", envir = .TMAP_CACHE)$show.messages
+	show.messages <- gt$show.messages
+	show.warnings = gt$show.warnings
 	
 	if (!is.null(gsb)) {
 		gsb <- within(gsb, {
 			if (!exists("scale.call")) scale.call <- ""
 			if (interactive) {
-				if ("breaks" %in% scale.call) warnings("In view mode, scale bar breaks are ignored.", call. = FALSE)
+				if ("breaks" %in% scale.call && show.warnings) warning("In view mode, scale bar breaks are ignored.", call. = FALSE)
 				
 				if (is.na(scale.width))
 					scale.width <- 100
@@ -407,12 +409,12 @@ process_meta_scale_bar <- function(gsb, interactive, gt) {
 				if (is.na(scale.position[1])) scale.position <- gt$attr.position
 				scale.position <- find_leaflet_position(scale.position)
 			} else {
-				if (all(c("breaks", "width") %in% scale.call)) {
+				if (all(c("breaks", "width") %in% scale.call) && show.warnings) {
 					warning("For tm_scale_bar, breaks and width cannot be used together. The width is being ignored.", call. = FALSE)	
 				}
 				if ("breaks" %in% scale.call) {
 					if (scale.breaks[1] != 0) {
-						warning("First scale_bar breaks value should be 0.", call. = FALSE)
+						if (show.warnings) warning("First scale_bar breaks value should be 0.", call. = FALSE)
 						scale.breaks <- c(0, scale.breaks)
 					}
 				}

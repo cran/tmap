@@ -6,7 +6,7 @@ plot_scale <- function(gt, just, xrange, crop_factor) {
 	unit.size <- 1/gt$shape.units$to
 	
 	if (is.na(unit.size)) {
-		warning("Unable to determine shape coordinate units. Please check if the \"+units\" part of the projection is present. Otherwise, specify coords.unit or unit.size")
+		if (gt$show.warnings) warning("Unable to determine shape coordinate units. Please check if the \"+units\" part of the projection is present. Otherwise, specify coords.unit or unit.size")
 	} else if (!gt$shape.units$projected && ((gt$shape.bbx[4]-gt$shape.bbx[2]) > 30)) {
 		if (gt$show.messages) message("Scale bar set for latitude ", gsub("long@lat(.+)$", "\\1", unit), " and will be different at the top and bottom of the map.")
 	}
@@ -111,7 +111,7 @@ plot_logo <- function(gt, just, id) {
 	
 }
 
-plot_cred <- function(gt, just, id) {
+plot_cred <- function(gt, just, id, width_scale) {
 	lineHeight <- convertHeight(unit(1, "lines"), "npc", valueOnly=TRUE)
 	
 	my <- lineHeight / 2
@@ -123,9 +123,8 @@ plot_cred <- function(gt, just, id) {
 	
 	size <- min((1-2*mx) / text_width_npc(txt, space=FALSE), gt$credits.size[id])
 	
-	width <- (text_width_npc(txt, space=FALSE)+1*mx) * size
-	#height <- lineHeight * (nlines) * size
-	
+	width =	if (is.na(gt$credits.width[id])) (text_width_npc(txt, space=FALSE)+1*mx) * size else gt$credits.width[id] * width_scale
+
 	x <- just - just*width
 	tx <- mx*.5*size + just - just*width
 	

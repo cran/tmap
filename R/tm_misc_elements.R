@@ -59,7 +59,8 @@ tm_facets <- function(by=NULL,
 					  scale.factor=2,
 					  drop.shapes=drop.units) {
 	calls <- names(match.call(expand.dots = TRUE)[-1])
-	if ("drop.shapes" %in% calls) warning("The argument drop.shapes has been renamed to drop.units, and is therefore deprecated", call.=FALSE)
+	
+	if ("drop.shapes" %in% calls && get("tmapOptions", envir = .TMAP_CACHE)$show.warnings) warning("The argument drop.shapes has been renamed to drop.units, and is therefore deprecated", call.=FALSE)
 	if ("free.scales" %in% calls) calls <- union(calls, c("free.scales.fill", "free.scales.symbol.size", "free.scales.symbol.col", "free.scales.symbol.shape", "free.scales.line.col", "free.scales.line.lwd"))
 	g <- list(tm_facets=c(as.list(environment()), list(call=calls)))
 	class(g) <- "tmap"
@@ -164,6 +165,7 @@ tm_graticules <- function(x=NA,
 #' @param fontface font face of the text. By default, determined by the fontface argument of \code{\link{tm_layout}}.
 #' @param fontfamily font family of the text. By default, determined by the fontfamily argument of \code{\link{tm_layout}}.
 #' @param position position of the text. Vector of two values, specifying the x and y coordinates. Either this vector contains "left", "LEFT", "center", "right", or "RIGHT" for the first value and "top", "TOP", "center", "bottom", or "BOTTOM" for the second value, or this vector contains two numeric values between 0 and 1 that specifies the x and y value of the center of the text. The uppercase values correspond to the position without margins (so tighter to the frame). The default value is controlled by the argument \code{"attr.position"} of \code{\link{tm_layout}}.
+#' @param width the width of the credits text box, a numeric value that is relative to the map area (so 1 means the whole map width). By default (\code{NA}), it is determined by the width of the text. Tip: set \code{bg.color} to see the result.
 #' @param just Justification of the attribute relative to the point coordinates.  The first value specifies horizontal and the second value vertical justification. Possible values are: \code{"left"} , \code{"right"}, \code{"center"}, \code{"bottom"}, and \code{"top"}. Numeric values of 0 specify left/bottom alignment and 1 right/top alignment. This option is only used, if \code{position} is specified by numeric coordinates. The default value is controlled by the argument \code{"attr.just"} of \code{\link{tm_layout}}.
 #' @export
 #' @seealso \code{\link{tm_xlab}}
@@ -177,6 +179,7 @@ tm_credits <- function(text,
 					   bg.alpha=NA,
 					   fontface=NA, fontfamily=NA,
 					   position=NA,
+					   width=NA,
 					   just=NA) {
 	g <- list(tm_credits=as.list(environment()))
 	names(g$tm_credits) <- paste("credits", names(g$tm_credits), sep=".")
@@ -242,7 +245,7 @@ tm_scale_bar <- function(breaks=NULL,
 						 just=NA,
 						 size = NULL) {
 	if (!missing(size)) {
-		warning("The argument size of tm_scale_bar is deprecated. It has been renamed to text.size", call. = FALSE)
+		if (get("tmapOptions", envir = .TMAP_CACHE)$show.warnings) warning("The argument size of tm_scale_bar is deprecated. It has been renamed to text.size", call. = FALSE)
 		text.size <- size
 		size <- NULL
 	}
@@ -292,7 +295,7 @@ tm_compass <- function(north=0,
 					   just=NA,
 					   fontsize = NULL) {
 	if (!missing(fontsize)) {
-		warning("The argument fontsize of tm_compass is deprecated. It has been renamed to text.size", call. = FALSE)
+		if (get("tmapOptions", envir = .TMAP_CACHE)$show.warnings) warning("The argument fontsize of tm_compass is deprecated. It has been renamed to text.size", call. = FALSE)
 		text.size <- fontsize
 		fontsize <- NULL
 	}
@@ -387,10 +390,10 @@ tm_mouse_coordinates <- function() {
 	qtm_shortcut2 <- attr(e2, "qtm_shortcut")
 
 	if (identical(qtm_shortcut1, TRUE)) {
-		warning("qtm called without shape objects cannot be stacked", call. = FALSE)
+		if (get("tmapOptions", envir = .TMAP_CACHE)$show.warnings) warning("qtm called without shape objects cannot be stacked", call. = FALSE)
 		g <- e2
 	} else if (identical(qtm_shortcut2, TRUE)) {
-		warning("qtm called without shape objects cannot be stacked", call. = FALSE)
+		if (get("tmapOptions", envir = .TMAP_CACHE)$show.warnings) warning("qtm called without shape objects cannot be stacked", call. = FALSE)
 		g <- e1
 	} else {
 		g <- c(e1,e2)
@@ -411,7 +414,7 @@ tm_mouse_coordinates <- function() {
 #' @seealso \code{\link{tmap_save}}
 tmap_last <- function() {
 	.x <- get("last_map", envir = .TMAP_CACHE)
-	if (is.null(.x)) warning("A map has not been created yet")
+	if (is.null(.x) && get("tmapOptions", envir = .TMAP_CACHE)$show.warnings) warning("A map has not been created yet")
 	eval(.x)
 }
 

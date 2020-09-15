@@ -21,10 +21,12 @@ tmap_options(
   qtm.minimap,
   qtm.mouse.coordinates,
   show.messages,
+  show.warnings,
   output.format,
   output.size,
   output.dpi,
-  design.mode,
+  output.dpi.animation,
+  design.mode = NULL,
   check.and.fix
 )
 
@@ -45,7 +47,7 @@ tmap_options_save(style)
 
 \item{max.raster}{the maximum size of rasters, in terms of number of raster cells. It should be a vector of two numeric values named \code{plot} and \code{view}, which determines the size in plotting and viewing mode. The default values are \code{c(plot = 1e7, view = 1e6)}. Rasters that are larger will be shown at a decreased resolution.}
 
-\item{basemaps}{default basemaps. Basemaps are normally configured with \code{\link{tm_basemap}}. When this is not done, the basemaps specified by this option are shown (in view mode). Vector of one or more names of baselayer maps, or \code{NULL} if basemaps should be omitted. For options see the list \code{leaflet::providers}, which can be previewed at \url{http://leaflet-extras.github.io/leaflet-providers/preview}. Also supports URL's for tile servers, such as \code{"http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}. If a named vector is provided, the names are used in the layer control legend (similar to the \code{group} argument of \code{\link{tm_basemap}}. See also \code{overlays}, which is the default option for overlay tiles.}
+\item{basemaps}{default basemaps. Basemaps are normally configured with \code{\link{tm_basemap}}. When this is not done, the basemaps specified by this option are shown (in view mode). Vector of one or more names of baselayer maps, or \code{NULL} if basemaps should be omitted. For options see the list \code{leaflet::providers}, which can be previewed at \url{https://leaflet-extras.github.io/leaflet-providers/preview/}. Also supports URL's for tile servers, such as \code{"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}. If a named vector is provided, the names are used in the layer control legend (similar to the \code{group} argument of \code{\link{tm_basemap}}. See also \code{overlays}, which is the default option for overlay tiles.}
 
 \item{basemaps.alpha}{default transparency (opacity) value for the basemaps. Can be a vector of values, one for each basemap.}
 
@@ -61,13 +63,17 @@ tmap_options_save(style)
 
 \item{show.messages}{should messages be shown?}
 
+\item{show.warnings}{should warnings be shown?}
+
 \item{output.format}{The format of the static maps saved with \code{\link{tmap_save}} without specification of the filename. The default is \code{"png"}.}
 
 \item{output.size}{The size of the static maps saved with \code{\link{tmap_save}} without specification of width and height. The unit is squared inch and the default is 49. This means that square maps (so with aspect ratio 1) will be saved as 7 by 7 inch images and a map with aspect ratio 2 (e.g. most world maps) will be saved as approximately 10 by 5 inch.}
 
-\item{output.dpi}{The default number of dots per inch for \code{\link{tmap_save}} and \code{\link{tmap_animation}}.}
+\item{output.dpi}{The default number of dots per inch for \code{\link{tmap_save}}.}
 
-\item{design.mode}{Logical that enables the design mode. If \code{TRUE}, inner and outer margins, legend position, aspect ratio are explicitly shown. Also, information about aspect ratios is printed in the console.}
+\item{output.dpi.animation}{The default number of dots per inch for \code{\link{tmap_animation}}.}
+
+\item{design.mode}{Not used anymore; the design mode can now be set with \code{\link{tmap_design_mode}}}
 
 \item{check.and.fix}{Logical that determines whether shapes (\code{sf} objects) are checked for validity with \code{\link[sf:st_is_valid]{st_is_valid}} and fixed with \code{\link[sf:st_make_valid]{st_make_valid}} if needed.}
 

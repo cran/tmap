@@ -1,9 +1,13 @@
 check_deprecated_layer_fun_args <- function(auto.palette.mapping, max.categories, midpoint) {
-	if (!is.null(auto.palette.mapping)) {
+	tmapOptions = get("tmapOptions", envir = .TMAP_CACHE)
+	show.warnings <- tmapOptions$show.warnings
+	
+	
+	if (!is.null(auto.palette.mapping) && show.warnings) {
 		warning("The argument auto.palette.mapping is deprecated. Please use midpoint for numeric data and stretch.palette for categorical data to control the palette mapping.", call. = FALSE)
 		if (auto.palette.mapping && is.null(midpoint)) midpoint <- 0 # for backwards compatability
 	}
-	if (!is.null(max.categories)) warning("The argument max.categories is deprecated. It can be specified with tmap_options.", call. = FALSE)
+	if (!is.null(max.categories) && show.warnings) warning("The argument max.categories is deprecated. It can be specified with tmap_options.", call. = FALSE)
 	midpoint
 }
 
@@ -85,6 +89,7 @@ check_deprecated_layer_fun_args <- function(auto.palette.mapping, max.categories
 #' @param legend.size.z index value that determines the position of the legend element regarding the text sizes with respect to other legend elements. The legend elements are stacked according to their z values. The legend element with the lowest z value is placed on top.
 #' @param legend.col.z index value that determines the position of the legend element regarding the text colors. (See \code{legend.size.z})
 #' @param legend.hist.z index value that determines the position of the histogram legend element. (See \code{legend.size.z})
+#' @param id name of the data variable that specifies the indices of the text labels. Only used for \code{"view"} mode (see \code{\link{tmap_mode}}).
 #' @param zindex zindex of the pane in view mode. By default, it is set to the layer number plus 400. By default, the tmap layers will therefore be placed in the custom panes \code{"tmap401"}, \code{"tmap402"}, etc., except for the base tile layers, which are placed in the standard \code{"tile"}. This parameter determines both the name of the pane and the z-index, which determines the pane order from bottom to top. For instance, if \code{zindex} is set to 500, the pane will be named \code{"tmap500"}.
 #' @param group name of the group to which this layer belongs in view mode. Each group can be selected or deselected in the layer control item. Set \code{group = NULL} to hide the layer in the layer control item. By default, it will be set to the name of the shape (specified in \code{\link{tm_shape}}).
 #' @param auto.palette.mapping deprecated. It has been replaced by \code{midpoint} for numeric variables and \code{stretch.palette} for categorical variables.
@@ -133,6 +138,7 @@ tm_text <-  function(text, size=1, col=NA, root=3,
 					 legend.size.z=NA,
 					 legend.col.z=NA,
 					 legend.hist.z=NA,
+					 id=NA,
 					 zindex = NA,
 					 group = NA,
 					 auto.palette.mapping = NULL,
@@ -232,6 +238,7 @@ tm_iso <- function(col=NA, text="level", size=.5,
 #' @param legend.lwd.z index value that determines the position of the legend element regarding the line widths. (See \code{legend.col.z})
 #' @param legend.hist.z index value that determines the position of the legend element regarding the histogram. (See \code{legend.col.z})
 #' @param id name of the data variable that specifies the indices of the lines. Only used for \code{"view"} mode (see \code{\link{tmap_mode}}).
+#' @param interactive logical that determines whether this layer is interactive in view mode (e.g. hover text, popup, and click event in shiny apps)
 #' @param popup.vars names of data variables that are shown in the popups in \code{"view"} mode. If \code{NA} (default), only aesthetic variables (i.e. specified by \code{col} and \code{lwd}) are shown). If they are not specified, all variables are shown. Set popup.vars to \code{FALSE} to disable popups. When a vector of variable names is provided, the names (if specified) are printed in the popups.
 #' @param popup.format list of formatting options for the popup values. See the argument \code{legend.format} for options. Only applicable for numeric data variables. If one list of formatting options is provided, it is applied to all numeric variables of \code{popup.vars}. Also, a (named) list of lists can be provided. In that case, each list of formatting options is applied to the named variable.
 #' @param zindex zindex of the pane in view mode. By default, it is set to the layer number plus 400. By default, the tmap layers will therefore be placed in the custom panes \code{"tmap401"}, \code{"tmap402"}, etc., except for the base tile layers, which are placed in the standard \code{"tile"}. This parameter determines both the name of the pane and the z-index, which determines the pane order from bottom to top. For instance, if \code{zindex} is set to 500, the pane will be named \code{"tmap500"}.
@@ -279,6 +286,7 @@ tm_lines <- function(col=NA, lwd=1, lty="solid", alpha=NA,
 					 legend.lwd.z=NA,
 					 legend.hist.z=NA,
 					 id=NA,
+					 interactive=TRUE,
 					 popup.vars=NA,
 					 popup.format=list(),
 					 zindex=NA,
@@ -354,6 +362,7 @@ tm_lines <- function(col=NA, lwd=1, lty="solid", alpha=NA,
 #' @param legend.z index value that determines the position of the legend element with respect to other legend elements. The legend elements are stacked according to their z values. The legend element with the lowest z value is placed on top.
 #' @param legend.hist.z index value that determines the position of the histogram legend element 
 #' @param id name of the data variable that specifies the indices of the polygons. Only used for \code{"view"} mode (see \code{\link{tmap_mode}}).
+#' @param interactive logical that determines whether this layer is interactive in view mode (e.g. hover text, popup, and click event in shiny apps)
 #' @param popup.vars names of data variables that are shown in the popups in \code{"view"} mode. If \code{convert2density=TRUE}, the derived density variable name is suffixed with \code{_density}. If \code{NA} (default), only aesthetic variables (i.e. specified by \code{col} and \code{lwd}) are shown). If they are not specified, all variables are shown. Set popup.vars to \code{FALSE} to disable popups. When a vector of variable names is provided, the names (if specified) are printed in the popups.
 #' @param popup.format list of formatting options for the popup values. See the argument \code{legend.format} for options. Only applicable for numeric data variables. If one list of formatting options is provided, it is applied to all numeric variables of \code{popup.vars}. Also, a (named) list of lists can be provided. In that case, each list of formatting options is applied to the named variable.
 #' @param zindex zindex of the pane in view mode. By default, it is set to the layer number plus 400. By default, the tmap layers will therefore be placed in the custom panes \code{"tmap401"}, \code{"tmap402"}, etc., except for the base tile layers, which are placed in the standard \code{"tile"}. This parameter determines both the name of the pane and the z-index, which determines the pane order from bottom to top. For instance, if \code{zindex} is set to 500, the pane will be named \code{"tmap500"}.
@@ -398,6 +407,7 @@ tm_fill <- function(col=NA,
 					legend.z=NA,
 					legend.hist.z=NA,
 					id=NA,
+					interactive = TRUE,
 					popup.vars=NA,
 					popup.format=list(),
 					zindex=NA,
@@ -679,6 +689,7 @@ tm_rgba <- function(r = 1, g = 2, b = 3, a = 4, alpha = NA, saturation = 1, inte
 #' @param legend.shape.z index value that determines the position of the legend element regarding the symbol shapes. (See \code{legend.size.z})
 #' @param legend.hist.z index value that determines the position of the histogram legend element. (See \code{legend.size.z})
 #' @param id name of the data variable that specifies the indices of the symbols. Only used for \code{"view"} mode (see \code{\link{tmap_mode}}).
+#' @param interactive logical that determines whether this layer is interactive in view mode (e.g. hover text, popup, and click event in shiny apps)
 #' @param popup.vars names of data variables that are shown in the popups in \code{"view"} mode. If \code{NA} (default), only aesthetic variables (i.e. specified by \code{col} and \code{lwd}) are shown). If they are not specified, all variables are shown. Set popup.vars to \code{FALSE} to disable popups. When a vector of variable names is provided, the names (if specified) are printed in the popups.
 #' @param popup.format list of formatting options for the popup values. See the argument \code{legend.format} for options. Only applicable for numeric data variables. If one list of formatting options is provided, it is applied to all numeric variables of \code{popup.vars}. Also, a (named) list of lists can be provided. In that case, each list of formatting options is applied to the named variable.
 #' @param title shortcut for \code{title.col} for \code{tm_dots}
@@ -765,6 +776,7 @@ tm_symbols <- function(size=1, col=NA,
 						legend.shape.z=NA,
 						legend.hist.z=NA,
 						id=NA,
+						interactive=TRUE,
 						popup.vars=NA,
 						popup.format=list(),
 						zindex=NA,
@@ -807,7 +819,7 @@ tm_bubbles <- function(size=1,
 #' @export
 tm_dots <- function(col=NA, 
 					size=.02, 
-					shape=16,
+					shape=19,
 					title = NA, 
 					legend.show=TRUE, 
 					legend.is.portrait=TRUE, 
@@ -885,7 +897,7 @@ tm_markers <- function(shape=marker_icon(),
 #' @example ./examples/tm_sf.R
 #' @seealso \href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}}
 #' @return \code{\link{tmap-element}}
-tm_sf <- function(col=NA, size=.02, shape = 16, lwd=1, lty = "solid", alpha=NA, palette=NULL, border.col=NA, border.lwd=1, border.lty = "solid", border.alpha=NA, group = NA, ...) {
+tm_sf <- function(col=NA, size=.02, shape = 19, lwd=1, lty = "solid", alpha=NA, palette=NULL, border.col=NA, border.lwd=1, border.lty = "solid", border.alpha=NA, group = NA, ...) {
 	args <- list(...)
 	
 	argsFill <- c(list(col = col, alpha = alpha, palette = palette), args[intersect(names(args), names(formals("tm_fill")))])
@@ -922,7 +934,7 @@ tm_basemap <- function(server=NA, group = NA, alpha = NA, tms = FALSE) {
 #' 
 #' When \code{tm_basemap} is not specified, the default basemaps are shown, which can be configured by the \code{basemaps} arugument in \code{\link{tmap_options}}. By default (for style \code{"white"}) three basemaps are drawn: \code{c("Esri.WorldGrayCanvas", "OpenStreetMap", "Esri.WorldTopoMap")}. To disable basemaps, add \code{tm_basemap(NULL)} to the plot, or set \code{tmap_options(basemaps = NULL)}. Similarly, when \code{tm_tiles} is not specified, the overlay maps specified by the \code{overlays} argument in in \code{\link{tmap_options}} are shown as front layer. By default, this argument is set to \code{NULL}, so no overlay maps are shown by default. See examples.
 #' 
-#' @param server name of the provider or an URL. The list of available providers can be obtained with \code{leaflet::providers}. See \url{http://leaflet-extras.github.io/leaflet-providers/preview} for a preview of those. When a URL is provided, it should be in template format, e.g. \code{"http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}. Use \code{NULL} in \code{tm_basemap} to disable the basemaps.
+#' @param server name of the provider or an URL. The list of available providers can be obtained with \code{providers} (tip: in RStudio, type \code{providers$} to see the options). See \url{https://leaflet-extras.github.io/leaflet-providers/preview/} for a preview of those. When a URL is provided, it should be in template format, e.g. \code{"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}. Use \code{NULL} in \code{tm_basemap} to disable the basemaps.
 #' @param group name of the group to which this layer belongs in view mode. Each group can be selected or deselected in the layer control item. Set \code{group = NULL} to hide the layer in the layer control item. By default, it will be set to the name of the shape (specified in \code{\link{tm_shape}}). Tile layers generated with \code{tm_basemap} will be base groups whereas tile layers generated with \code{tm_tiles} will be overlay groups.
 #' @param alpha alpha
 #' @param zindex zindex of the pane in view mode. By default, it is set to the layer number plus 400. By default, the tmap layers will therefore be placed in the custom panes \code{"tmap401"}, \code{"tmap402"}, etc., except for the base tile layers, which are placed in the standard \code{"tile"}. This parameter determines both the name of the pane and the z-index, which determines the pane order from bottom to top. For instance, if \code{zindex} is set to 500, the pane will be named \code{"tmap500"}.
