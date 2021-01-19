@@ -1,3 +1,8 @@
+version 3.3
+- tmap_grob added, which exports tmap plots to grob objects (grid package)
+- SpatRaster objects (terra package) supported
+- fixed many small bugs (see github issue list)
+
 version 3.2
 - tmap_animation improved: now using av and gifski under the hood; added progress bar; lists of tmap objects supported; improved default settings
 - improved tmapOutput; it now works with reactive shiny objects

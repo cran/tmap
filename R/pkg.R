@@ -117,7 +117,7 @@
 #' @concept choropleth
 #' @concept bubble map
 #' @seealso \href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}}
-#' @references Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \href{https://doi.org/10.18637/jss.v084.i06}{DOI}
+#' @references Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \doi{10.18637/jss.v084.i06}
 NULL
 
 #' World and Netherlands map
@@ -179,7 +179,11 @@ NULL
 
 #' Spatial data of global land cover
 #' 
-#' Spatial data of global land cover, of class \code{\link[stars:st_as_stars]{stars}}. The data includes a population times series from 1950 to (forecasted) 2030. All metro areas with over 1 million inhabitants in 2010 are included.
+#' Spatial data of global land cover, percent tree cover, and elevation of class \code{\link[stars:st_as_stars]{stars}}. 
+#' Two attributes in this object relates to global land cover.
+#' The cover layer classifies the status of land cover of the whole globe into 20 categories, while 
+#' the cover_cls layer uses 8 simplified categories.
+#' Percent Tree Cover (trees) represents the density of trees on the ground, and the last attribute represents elevation.
 #' 
 #' \strong{Important:} publication of these maps is only allowed when cited to Tateishi et al. (2014), and when "Geospatial Information Authority of Japan, Chiba University and collaborating organizations." is shown.
 #' 
@@ -246,6 +250,6 @@ NULL
 #' 
 #' @name tmap-element
 #' @seealso \href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}}
-#' @references Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \href{https://doi.org/10.18637/jss.v084.i06}{DOI}
+#' @references Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \doi{10.18637/jss.v084.i06}
 #' @seealso The examples in each of the element functions
 NULL

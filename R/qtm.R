@@ -37,7 +37,7 @@
 #' @return \code{\link{tmap-element}}
 #' @example ./examples/qtm.R
 #' @seealso \href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}}
-#' @references Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \href{https://doi.org/10.18637/jss.v084.i06}{DOI}
+#' @references Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \doi{10.18637/jss.v084.i06}
 #' @export
 qtm <- function(shp, 
 				fill=NA,
@@ -89,7 +89,7 @@ qtm <- function(shp,
 	}
 	
 	
-	isRaster <- (inherits(shp, c("SpatialGrid", "SpatialPixels", "Raster", "stars")))
+	isRaster <- (inherits(shp, c("SpatialGrid", "SpatialPixels", "Raster", "stars", "SpatRaster")))
 	
 	
 	if ((inherits(shp, "stars") && !has_raster(shp))) {

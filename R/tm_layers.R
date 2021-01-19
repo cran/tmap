@@ -98,7 +98,7 @@ check_deprecated_layer_fun_args <- function(auto.palette.mapping, max.categories
 #' @export
 #' @example ./examples/tm_text.R
 #' @seealso \href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}}
-#' @references Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \href{https://doi.org/10.18637/jss.v084.i06}{DOI}
+#' @references Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \doi{10.18637/jss.v084.i06}
 #' @return \code{\link{tmap-element}}
 tm_text <-  function(text, size=1, col=NA, root=3, 
 					 clustering=FALSE,
@@ -160,11 +160,13 @@ tm_text <-  function(text, size=1, col=NA, root=3,
 #' @param remove.overlap see \code{\link{tm_text}}
 #' @param along.lines see \code{\link{tm_text}}
 #' @param overwrite.lines see \code{\link{tm_text}}
+#' @param bg.color background color of the labels. Note: in tmap <= 3.2, the iso lines were cut to make space for labels. In tmap >= 3.3, this is changed: the iso lines remain unchanged, but the labels are printed with a background color by default.
 #' @param group name of the group to which this layer belongs in view mode. Each group can be selected or deselected in the layer control item. Set \code{group = NULL} to hide the layer in the layer control item. By default, it will be set to the name of the shape (specified in \code{\link{tm_shape}}).
 #' @param ... arguments passed on to \code{\link{tm_lines}} or \code{\link{tm_text}}
 #' @export
 tm_iso <- function(col=NA, text="level", size=.5, 
 				   remove.overlap=TRUE, along.lines=TRUE, overwrite.lines=TRUE,
+				   bg.color = tmap_options()$bg.color,
 				   group = NA, ...) {
 	args <- list(...)
 	argsL <- args[intersect(names(formals("tm_lines")), names(args))]
@@ -174,7 +176,8 @@ tm_iso <- function(col=NA, text="level", size=.5,
 		do.call("tm_text", c(list(text=text, size=size,
 								  remove.overlap=remove.overlap,
 								  along.lines=along.lines,
-								  overwrite.lines = overwrite.lines),
+								  overwrite.lines = overwrite.lines,
+								  bg.color = bg.color),
 							 argsT))
 }
 
@@ -248,7 +251,7 @@ tm_iso <- function(col=NA, text="level", size=.5,
 #' @param ... these arguments are passed on to \code{\link[classInt:classIntervals]{classIntervals}}, the function that determine color classes (see also \code{style}).
 #' @export
 #' @seealso \href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}}
-#' @references Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \href{https://doi.org/10.18637/jss.v084.i06}{DOI}
+#' @references Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \doi{10.18637/jss.v084.i06}
 #' @example ./examples/tm_lines.R
 #' @return \code{\link{tmap-element}}
 tm_lines <- function(col=NA, lwd=1, lty="solid", alpha=NA,
@@ -374,7 +377,7 @@ tm_lines <- function(col=NA, lwd=1, lty="solid", alpha=NA,
 #' @export
 #' @example ./examples/tm_fill.R
 #' @seealso \href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}}
-#' @references Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \href{https://doi.org/10.18637/jss.v084.i06}{DOI}
+#' @references Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \doi{10.18637/jss.v084.i06}
 #' @return \code{\link{tmap-element}}	
 tm_fill <- function(col=NA, 
 					alpha=NA,
@@ -519,7 +522,7 @@ tm_polygons <- function(col=NA,
 #' @export
 #' @example ./examples/tm_raster.R
 #' @seealso \href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}}
-#' @references Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \href{https://doi.org/10.18637/jss.v084.i06}{DOI}
+#' @references Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \doi{10.18637/jss.v084.i06}
 #' @return \code{\link{tmap-element}}	
 tm_raster <- function(col=NA,
 					  alpha = NA,
@@ -705,7 +708,7 @@ tm_rgba <- function(r = 1, g = 2, b = 3, a = 4, alpha = NA, saturation = 1, inte
 #' @export
 #' @example ./examples/tm_symbols.R
 #' @references Flannery J (1971). The Relative Effectiveness of Some Common Graduated Point Symbols in the Presentation of Quantitative Data. Canadian Cartographer, 8(2), 96-109.
-#' @references Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \href{https://doi.org/10.18637/jss.v084.i06}{DOI}
+#' @references Tennekes, M., 2018, {tmap}: Thematic Maps in {R}, Journal of Statistical Software, 84(6), 1-39, \doi{10.18637/jss.v084.i06}
 #' @seealso \href{../doc/tmap-getstarted.html}{\code{vignette("tmap-getstarted")}}
 #' @return \code{\link{tmap-element}}
 tm_symbols <- function(size=1, col=NA,

@@ -38,11 +38,11 @@ pre_process_shapes <- function(y, raster_facets_vars, gm, interactive) {
 		treat_as_by = TRUE
 		
 		shp = sf::st_as_sf(shp[by_var])
-		shpnames = setdiff(names(shp), "geom")
+		shpnames = setdiff(names(shp), attr(shp, "sf_column"))
 	}
 	
 	
-	if (inherits(shp, c("stars", "Raster", "SpatialPixels", "SpatialGrid"))) {
+	if (inherits(shp, c("stars", "Raster", "SpatialPixels", "SpatialGrid", "SpatRaster"))) {
 		is.RGB <- attr(raster_facets_vars, "is.RGB") # true if tm_rgb is used (NA if qtm is used)
 		rgb.vars <- attr(raster_facets_vars, "rgb.vars")
 		to.Cat <- attr(raster_facets_vars, "to.Cat") # true if tm_raster(..., style = "cat) is specified
@@ -50,12 +50,21 @@ pre_process_shapes <- function(y, raster_facets_vars, gm, interactive) {
 		
 		if (interactive && is.numeric(tmapOptions$projection) && !identical(tmapOptions$projection, 0)) gm$shape.master_crs <- .crs_merc # leaflet excepts rasters in epsg 3857
 		
-		if (!inherits(shp, "stars")) shp <- stars::st_as_stars(shp)
+		if (!inherits(shp, "stars")) {
+			#if (inherits(shp, "SpatRaster")) shp = as(shp, "Raster")
+			shp = stars::st_as_stars(shp)	
+		} 
 
 		if (!has_raster(shp)) stop("object ", y$shp_name, " does not have a spatial raster", call. = FALSE)
 		
 		max.raster <- tmapOptions$max.raster[if(interactive) "view" else "plot"]
-
+		
+		
+		# estimate number of facets (for max.raster)
+		# nfacets = if (identical(is.RGB, TRUE)) 1 else if (treat_as_by || is.na(raster_facets_vars[1])) length(shpnames) else length(na.omit(raster_facets_vars))
+		# Not used yet, since it is hard to determine facets created with tm_facets(group = ...)
+		if ((inherits(shp, "stars_proxy")) || y$raster.downsample) shp <- downsample_stars(shp, max.raster)
+		
 		
 		dxy <- attr(st_dimensions(shp), "raster")$dimensions
 		dvars <- setdiff(names(dim(shp)), dxy)
@@ -72,10 +81,6 @@ pre_process_shapes <- function(y, raster_facets_vars, gm, interactive) {
 		}
 		
 
-		# estimate number of facets (for max.raster)
-		# nfacets = if (identical(is.RGB, TRUE)) 1 else if (treat_as_by || is.na(raster_facets_vars[1])) length(shpnames) else length(na.omit(raster_facets_vars))
-		# Not used yet, since it is hard to determine facets created with tm_facets(group = ...)
-		if ((inherits(shp, "stars_proxy")) || y$raster.downsample) shp <- downsample_stars(shp, max.raster)
 		
 		
 		# attribute get from read_osm
@@ -210,10 +215,13 @@ pre_process_shapes <- function(y, raster_facets_vars, gm, interactive) {
 		
 
 		# flatten
+		shp2 = shp[1,] # select first attribute
 		
-		shp2 <- shp[1]
-		shp2[[1]] <- matrix(1L:(nrow(shp)*ncol(shp)), ncol = ncol(shp), nrow = nrow(shp))
-		attr(shp2, "dimensions") <- attr(shp2, "dimensions")[dxy]
+		while(length(dim(shp2)) > 2) {
+			shp2 = abind::adrop(shp2[,,,1])
+		}
+		
+		shp2[[1]] = seq_len(prod(dim(shp2))) 
 		
 		## to be consistent with Spatial objects:
 		#attr(shp2, "bbox") <- bb(shp2)
@@ -288,14 +296,14 @@ pre_process_shapes <- function(y, raster_facets_vars, gm, interactive) {
 		}
 		
 		if (inherits(st_geometry(shp2), c("sfc_POLYGON", "sfc_MULTIPOLYGON"))) {
-			data$SHAPE_AREAS <- tmaptools::approx_areas(shp=shp2, target = paste(shp.unit, shp.unit, sep=" "))
+			data$SHAPE_AREAS <- as.numeric(tmaptools::approx_areas(shp=shp2, target = paste(shp.unit, shp.unit, sep=" ")))
 			
-			zeros = as.numeric(data$SHAPE_AREAS)==0
+			zeros = (data$SHAPE_AREAS==0) #| is.nan(data$SHAPE_AREAS)
 			
-			if (all(zeros)) {
-				stop("All polygons of ", y$shp_name, " have an area of 0, possibly caused by transformation.", call. = FALSE)
-			} else if (any(zeros)) {
-				sel = as.numeric(data$SHAPE_AREAS)!=0
+			if (all(zeros & !is.na(zeros))) {
+				stop("All polygons of ", y$shp_name, " have an area of 0 or NaN, possibly caused by transformation.", call. = FALSE)
+			} else if (any(zeros & !is.na(zeros))) {
+				sel = data$SHAPE_AREAS!=0 & !is.nan(data$SHAPE_AREAS)
 				data = data[sel, , drop = FALSE]
 				shp2 = shp2[sel, ]
 				
