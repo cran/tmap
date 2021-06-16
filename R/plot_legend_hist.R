@@ -31,7 +31,7 @@ plot_legend_hist <- function(x, legend.hist.size, lineHeight, scale, m, attr.col
 			breaks[length(breaks)] <- Inf
 			
 			pal = legend.palette[1:(length(breaks)-1L)]
-			print(pal)
+			# print(pal)
 			if (reverse) pal = rev(pal)
 			
 			colors <- pal[vapply(bins.mean, function(x) which(x<breaks)[1]-1L, integer(1))]
@@ -143,7 +143,7 @@ plot_legend_hist <- function(x, legend.hist.size, lineHeight, scale, m, attr.col
 				line_height <- convertHeight(unit(1, "lines"), "npc", valueOnly=TRUE) * size
 				if (draw_x_axis) {
 					
-					gTree(children = gList(linesGrob(x=c(0,1), y=c(1, 1), gp=gpar(lwd=scale)),
+					gTree(children = gList(linesGrob(x=c(0,1), y=c(1, 1), gp=gpar(col=attr.color, lwd=scale)),
 										   polylineGrob(x=rep(xticks, each=2), y=rep(c(1, 1-axisTicks.npc), n), 
 								  id=rep(1:n, each=2), gp=gpar(col=attr.color, lwd=scale)))) 
 				} else linesGrob(x=c(0,1), y=c(1, 1), gp=gpar(col=attr.color, lwd=scale))
