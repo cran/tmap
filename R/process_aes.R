@@ -48,6 +48,10 @@ process_aes <- function(type, xs, xlabels, colname, data, g, gt, gby, z, interac
 	treat_as_by = attr(data, "treat_as_by")
 	
 	xs <- mapply(function(x, nm) {
+		if (inherits(x, c("sf", "stars", "raster"))) {
+			stop("Spatial objects should be specified with tm_shape.", call. = FALSE)
+		}
+		
 		#if (length(x)==1 && is.na(x)[1] && !any(type == c("raster", "text")) && !treat_as_by) gt$aes.colors[nm] else x
 		if (treat_as_by) {
 			if (!is.na(x[1])) {
@@ -313,17 +317,25 @@ process_aes <- function(type, xs, xlabels, colname, data, g, gt, gby, z, interac
 
 		
 		## histogram
+		
+		
 		if (xname %in% c("fill", "line.col", "symbol.col", "raster", "text.col")) {
-			legend.hist.z <- if (is.na(g$legend.hist.z)) z+.5 else g$legend.hist.z
-			
-			if (g$legend.hist && is.ena(g$legend.hist.title) && legend.z>legend.hist.z) {
-				# histogram is drawn between title and legend enumeration
-				legend.hist.title <- legend.title
-				legend.title <- ""
-			} else if (g$legend.hist && !is.na(g$legend.hist.title)) {
-				legend.hist.title <- g$legend.hist.title
-			} else legend.hist.title <- ""
-			hlist <- list(legend.hist=g$legend.hist, legend.hist.title = legend.hist.title, legend.hist.z = legend.hist.z)
+			if (any(g$style %in% c("order", "cont")) && g$legend.hist) {
+				warning("Histogram not supported for styles \"cont\" or \"order\"", call. = FALSE)
+				g$legend.hist = FALSE
+				hlist <- list(legend.hist = FALSE)
+			} else {
+				legend.hist.z <- if (is.na(g$legend.hist.z)) z+.5 else g$legend.hist.z
+				
+				if (g$legend.hist && is.ena(g$legend.hist.title) && legend.z>legend.hist.z) {
+					# histogram is drawn between title and legend enumeration
+					legend.hist.title <- legend.title
+					legend.title <- ""
+				} else if (g$legend.hist && !is.na(g$legend.hist.title)) {
+					legend.hist.title <- g$legend.hist.title
+				} else legend.hist.title <- ""
+				hlist <- list(legend.hist=g$legend.hist, legend.hist.title = legend.hist.title, legend.hist.z = legend.hist.z)
+			}
 		} else {
 			hlist <- list()
 		}		
