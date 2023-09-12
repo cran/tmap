@@ -106,7 +106,7 @@ tmap_options_reset()
 #  })
 
 ## -----------------------------------------------------------------------------
-qtm(World, fill = "HPI", fill.pallete = "RdYlGn")
+qtm(World, fill = "HPI", fill.palette = "RdYlGn")
 
 ## ---- eval = FALSE------------------------------------------------------------
 #  tmap_tip()
