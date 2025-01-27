@@ -2,108 +2,55 @@
 % Please edit documentation in R/tm_add_legend.R
 \name{tm_add_legend}
 \alias{tm_add_legend}
-\title{Add manual legend}
+\title{Map component: manual legend}
 \usage{
 tm_add_legend(
-  type = c("fill", "symbol", "text", "line", "title"),
-  labels = NULL,
-  col = NULL,
-  size = NULL,
-  shape = NULL,
-  lwd = NULL,
-  lty = NULL,
-  text = NULL,
-  alpha = NA,
-  border.col = "black",
-  border.lwd = 1,
-  border.alpha = NA,
+  ...,
+  labels = "",
+  type = "symbols",
   title = "",
-  is.portrait = TRUE,
-  legend.format = list(),
-  reverse = FALSE,
-  z = NA,
-  zindex = NA,
-  group = NULL
+  design = NULL,
+  orientation = NULL,
+  position = NULL,
+  group = NA,
+  group.control = "check",
+  resize.as.group = FALSE,
+  z = NA_integer_
 )
 }
 \arguments{
-\item{type}{type of legend. One of \code{"fill"}, \code{"symbol"}, \code{"text"}, \code{"line"}, or \code{"title"}. The last option only displays a title.}
+\item{...}{visual variables and arguments passed on to \code{tm_legend()}.
+By default, the argument \code{type} is set to \code{"symbols"}, which means that the
+supported visual variables are: \code{"fill"}, \code{"col"}, \code{"shape"}, \code{"size"},
+\code{"fill_alpha"}, \code{"col_alpha"}, \code{"lty"}, \code{"lwd"}, \code{"linejoin"}, and \code{"lineend"}.
+The number of legend items will be equal to the maximum number of specific values (and specified labels.)}
 
-\item{labels}{legend labels}
+\item{labels}{labels by default \code{""} (so omitted)}
 
-\item{col}{legend colors}
+\item{type}{the layer type from which the visual variables (see \code{...}) are taken.
+Options: \code{"symbols"} (default), \code{"lines"}, \code{"polygons"}, and \code{"text"}.}
 
-\item{size}{legend symbol sizes (if \code{type=="symbol"}). See example how to replicate the sizes of symbols created with \code{\link{tm_symbols}}. If not specified, the symbols will have the same size as when calling \code{\link{tm_symbols}} without specifying the \code{size} argument.}
+\item{title}{The title of the legend.}
 
-\item{shape}{legend symbol shapes (if \code{type=="symbol"})}
+\item{design}{The design of the legend.}
 
-\item{lwd}{legend line widths (if \code{type=="line"})}
+\item{orientation}{The orientation of the legend.}
 
-\item{lty}{legend line types (if \code{type=="line"})}
+\item{position}{The position of the legend. A tm_pos object, or a shortcut of two values: horizontal (left, center, right) and vertical (top, center, bottom). See tm_pos for details}
 
-\item{text}{legend texts (if \code{type=="text"})}
+\item{group}{Name of the group to which this layer belongs. This is only
+relevant in view mode, where layer groups can be switched (see \code{group.control})}
 
-\item{alpha}{legend fill transparency}
+\item{group.control}{In view mode, the group control determines how
+layer groups can be switched on and off. Options: \code{"radio"} for radio
+buttons (meaning only one group can be shown), \code{"check"} for check boxes
+(so multiple groups can be shown), and \code{"none"} for no control
+(the group cannot be (de)selected).}
 
-\item{border.col}{legend border col (if \code{type} is \code{"fill"} or \code{"symbol"})}
+\item{resize.as.group}{resize.as.group}
 
-\item{border.lwd}{legend border width (if \code{type} is \code{"fill"} or \code{"symbol"})}
-
-\item{border.alpha}{legend border alpha (if \code{type} is \code{"fill"} or \code{"symbol"})}
-
-\item{title}{legend title}
-
-\item{is.portrait}{is legend portrait (\code{TRUE}) or landscape (\code{FALSE})?}
-
-\item{legend.format}{options to format the legend, see \code{\link{tm_symbols}} (the description of the argument \code{legend.format}) for details. Note that many of these arguments are not applicable for \code{tm_add_legend} since \code{labels} should be a character vector. However, some options could still be handy, e.g. \code{list(text.align = "right")}.}
-
-\item{reverse}{are the legend items reversed (by default \code{FALSE})?}
-
-\item{z}{legend stack position}
-
-\item{zindex}{zindex of the pane in view mode to which the legend belongs (if any).}
-
-\item{group}{name of the group to which this layer belongs in view mode. Each group can be selected or deselected in the layer control item. By default \code{NULL}, which means that the legend will not be shown in the layer control item.}
+\item{z}{z}
 }
 \description{
-Creates a \code{\link{tmap-element}} that adds a manual legend.
-}
-\examples{
-# This example adds a manual legend that combines the tm_symbols color and size legend.
-\dontrun{
-data(World)
-data(metro)
-
-# legend bubble size (10, 20, 30, 40 million) are
-# - are normlized by upper limit (40e6),
-# - square rooted (see argument perceptual of tm_symbols), and 
-# - scaled by 2:
-bubble_sizes <- ((c(10, 20, 30, 40) * 1e6) / 40e6) ^ 0.5 * 2 
-
-tm_shape(World) + 
-	tm_polygons() + 
-tm_shape(metro) +
-	tm_symbols(col='pop2020', 
-		breaks = c(0, 15, 25, 35, 40) * 1e6,
-		n=4,
-		palette = 'YlOrRd',
-		size='pop2020',
-		sizes.legend = c(10, 20, 30, 40) * 1e6,
-		size.lim = c(0, 40e6),
-		scale = 2,
-		legend.size.show = FALSE,    # comment this line to see the original size legend
-		legend.col.show = FALSE,     # comment this line to see the original color legend
-		legend.size.is.portrait = TRUE) + 
-tm_add_legend('symbol', 
-	col = RColorBrewer::brewer.pal(4, "YlOrRd"),
-	border.col = "grey40",
-	size = bubble_sizes,
-	labels = c('0-15 mln','15-25 mln','25-35 mln','35-40 mln'),
-	title="Population Estimate")
-}
-
-# See also the documentation of tm_symbols for another example
-}
-\seealso{
-\code{\link{tm_symbols}} for another example
+Map component that adds a manual legend.
 }

@@ -5,22 +5,32 @@
 \alias{tmapOutput}
 \alias{tmapProxy}
 \alias{tm_remove_layer}
-\title{Wrapper functions for using tmap in shiny}
+\title{Wrapper functions for using \strong{tmap} in \strong{shiny}}
 \usage{
-renderTmap(expr, env = parent.frame(), quoted = FALSE)
+renderTmap(
+  expr,
+  env = parent.frame(),
+  quoted = FALSE,
+  execOnResize = TRUE,
+  mode = NA
+)
 
-tmapOutput(outputId, width = "100\%", height = 400)
+tmapOutput(outputId, width = "100\%", height = 400, mode = NA)
 
-tmapProxy(mapId, session = shiny::getDefaultReactiveDomain(), x)
+tmapProxy(mapId, session = shiny::getDefaultReactiveDomain(), x, mode = NA)
 
 tm_remove_layer(zindex)
 }
 \arguments{
-\item{expr}{A tmap object. A tmap object is created with \code{\link{qtm}} or by stacking \code{\link{tmap-element}}s.}
+\item{expr}{A tmap object. A tmap object is created with \code{\link[=qtm]{qtm()}} or by stacking \code{\link{tmap-element}}s.}
 
 \item{env}{The environment in which to evaluate expr}
 
-\item{quoted}{Is expr a quoted expression (with quote())? This is useful if you want to save an expression in a variable}
+\item{quoted}{Is \code{expr} a quoted expression (with \code{quote()})? This is useful if you want to save an expression in a variable}
+
+\item{execOnResize}{If \code{TRUE} (default), when the plot is resized, the map is regenerated. When set to \code{FALSE} the map is rescaled: the aspect ratio is kept, but the layout will be less desirable.}
+
+\item{mode}{tmap mode, see \code{\link[=tmap_mode]{tmap_mode()}} If not defined, the current mode is used}
 
 \item{outputId}{Output variable to read from}
 
@@ -32,45 +42,66 @@ tm_remove_layer(zindex)
 
 \item{x}{the tmap object that specifies the added and removed layers.}
 
-\item{zindex}{the z index of the pane in which the layer is contained that is going to be removed. It is recommended to specify the zindex for this layer when creating the map (inside \code{renderTmap}).}
+\item{zindex}{the z index of the pane in which the layer is contained that is going to be removed. It is recommended to specify the \code{zindex} for this layer when creating the map (inside \code{renderTmap()}).}
 }
 \description{
-Use \code{tmapOutput} to create a UI element, and \code{renderTmap} to render the tmap map. To update the map (more specifically, to add and remove layers) use \code{tmapProxy}. Adding layers is as usual, removing layers can be done with the function \code{tm_remove_layer}.
+\itemize{
+\item \code{tmapOutput()} creates a UI element
+\item \code{renderTmap()} renders a tmap map
+\item \code{tmapProxy()} updates a tmap map in \code{view} mode
+}
+
+Adding layers is as usual via the map layer functions like \code{\link[=tm_polygons]{tm_polygons()}}.
+Removing layers can be done, removing with \code{tm_remove_layer()}.
 }
 \details{
-Two features from tmap are not (yet) supported in Shiny: small multiples (facets) and colored backgrounds (argument bg.color of \code{\link{tm_layout}}). Workarounds for small multiples: create multiple independent maps or specify as.layers = TRUE in \code{\link{tm_facets}}.
+Two features from tmap are not (yet) supported in Shiny: small multiples (facets) and colored backgrounds (argument \code{bg.color} of \code{\link[=tm_layout]{tm_layout()}}).
+Workarounds for small multiples: create multiple independent maps or specify \code{as.layers = TRUE} in \code{\link[=tm_facets]{tm_facets()}}.
 }
 \examples{
-if (require("shiny")) {
-	
-	
+if (interactive() && require("shiny")) {
+
 	data(World)
 	world_vars <- setdiff(names(World), c("iso_a3", "name", "sovereignt", "geometry"))
-	
-	
-	ui <- fluidPage(
-		tmapOutput("map"),
-		selectInput("var", "Variable", world_vars)
-	)
-	
-	server <- function(input, output, session) {
-		output$map <- renderTmap({
-			tm_shape(World) +
-				tm_polygons(world_vars[1], zindex = 401)
-		})
-		
-		observe({
-			var <- input$var
-			tmapProxy("map", session, {
-				tm_remove_layer(401) +
+
+	current.mode <- tmap_mode("plot")
+
+	shinyApp(
+		ui = fluidPage(
+			tmapOutput("map", height = "600px"),
+			selectInput("var", "Variable", world_vars)
+		),
+		server <- function(input, output, session) {
+			output$map <- renderTmap({
 				tm_shape(World) +
-					tm_polygons(var, zindex = 401)
+					tm_polygons(input$var, zindex = 401)
 			})
-		})
-	}	
-	
-	
-	app <- shinyApp(ui, server)
-	if (interactive()) app
+		}
+	)
+
+	tmap_mode("view")
+
+	shinyApp(
+		ui = fluidPage(
+			tmapOutput("map", height = "600px"),
+			selectInput("var", "Variable", world_vars)
+		),
+		server <- function(input, output, session) {
+			output$map <- renderTmap({
+				tm_shape(World, id = "iso_a3") +
+					tm_polygons(fill = world_vars[1], zindex = 401)
+			})
+			observe({
+				var <- input$var
+				tmapProxy("map", session, {
+					tm_remove_layer(401) +
+						tm_shape(World, id = "iso_a3") +
+						tm_polygons(fill = var, zindex = 401)
+				})
+			})
+		},options = list(launch.browser=TRUE)
+	)
+
+	tmap_mode(current.mode)
 }
 }

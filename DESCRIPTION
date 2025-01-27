@@ -1,36 +1,49 @@
 Package: tmap
-License: GPL-3
 Title: Thematic Maps
-Type: Package
-LazyLoad: yes
+Version: 4.0
 Authors@R: c(
-	person("Martijn", "Tennekes", email = "mtennekes@gmail.com", role = c("aut", "cre")),
-	person("Jakub", "Nowosad", email = "nowosad.jakub@gmail.com", role = "ctb"),
-	person("Joel", "Gombin", email = "joel.gombin@gmail.com", role = "ctb"),
-	person("Sebastian", "Jeworutzki", email = "Sebastian.Jeworutzki@rub.de", role = "ctb"),
-	person("Kent", "Russell", email = "kent.russell@timelyportfolio.com", role = "ctb"),
-	person("Richard", "Zijdeman", email = "richard.zijdeman@iisg.nl", role = "ctb"),
-	person("John", "Clouse", email = "johnaclouse@gmail.com", role = "ctb"),
-	person("Robin", "Lovelace", email = "rob00x@gmail.com", role = "ctb"),
-	person("Jannes", "Muenchow", email = "jannes.muenchow@uni-jena.de", role = "ctb")
-	)
-Description: Thematic maps are geographical maps in which spatial data distributions are visualized. This package offers a flexible, layer-based, and easy to use approach to create thematic maps, such as choropleths and bubble maps.
-Version: 3.3-4
-Date: 2023-09-12
-Encoding: UTF-8
-Depends: R (>= 3.5.0), methods
-Imports: tmaptools (>= 3.1), sf (>= 0.9-7), stars (>= 0.5-0), units (>=
-        0.6-1), grid, RColorBrewer, viridisLite, classInt (>= 0.4-3),
-        htmltools, htmlwidgets, widgetframe, leaflet (>= 2.0.2),
-        leafsync, leafem (>= 0.1), stats, abind, rlang, utils
-Suggests: rmapshaper, rmarkdown, knitr, png, cartogram, osmdata,
-        ggplot2, dplyr, tidyr, shiny, testthat, covr, av, gifski, s2
-URL: https://r-tmap.github.io/tmap/, https://github.com/r-tmap/tmap
+    person("Martijn", "Tennekes", , "mtennekes@gmail.com", role = c("aut", "cre")),
+    person("Jakub", "Nowosad", , "nowosad.jakub@gmail.com", role = "ctb"),
+    person("Joel", "Gombin", , "joel.gombin@gmail.com", role = "ctb"),
+    person("Sebastian", "Jeworutzki", , "Sebastian.Jeworutzki@rub.de", role = "ctb"),
+    person("Kent", "Russell", , "kent.russell@timelyportfolio.com", role = "ctb"),
+    person("Richard", "Zijdeman", , "richard.zijdeman@iisg.nl", role = "ctb"),
+    person("John", "Clouse", , "johnaclouse@gmail.com", role = "ctb"),
+    person("Robin", "Lovelace", , "rob00x@gmail.com", role = "ctb"),
+    person("Jannes", "Muenchow", , "jannes.muenchow@uni-jena.de", role = "ctb"),
+    person("Olivier", "Roy", role = "ctb"),
+    person("Edzer", "Pebesma", , "edzer.pebesma@uni-muenster.de", role = "ctb"),
+    person("Hugh", "Graham", , "hugh.a.graham@gmail.com", role = "ctb"),
+    person("Michael D.", "Sumner", , "mdsumner@gmail.com", role = "ctb"),
+    person("Tim", "Appelhans", , "tim.appelhans@gmail.com", role = "ctb"),
+    person("Nick", "Bearman", , "nick@nickbearman.com", role = "ctb"))
+Description: Thematic maps are geographical maps in which spatial data
+    distributions are visualized. This package offers a flexible,
+    layer-based, and easy to use approach to create thematic maps, such as
+    choropleths and bubble maps.
+License: GPL-3
+URL: https://github.com/r-tmap/tmap, https://r-tmap.github.io/tmap/
 BugReports: https://github.com/r-tmap/tmap/issues
-VignetteBuilder: knitr
-RoxygenNote: 7.2.3
+Depends: R (>= 4.1)
+Imports: classInt (>= 0.4-3), cli, cols4all (>= 0.8), data.table, grid,
+        htmltools, htmlwidgets, leafem (>= 0.1), leafgl, leaflegend,
+        leaflet (>= 2.0.2), leafsync, methods, rlang, sf (>= 0.9-3),
+        stars (>= 0.4-2), stats, s2, tmaptools (>= 3.1), units (>=
+        0.6-1), servr,
+Suggests: av, colorspace, ggplot2, gifski, knitr, maptiles, png, shiny,
+        terra, testthat (>= 3.2.0), widgetframe, lobstr, rstudioapi
+Config/Needs/check: Nowosad/spDataLarge, lwgeom
+Config/Needs/coverage: Nowosad/spDataLarge, lwgeom
+Config/Needs/website: bookdown, geofacet, rmarkdown, mapview, sits,
+        r-spatial/leafem, mapsf, r-tmap/tmap.glyphs,
+        r-tmap/tmap.networks, r-tmap/tmap.deckgl, sfnetworks,
+        r-tmap/tmap.cartogram
+Config/testthat/edition: 3
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.2
 NeedsCompilation: no
-Packaged: 2023-09-12 14:21:04 UTC; mtes
+Packaged: 2025-01-27 20:26:32 UTC; mtes
 Author: Martijn Tennekes [aut, cre],
   Jakub Nowosad [ctb],
   Joel Gombin [ctb],
@@ -39,7 +52,13 @@ Author: Martijn Tennekes [aut, cre],
   Richard Zijdeman [ctb],
   John Clouse [ctb],
   Robin Lovelace [ctb],
-  Jannes Muenchow [ctb]
+  Jannes Muenchow [ctb],
+  Olivier Roy [ctb],
+  Edzer Pebesma [ctb],
+  Hugh Graham [ctb],
+  Michael D. Sumner [ctb],
+  Tim Appelhans [ctb],
+  Nick Bearman [ctb]
 Maintainer: Martijn Tennekes <mtennekes@gmail.com>
 Repository: CRAN
-Date/Publication: 2023-09-12 21:20:02 UTC
+Date/Publication: 2025-01-27 23:30:02 UTC

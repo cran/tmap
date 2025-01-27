@@ -1,23 +1,39 @@
 #' Arrange small multiples in grid layout
-#' 
-#' Arrange small multiples in a grid layout. Normally, small multiples are created by specifying multiple variables for one aesthetic or by specifying the by argument (see \code{\link{tm_facets}}). This function can be used to arrange custom small multiples in a grid layout.
-#' 
-#' The global option \code{tmap.limits} controls the limit of the number of facets that are plotted. By default, \code{tmap_options(tmap.limits=c(facets.view=4, facets.plot=64))}. The maximum number of interactive facets is set to four since otherwise it may become very slow.
-#' 
-#' @param ... \code{\link{tmap}} objects or one list of \code{\link{tmap}} objects. The number of multiples that can be plot is limited (see details).
+#'
+#' Arrange small multiples in a grid layout. Normally, small multiples are created
+#' by specifying multiple variables for one aesthetic or by specifying the by argument
+#' (see [tm_facets()]). This function can be used to arrange custom small multiples in a grid layout.
+#'
+#' The global option `tmap.limits` controls the limit of the number of facets that are plotted.
+#' By default, `tmap_options(tmap.limits = c(facets.view=4, facets.plot=64))`.
+#' The maximum number of interactive facets is set to four since otherwise it may become very slow.
+#'
+#' @param ... [`tmap`] objects or one list of [`tmap`] objects.
+#'   The number of multiples that can be plot is limited (see details).
 #' @param ncol number of columns
 #' @param nrow number of rows
-#' @param widths vector of column widths. It should add up to 1 and the length should be equal to \code{ncol}
-#' @param heights vector of row heights. It should add up to 1 and the length should be equal to \code{nrow}
-#' @param sync logical. Should the navigation in view mode (zooming and panning) be synchronized? By default \code{FALSE}.
-#' @param asp aspect ratio. The aspect ratio of each map. Normally, this is controlled by the \code{asp} argument from \code{\link{tm_layout}} (also a tmap option). This argument will overwrite it, unless set to \code{NULL}. The default value for \code{asp} is 0, which means that the aspect ratio is adjusted to the size of the device divided by the number of columns and rows. When \code{asp} is set to \code{NA}, which is also the default value for \code{\link{tm_layout}}, the aspect ratio will be adjusted to the used shapes.
-#' @param outer.margins outer.margins, numeric vector four or a single value. If defines the outer margins for each multiple. If will overwrite the \code{outer.margins} argument from \code{\link{tm_layout}}, unless set to \code{NULL}.
-#' @param x a \code{tmap_arrange} object (returned from \code{tmap_arrange})
-#' @param knit should \code{\link[knitr:knit_print]{knit_print}} be enabled, or the normal \code{\link[base:print]{print}} function?
-#' @param options options passed on to knitprint
+#' @param widths vector of column widths. It should add up to 1 and the length
+#'   should be equal to `ncol`.
+#' @param heights vector of row heights. It should add up to 1 and the length
+#'   should be equal to `nrow`.
+#' @param sync logical. Should the navigation in view mode (zooming and panning)
+#'   be synchronized? By default `FALSE`.
+#' @param asp aspect ratio. The aspect ratio of each map. Normally, this is
+#'   controlled by the `asp` argument from [tm_layout()] (also a tmap option).
+#'   This argument will overwrite it, unless set to `NULL`.
+#'   The default value for `asp` is 0, which means that the aspect ratio is
+#'   adjusted to the size of the device divided by the number of columns and rows.
+#'   When `asp` is set to `NA`, which is also the default value for `tm_layout()`,
+#'   the aspect ratio will be adjusted to the used shapes.
+#' @param outer.margins outer.margins, numeric vector four or a single value.
+#'   If defines the outer margins for each multiple. If will overwrite the
+#'   `outer.margins` argument from [tm_layout()], unless set to `NULL`.
+#' @param x a `tmap_arrange` object (returned from `tmap_arrange()`).
+#' @param knit should [knitr::knit_print()] be enabled, or the normal [base::print()] function?
+#' @param options options passed on to [knitr::knit_print()]
 #' @example ./examples/tmap_arrange.R
 #' @export
-tmap_arrange <- function(..., ncol=NA, nrow=NA, widths=NA, heights = NA, sync=FALSE, asp=0, outer.margins=.02) {
+tmap_arrange <- function(..., ncol = NA, nrow = NA, widths = NA, heights = NA, sync = FALSE, asp = 0, outer.margins = .02) {
 	tms <- list(...)
 	if (!inherits(tms[[1]], "tmap")) {
 		if (!is.list(tms[[1]])) stop("The first argument of tmap_arrange is neither a tmap object nor a list.")
@@ -32,22 +48,16 @@ tmap_arrange <- function(..., ncol=NA, nrow=NA, widths=NA, heights = NA, sync=FA
 }
 
 #' @rdname tmap_arrange
-#' @rawNamespace
-#' if(getRversion() >= "3.6.0") {
-#'   S3method(knitr::knit_print, tmap_arrange)
-#' } else {
-#'   export(knit_print.tmap_arrange)
-#' }
+#' @exportS3Method knitr::knit_print
 knit_print.tmap_arrange <- function(x, ..., options = NULL) {
 	print_tmap_arrange(x, knit=TRUE, ..., options = options)
 }
 
 #' @export
 #' @rdname tmap_arrange
-#' @method print tmap_arrange
 print.tmap_arrange <- function(x, knit = FALSE, ..., options = NULL) {
 	print_tmap_arrange(x, knit=knit, ..., options = options)
-}	
+}
 
 
 
@@ -56,102 +66,93 @@ print_tmap_arrange <- function(tms, knit = FALSE, show = TRUE, add.titles = TRUE
 	args <- list(...)
 
 	opts <- attr(tms, "opts")
-		
+
 	tms_len <- length(tms)
-	
-	nx <- process_limit_nx(tms_len)
+
+	nx <- limit_nx(tms_len)
 	if (nx != tms_len) tms <- tms[1:nx]
-	
+
 	if (is.na(opts$ncol) && is.na(opts$nrow)) {
 		devsize <- dev.size()
 		dasp <- devsize[1] / devsize[2]
-		
-		## determine 'overall' aspect ratio by overlaying the maps		
+
+		## determine 'overall' aspect ratio by overlaying the maps
 		#tmp <- tempfile(fileext = ".png")
 		#png( tmp, width=700, height=700, res = 100)
-		
-		curdev <- dev.cur()
-		tasps <- vapply(tms, function(tm) {
-			asp <- get_asp_ratio(tm, width = 700, height = 700, res = 100)	
-			#asp <- print_tmap(tm, return.asp = TRUE, mode = "plot")
-			# dev.off()
-			asp
-		}, numeric(1))
-		dev.set(curdev)
-		
+
+		curdev <- grDevices::dev.cur()
+		rmc = tmap_options(raster.max_cells = 36)
+		tasps <- suppressMessages({
+			vapply(tms, function(tm) {
+				asp <- get_asp_ratio(tm, width = 700, height = 700, res = 100)
+				#asp <- print_tmap(tm, return.asp = TRUE, mode = "plot")
+				# dev.off()
+				asp
+			}, numeric(1))
+		})
+
+		grDevices::dev.set(curdev)
+		tmap_options(rmc)
+
 		#dev.off()
 		#dev.off()
 		hs <- vapply(tasps, function(tasp) ifelse(tasp>1, 1, 1/tasp), numeric(1))
 		ws <- vapply(tasps, function(tasp) ifelse(tasp>1, tasp, 1), numeric(1))
 		iasp <- max(ws) / max(hs)
-		
+
 		asp_ratio <- iasp / dasp
-		
+
 		nrowcol <- process_get_arrangement(nx = nx, asp_ratio = asp_ratio)
 		nrow <- nrowcol[1]
 		ncol <- nrowcol[2]
-		
-		
+
+
 	} else {
 		ncol <- if (is.na(opts$ncol)) ceiling(nx / opts$nrow) else opts$ncol
 		nrow <- if (is.na(opts$nrow)) ceiling(nx / opts$ncol) else opts$nrow
 	}
-	
-	widths <- opts$widths
-	heights = opts$heights
-	if (is.na(widths[1])) widths <- rep(1/ncol, ncol)
-	if (is.na(heights[1])) heights <- rep(1/nrow, nrow)
-	
-	m <- ncol * nrow
+
 
 	interactive <- (getOption("tmap.mode")=="view")
-	
-	if (interactive) {
-		lfs <- lapply(tms, function(tm) {
-			tmap_leaflet(tm, add.titles = FALSE)
-		})
-		lfmv <- do.call(leafsync::latticeView, c(lfs, list(ncol=ncol, sync=ifelse(opts$sync, "all", "none"))))
+	gs = tmap_graphics_name()
 
-		if (add.titles) lfmv <- view_add_leaflet_titles(lfmv)
-		
-		if (show) {
-			if (knit) {
-				kp <- get("knit_print", asNamespace("knitr"))
-				return(do.call(kp, c(list(x=lfmv), args, list(options=options))))
-			} else {
-				return(print(lfmv))
-			}
-		} else lfmv
-		
-		
-	} else {
-		grid.newpage()
-		vp <- viewport(layout=grid.layout(nrow=nrow, ncol=ncol, widths = widths, heights=heights), name = "tmap_arrangement")
-		pushViewport(vp)
-		
-		if (!is.null(opts$asp) || !is.null(opts$outer.margins)) {
-			layout_args <- list(asp=opts$asp, outer.margins=opts$outer.margins)
-			layout_args <- layout_args[!vapply(layout_args, is.null, logical(1))]
-			tml <- do.call(tm_layout, layout_args)
-		} else {
-			tml <- NULL
-		}
-		
-		nc <- 1
-		nr <- 1
-		for (i in 1:nx) {
-			tm <- tms[[i]]
-			if (!is.null(tml)) tm <- tm + tml
-			print_tmap(tm, vp = viewport(layout.pos.col = nc, layout.pos.row = nr))
-			nc <- nc + 1
-			if (nc > ncol) {
-				nc <- 1
-				nr <- nr + 1
-			}
-		}
-	}
-	#dev.off()
-	#invisible(tms)
+	fun = paste0("tmap", gs, "Arrange")
+
+	do.call(fun, list(tms = tms, nx = nx, ncol = ncol, nrow = nrow, opts = opts, knit = knit, show = show, args = args, options = options))
+
 }
 
+
+
+
+
+process_get_arrangement <- function(nx, asp_ratio) {
+	#           asp ~ nrow
+	#       |--------------
+	#   1   |
+	# ~ncol |       nx
+	#       |
+	ncol_init <- sqrt(nx/asp_ratio)
+	nrow_init <- nx / ncol_init
+
+	# rounding:
+	nrow_ceiling <- min(ceiling(nrow_init), nx)
+	ncol_ceiling <- min(ceiling(ncol_init), nx)
+
+	# find minimal change
+	nrow_xtra <- abs(nrow_ceiling - nrow_init) * ncol_init
+	ncol_xtra <- abs(ncol_ceiling - ncol_init) * nrow_init
+
+	# calculaet the other, and subtract 1 when possible
+	if (nrow_xtra < ncol_xtra) {
+		nrow <- nrow_ceiling
+		ncol <- ceiling(nx / nrow)
+		if ((nrow-1) * ncol >= nx) nrow <- nrow - 1
+	} else {
+		ncol <- ncol_ceiling
+		nrow <- ceiling(nx / ncol)
+		if ((ncol-1) * nrow >= nx) ncol <- ncol - 1
+	}
+	c(nrow=nrow, ncol=ncol)
+}
 

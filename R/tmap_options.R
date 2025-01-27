@@ -1,483 +1,569 @@
-.defaultTmapOptions <- structure(
-	list(
-		unit = "metric",
-		limits = c(facets.plot = 64, facets.view = 4),
-		max.categories = 30,
-		max.raster = c(plot = 1e6, view = 1e6),
-		show.messages = TRUE,
-		show.warnings = TRUE,
-		output.format = "png",
-		output.size = 49,
-		output.dpi = 300,
-		output.dpi.animation = 100,
-		check.and.fix = FALSE,
-		title = NA,
-		scale = 1,
-		title.size = 1.3,
-		bg.color = "white",
-		aes.color = c(
-			fill = "grey85",
-			borders = "grey40",
-			symbols = "grey60",
-			dots = "black",
-			lines = "black",
-			text = "black",
-			na = "grey75",
-			null = "grey95"
-		),
-		aes.palette = list(seq = "YlOrBr", div = "RdYlGn", cat = "Set3"),
-		attr.color = "black",
-		sepia.intensity = 0,
-		saturation = 1,
-		frame = TRUE,
-		frame.lwd = 1,
-		frame.double.line = FALSE,
-		asp = NA,
-		outer.margins = rep(0.02, 4),
-		inner.margins = NA,
-		between.margin = .5,
-		outer.bg.color = NULL,
-		fontface = "plain",
-		fontfamily = "",
-		compass.type = "arrow",
-		earth.boundary = FALSE,
-		earth.boundary.color = NULL,
-		earth.boundary.lwd = 1,
-		earth.datum = 4326,
-		space.color = NULL,
-		legend.show = TRUE,
-		legend.only = FALSE,
-		legend.outside = NA,
-		legend.outside.position = "right",
-		legend.outside.size = 0.3,
-		legend.position = NULL,
-		legend.stack = "vertical",
-		legend.just = c("left", "bottom"),
-		legend.width = 0.4,
-		legend.height = 0.9,
-		legend.hist.height = 0.3,
-		legend.hist.width = 0.4,
-		#legend.width,
-		legend.title.color = NULL,
-		legend.title.size = 1.1,
-		legend.title.fontface = NULL,
-		legend.title.fontfamily = NULL,
-		legend.text.color = NULL,
-		legend.text.size = 0.7,
-		legend.text.fontface = NULL,
-		legend.text.fontfamily = NULL,
-		legend.hist.size = 0.7,
-		legend.format = list(
-			fun = NULL,
-			scientific = FALSE,
-			digits = NA,
-			big.num.abbr = c(mln = 6, bln = 9),
-			prefix = "",
-			suffix = "",
-			text.separator = "to",
-			text.less.than = c("Less", "than"),
-			text.or.more = c("or", "more"),
-			text.align = NA,
-			text.to.columns = FALSE,
-			html.escape = TRUE
-		),
-		legend.frame = FALSE,
-		legend.frame.lwd = 1,
-		legend.bg.color = NA,
-		legend.bg.alpha = 1,
-		legend.hist.bg.color = NA,
-		legend.hist.bg.alpha = 1,
-		title.snap.to.legend = NA,
-		title.position = c("left", "top"),
-		title.color = NULL,
-		title.fontface = NULL,
-		title.fontfamily = NULL,
-		title.bg.color = NA,
-		title.bg.alpha = 1,
-		panel.show = NA,
-		panel.labels = NA,
-		panel.label.size = 1,
-		panel.label.color = "black",
-		panel.label.fontface = NULL,
-		panel.label.fontfamily = NULL,
-		panel.label.bg.color = "grey80",
-		panel.label.height = 1.25,
-		panel.label.rot = c(90, 0),
-		main.title = NA,
-		main.title.size = 1.5,
-		main.title.color = "black",
-		main.title.fontface = NULL,
-		main.title.fontfamily = NULL,
-		main.title.position = "left",
-		attr.outside = FALSE,
-		attr.outside.position = "bottom",
-		attr.outside.size = NA,
-		attr.position = c("right", "bottom"),
-		attr.just = c("left", "bottom"),
-		basemaps = c("Esri.WorldGrayCanvas", "OpenStreetMap", "Esri.WorldTopoMap"),
-		basemaps.alpha = c(1, 1, 1),
-		overlays = NULL,
-		overlays.alpha = 1,
-		qtm.scalebar = TRUE,
-		qtm.minimap = FALSE,
-		qtm.mouse.coordinates = TRUE,
-		alpha = NA,
-		colorNA = NA,
-		projection = 3857,
-		symbol.size.fixed = FALSE,
-		dot.size.fixed = TRUE,
-		text.size.variable = FALSE,
-		bbox = NULL,
-		set.bounds = FALSE,
-		set.view = NA,
-		set.zoom.limits = NA,
-		view.legend.position = c("right", "top"),
-		control.position = c("left", "top"),
-		leaflet.options = list()
-	),
-	style = "white"
-)
-
-.defaultTmapStyles <- list(
-	gray = list(
-		bg.color = "grey85",
-		aes.color = c(
-			fill = "grey70",
-			borders = "grey20",
-			symbols = "grey50",
-			dots = "black",
-			lines = "black",
-			text = "black",
-			na = "grey60",
-			null = "grey80"
-		)
-	),
-	grey = list(
-		bg.color = "grey85",
-		aes.color = c(
-			fill = "grey70",
-			borders = "grey20",
-			symbols = "grey50",
-			dots = "black",
-			lines = "black",
-			text = "black",
-			na = "grey60",
-			null = "grey80"
-		)
-	),
-	natural = list(
-		bg.color = "lightskyblue1",
-		aes.color = c(
-			fill = "darkolivegreen3",
-			borders = "black",
-			symbols = "tomato2",
-			dots = "firebrick",
-			lines = "steelblue",
-			text = "black",
-			na = "white",
-			null = "grey70"
-		),
-		aes.palette = list(seq = "YlGn", div = "RdYlGn", cat = "Set3"),
-		attr.color = "black",
-		space.color = "white",
-		legend.frame = TRUE,
-		legend.bg.color = "grey90",
-		earth.boundary = TRUE,
-		basemaps = "Esri.NatGeoWorldMap",
-		basemaps.alpha = 1
-	),
-	cobalt = list(
-		bg.color = "#002240",
-		aes.color = c(
-			fill = "#0088FF",
-			borders = "#002240",
-			symbols = "#FF9D00",
-			dots = "#FF9D00",
-			lines = "#FFEE80",
-			text = "white",
-			na = "grey60",
-			null = "grey40"
-		),
-		aes.palette = list(seq = "YlGn", div = "RdYlGn", cat = "Set3"),
-		attr.color = "white",
-		basemaps = "CartoDB.DarkMatter",
-		basemaps.alpha = .5
-	),
-	col_blind = list(
-		bg.color = "white",
-		aes.color = c(
-			fill = "grey85",
-			borders = "black",
-			symbols = "#D55E00",
-			dots = "#0072B2",
-			lines = "#009E73",
-			text = "black",
-			na = "white",
-			null = "grey90"
-		),
-		aes.palette = list(
-			seq = "Blues",
-			div = "RdBu",
-			cat = c(
-				"#D55E00",
-				"#56B4E9",
-				"#E69F00",
-				"#009E73",
-				"#F0E442",
-				"#0072B2",
-				"#CC79A7"
-			)
-		),
-		attr.color = "black"
-	),
-	albatross = list(
-		bg.color = "#00007F",
-		aes.color = c(
-			fill = "#4C4C88",
-			borders = "#00004C",
-			symbols = "#BFBFFF",
-			dots = "#BFBFFF",
-			lines = "#BFBFFF",
-			text = "#FFE700",
-			na = "grey60",
-			null = "#4C4C88"
-		),
-		aes.palette = list(seq = "YlOrRd", div = "RdYlGn", cat = "Set3"),
-		attr.color = "#BFBFFF",
-		basemaps = "CartoDB.DarkMatter",
-		basemaps.alpha = .5
-	),
-	beaver = list(
-		bg.color = "#FFFFFF",
-		aes.color = c(
-			fill = "#FFE200",
-			borders = "#000000",
-			symbols = "#A30000",
-			dots = "#A30000",
-			lines = "#A30000",
-			text = "#000000",
-			na = "grey80",
-			null = "grey95"
-		),
-		aes.palette = list(seq = "YlOrBr", div = "RdYlGn", cat = "Dark2"),
-		attr.color = "black"
-	),
-	bw = list(saturation = 0),
-	classic = list(
-		sepia.intensity = .7,
-		fontfamily = "serif",
-		frame.double.line = TRUE,
-		compass.type = "rose",
-		basemaps = "Esri.WorldTopoMap",
-		basemaps.alpha = .5
-	),
-	watercolor = list(
-		basemaps = "Stamen.Watercolor",
-		aes.color = c(
-			fill = "#D95F02",
-			borders = "grey20",
-			symbols = "#D95F02",
-			dots = "red",
-			lines = "red",
-			text = "black",
-			na = "grey80",
-			null = "#FDCDAC"
-		),
-		aes.palette = list(seq = "Greens", div = "PiYG", cat = "Pastel1")
-	)
-)
-
-
-.defaultTmapFormats <- list(World = list(inner.margins=c(0, 0.05, 0.025, 0.01),
-							  legend.position=c("left", "bottom"), 
-							  attr.position=c("right", "bottom"),
-							  scale=.8),
-				 World_wide = list(inner.margins=c(0, 0.2, 0.025, 0.01),
-							  legend.position=c("left", "bottom"), 
-							  attr.position=c("right", "bottom"),
-							  scale=.8),
-				 NLD = list(basemaps = c(Standard = "//geodata.nationaalgeoregister.nl/tiles/service/wmts/brtachtergrondkaart/EPSG:3857/{z}/{x}/{y}.png",
-				 						Aerial = "//geodata.nationaalgeoregister.nl/luchtfoto/rgb/wmts/Actueel_ortho25/EPSG:3857/{z}/{x}/{y}.jpeg",
-				 						Pastel = "//geodata.nationaalgeoregister.nl/tiles/service/wmts/brtachtergrondkaartpastel/EPSG:3857/{z}/{x}/{y}.png",
-				 						Gray   = "//geodata.nationaalgeoregister.nl/tiles/service/wmts/brtachtergrondkaartgrijs/EPSG:3857/{z}/{x}/{y}.png"),
-				 			frame=FALSE, 
-				 		   inner.margins=c(.02, .2, .06, .02),
-				 		   legend.position=c("left", "top"), 
-				 		   attr.position=c("left", "bottom")),
-				 NLD_wide = list(basemaps = c(Standard = "//geodata.nationaalgeoregister.nl/tiles/service/wmts/brtachtergrondkaart/EPSG:3857/{z}/{x}/{y}.png",
-				 							 Aerial = "//geodata.nationaalgeoregister.nl/luchtfoto/rgb/wmts/Actueel_ortho25/EPSG:3857/{z}/{x}/{y}.jpeg",
-				 							 Pastel = "//geodata.nationaalgeoregister.nl/tiles/service/wmts/brtachtergrondkaartpastel/EPSG:3857/{z}/{x}/{y}.png",
-				 							 Gray   = "//geodata.nationaalgeoregister.nl/tiles/service/wmts/brtachtergrondkaartgrijs/EPSG:3857/{z}/{x}/{y}.png"),
-				 				frame=FALSE, 
-				 				inner.margins=c(.02, .3, .06, .02),
-				 				legend.position=c("left", "top"), 
-				 				attr.position=c("left", "bottom")))
-				 
-
-#' Options for tmap
-#' 
-#' Get or set global options for tmap. The behaviour of \code{tmap_options} is similar to \code{\link[base:options]{options}}: all tmap options are retrieved when this function is called without arguments. When arguments are specified, the corresponding options are set, and the old values are silently returned as a list. The function \code{tmap_options_reset} is used to reset all options back to the default values (also the \code{style} is reset to \code{"white"}). Differences with the default values can be shown with \code{tmap_options_diff}. The function \code{tmap_options_save} can be used to save the current options as a new style. See details below on how to create a new style.
-#' 
-#' The options can be divided into three parts: one part contains the arguments from \code{\link{tm_layout}}, one part contains the arguments from \code{\link{tm_view}}, and one part contains options that can only be set with \code{tmap_options}. Observe that the options from \code{\link{tm_layout}} and \code{\link{tm_view}} can also be set with those functions. It is recommended to use \code{tmap_options} when setting specific options during global session. However, options that are only relevant for a specific map can better be set with \code{\link{tm_layout}} or \code{\link{tm_view}}.
-#' 
-#' A new style can be created in two ways. The first approach is to use the function \code{tmap_options_save}, which takes a snapshot of the current tmap options. E.g., \code{tmap_options_save("my_style")} will save the current tmap options as a style called \code{"my_style"}. See the examples in which a style called \code{"red"} is created. The second way to create a style is to create a list with tmap options and with a attribute called style. This approach is illustrated in the last example, in which a style called \code{"black"} is created.
-#' 
-#' The newly created style, say \code{"my_style"}, will be accessible globally via \code{tmap_style("my_style")} and \code{+ tm_style("my_style")} until the R session is restarted or \code{tmap} is reloaded. In order to save the style for future use or sharing, obtain the option list as follows: \code{my_style <- tmap_options()} and save the object \code{my_style} in the usual way. Next time, the style can be loaded simply by running \code{tmap_options(my_style)}, which corresponds to the second way to create a style (see the paragraph above).
-#' 
-#' @param ...  options from \code{\link{tm_layout}} or \code{\link{tm_view}}. Note that the difference with using \code{\link{tm_layout}} or \code{\link{tm_view}} directly, is that options set with \code{tmap_options} remain for the entire session (unless changed with \code{tmap_options} or \code{\link{tmap_style}}). It can also be a single unnamed argument which is a named list of options (similar behaviour as \code{\link[base:options]{options}}).
-#' @param unit this is the default value for the \code{unit} argument of \code{\link{tm_shape}}. It specifies the unit of measurement, which is used in the scale bar and the calculation of density values. By default (when loading the package), it is \code{"metric"}. Other valid values are \code{"imperial"}, \code{"km"}, \code{"m"}, \code{"mi"}, and \code{"ft"}.
-#' @param limits this option determines how many facets (small multiples) are allowed for per mode. It should be a vector of two numeric values named \code{facets.view} and \code{facets.plot}. By default (i.e. when loading the package), it is set to \code{c(facets.view = 4, facets.plot = 64)}
-#' @param max.categories in case \code{col} is the name of a categorical variable in the layer functions (e.g. \code{\link{tm_polygons}}), this value determines how many categories (levels) it can have maximally. If the number of levels is higher than \code{max.categories}, then levels are combined.
-#' @param max.raster the maximum size of rasters, in terms of number of raster cells. It should be a vector of two numeric values named \code{plot} and \code{view}, which determines the size in plotting and viewing mode. The default values are \code{c(plot = 1e7, view = 1e6)}. Rasters that are larger will be shown at a decreased resolution.
-#' @param basemaps default basemaps. Basemaps are normally configured with \code{\link{tm_basemap}}. When this is not done, the basemaps specified by this option are shown (in view mode). Vector of one or more names of baselayer maps, or \code{NULL} if basemaps should be omitted. For options see the list \code{leaflet::providers}, which can be previewed at \url{https://leaflet-extras.github.io/leaflet-providers/preview/}. Also supports URL's for tile servers, such as \code{"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}. If a named vector is provided, the names are used in the layer control legend (similar to the \code{group} argument of \code{\link{tm_basemap}}. See also \code{overlays}, which is the default option for overlay tiles.
-#' @param basemaps.alpha default transparency (opacity) value for the basemaps. Can be a vector of values, one for each basemap.
-#' @param overlays default overlay tilemaps. Overlays tilemaps are shown as front layer (in contrast to basemaps, which are background layers), so they are only useful when they are semi-transparent. Like basemaps, a vector of tilemaps is expected, or \code{NULL} is overlays should be omitted.
-#' @param overlays.alpha default transparency (opacity) value for the overlay maps. Can be a vector of values, one for each overlay map.
-#' @param qtm.scalebar should a scale bar be added to interactive maps created with \code{\link{qtm}}. In other words, should \code{tm_scale_bar()} be added automatically? The value \code{NA} means that the scale bar is only added when \code{\link{qtm}} is called without arguments or with a search term. The default value is \code{TRUE}.
-#' @param qtm.minimap should a minimap be added to interactive maps created with \code{\link{qtm}}. In other words, should \code{tm_minimap()} be added automatically? The default value is \code{FALSE}.
-#' @param qtm.mouse.coordinates should mouse coordinates (and zoom level) be shown in view mode with \code{\link{qtm}}? In other words, should \code{tm_mouse_coordinates()} be added automatically? \code{TRUE} by default.
-#' @param show.messages should messages be shown?
-#' @param show.warnings should warnings be shown?
-#' @param output.format The format of the static maps saved with \code{\link{tmap_save}} without specification of the filename. The default is \code{"png"}.
-#' @param output.size The size of the static maps saved with \code{\link{tmap_save}} without specification of width and height. The unit is squared inch and the default is 49. This means that square maps (so with aspect ratio 1) will be saved as 7 by 7 inch images and a map with aspect ratio 2 (e.g. most world maps) will be saved as approximately 10 by 5 inch.
-#' @param output.dpi The default number of dots per inch for \code{\link{tmap_save}}.
-#' @param output.dpi.animation The default number of dots per inch for \code{\link{tmap_animation}}.
-#' @param design.mode Not used anymore; the design mode can now be set with \code{\link{tmap_design_mode}}
-#' @param check.and.fix Logical that determines whether shapes (\code{sf} objects) are checked for validity with \code{\link[sf:st_is_valid]{st_is_valid}} and fixed with \code{\link[sf:st_make_valid]{st_make_valid}} if needed.
-#' @param style style name
-#' @example ./examples/tmap_options.R
-#' @rdname tmap_options
-#' @name tmap_options
+# To generate all options:
+# args = intersect(names(tmap_options_mode("view")),names(tmap_options_mode("plot")))
+# cat(paste(args, collapse = ", "))
+# x = sapply(args, function(a) paste0("#' @param ", a, " `r .doc_opt(\"", a, "\")`"))
+# cat(paste(x, collapse = "\n"))
+#
+# To generate option topics (the 'what', last part)
+# nms = names(tmap_options())
+# nms_s = strsplit(nms, split = ".", fixed = TRUE)
+# nms_lst = sapply(nms_s, tail, 1)
+# whats = sort(unique(nms_lst))
+# cat(paste0("c(", paste(sapply(whats, function(w) paste0(w, " = \"", w, "\"")), collapse = ",\n"), ")"))
+#' tmap options
+#'
+#' Get or set the tmap options globally. For map specific options, we recommend to use [tm_options()] or [tm_layout()] via which the layout-related options can be set. [tmap_options()] functions similar to [base::options()].
+#'
+#' @param ... List of tmap options to be set, or option names (characters) to be returned (see details)
+#' @param crs Map crs (see [tm_shape()]). `NA` means the crs is specified in [tm_shape()]. The crs that is used by the transformation functions is defined in [tm_shape()].
+#' @param facet.max Maximum number of facets
+#' @param facet.flip Should facets be flipped (in case of facet wrap)? This can also be set via [tm_facets_flip()]
+#' @param free.scales For backward compatibility: if this value is set, it will be used to impute the free arguments in the layer functions
+#' @param raster.max_cells Maximum number of raster grid cells. Can be mode specific `c(plot = 3000, view = 1000, 1000)` (the last value is the fall back default)
+#' @param raster.warp Should rasters be warped or transformed in case a different projection (crs) is used? Warping creates a new regular raster in the target crs, whereas transforming creates a (usually non-regular) raster in the target crs. The former is lossy, but much faster and is therefore the default.
+#' When a different projection (crs) is used, a (usually) regular raster will be
+#' @param show.messages Show messages?
+#' @param show.warnings Show warnings?
+#' @param output.format Output format
+#' @param output.size Output size
+#' @param output.dpi Output dpi
+#' @param animation.dpi Output dpi for animations
+#' @param value.const Default visual value constants e.g. the default fill color for `tm_shape(World) + tm_polygons()`. A list is required with per visual variable a value.
+#' @param value.na Default visual values that are used to visualize NA data values. A list is required with per visual variable a value.
+#' @param value.null Default visual values that are used to visualize null (out-of-scope) data values. A list is required with per visual variable a value.
+#' @param value.blank Default visual values that correspond to blank. For color these are `"#00000000"` meaning transparent. A list is required with per visual variable a value.
+#' @param values.var Default values when a data variable to mapped to a visual variable, e.g. a color palette. A list is required with per visual variable a value.
+#' @param values.range Default range for values. See `values.range` of [tm_scale_categorical()]. A list is required with per visual variable a value.
+#' @param value.neutral Default values for when a data variable to mapped to a visual variable, e.g. a color palette. A list is required with per visual variable a value.
+#' @param values.scale Default scales (as in object sizes) for values. See `values.range` of [tm_scale_categorical()]. A list is required with per visual variable a value.
+#' @param scales.var Default scale functions per visual variable and type of data variable. A list is required with per visual variable per data type.
+#' @param scale.misc.args Default values of scale function-specific arguments. A list is required with per scale function and optional per visual variable.
+#' @param continuous.nclass_per_legend_break The number of continuous legend breaks within one 'unit' (label).  The default value is 50.
+#' @param continuous.nclasses the number of classes of a continuous scale. Should be odd.  The default value is 101.
+#' @param label.format Format for the labels (was `legend.format` in tmap v3).
+#' @param label.na Default label for missing values.
+#' @param scale Overall scale of the map
+#' @param asp Aspect ratio of each map. When `asp` is set to `NA` (default) the aspect ratio will be adjusted to the used shapes. When set to 0 the aspect ratio is
+#'   adjusted to the size of the device divided by the number of columns and rows.
+#' @param bg.color Background color of the map.
+#' @param outer.bg.color Background color of map outside the frame.
+#' @param frame Overall frame of the map
+#' @param frame.lwd `r .doc_opt("frame.lwd")`
+#' @param frame.r `r .doc_opt("frame.r")`
+#' @param frame.double_line `r .doc_opt("frame.double_line")`
+#' @param outer.margins `r .doc_opt("outer.margins")`
+#' @param inner.margins `r .doc_opt("inner.margins")`
+#' @param inner.margins.extra `r .doc_opt("inner.margins.extra")`
+#' @param meta.margins `r .doc_opt("meta.margins")`
+#' @param meta.auto_margins `r .doc_opt("meta.auto_margins")`
+#' @param between_margin Margin between the map.
+#' @param panel.margin `r .doc_opt("panel.margin")`
+#' @param component.offset `r .doc_opt("component.offset")`
+#' @param component.stack_margin `r .doc_opt("component.stack_margin")`
+#' @param grid.mark.height `r .doc_opt("grid.mark.height")`
+#' @param xylab.height `r .doc_opt("xylab.height")`
+#' @param coords.height `r .doc_opt("coords.height")`
+#' @param xlab.show `r .doc_opt("xlab.show")`
+#' @param xlab.text `r .doc_opt("xlab.text")`
+#' @param xlab.size `r .doc_opt("xlab.size")`
+#' @param xlab.color `r .doc_opt("xlab.color")`
+#' @param xlab.rotation `r .doc_opt("xlab.rotation")`
+#' @param xlab.space `r .doc_opt("xlab.space")`
+#' @param xlab.fontface `r .doc_opt("xlab.fontface")`
+#' @param xlab.fontfamily `r .doc_opt("xlab.fontfamily")`
+#' @param xlab.alpha `r .doc_opt("xlab.alpha")`
+#' @param xlab.side `r .doc_opt("xlab.side")`
+#' @param ylab.show `r .doc_opt("ylab.show")`
+#' @param ylab.text `r .doc_opt("ylab.text")`
+#' @param ylab.size `r .doc_opt("ylab.size")`
+#' @param ylab.color `r .doc_opt("ylab.color")`
+#' @param ylab.rotation `r .doc_opt("ylab.rotation")`
+#' @param ylab.space `r .doc_opt("ylab.space")`
+#' @param ylab.fontface `r .doc_opt("ylab.fontface")`
+#' @param ylab.fontfamily `r .doc_opt("ylab.fontfamily")`
+#' @param ylab.alpha `r .doc_opt("ylab.alpha")`
+#' @param ylab.side `r .doc_opt("ylab.side")`
+#' @param panel.type `r .doc_opt("panel.type")`
+#' @param panel.wrap.pos The panel positions for wrapped facets created with [tm_facets_grid()]. One of `"left"`, `"right"`, `"top"` (default) or `"bottom"`.
+#' @param panel.xtab.pos The panel positions for grid facets created with [tm_facets_grid()]. Vector of two, where the first determines the locations of row panels (`"left"` or `"right"`) and the second the location of column panels ( `"top"` or `"bottom")
+#' @param unit Unit of the coordinate
+#' @param color.sepia_intensity `r .doc_opt("color.sepia_intensity")`
+#' @param color.saturation `r .doc_opt("color.saturation")`
+#' @param color_vision_deficiency_sim `Color vision deficiency simulation
+#' @param text.fontface `r .doc_opt("text.fontface")`
+#' @param text.fontfamily `r .doc_opt("text.fontfamily")`
+#' @param text.alpha `r .doc_opt("text.alpha")`
+#' @param component.position `r .doc_opt("component.position")`
+#' @param component.autoscale `r .doc_opt("component.autoscale")`
+#' @param legend.show `r .doc_opt("legend.show")`
+#' @param legend.design `r .doc_opt("legend.design")`
+#' @param legend.orientation `r .doc_opt("legend.orientation")`
+#' @param legend.position `r .doc_opt("legend.position")`
+#' @param legend.width `r .doc_opt("legend.width")`
+#' @param legend.height `r .doc_opt("legend.height")`
+#' @param legend.stack `r .doc_opt("legend.stack")`
+#' @param legend.group.frame `r .doc_opt("legend.group.frame")`
+#' @param legend.resize_as_group `r .doc_opt("legend.resize_as_group")`
+#' @param legend.reverse `r .doc_opt("legend.reverse")`
+#' @param legend.na.show `r .doc_opt("legend.na.show")`
+#' @param legend.title.color `r .doc_opt("legend.title.color")`
+#' @param legend.title.size `r .doc_opt("legend.title.size")`
+#' @param legend.title.fontface `r .doc_opt("legend.title.fontface")`
+#' @param legend.title.fontfamily `r .doc_opt("legend.title.fontfamily")`
+#' @param legend.title.alpha `r .doc_opt("legend.title.alpha")`
+#' @param legend.xlab.color `r .doc_opt("legend.xlab.color")`
+#' @param legend.xlab.size `r .doc_opt("legend.xlab.size")`
+#' @param legend.xlab.fontface `r .doc_opt("legend.xlab.fontface")`
+#' @param legend.xlab.fontfamily `r .doc_opt("legend.xlab.fontfamily")`
+#' @param legend.xlab.alpha `r .doc_opt("legend.xlab.alpha")`
+#' @param legend.ylab.color `r .doc_opt("legend.ylab.color")`
+#' @param legend.ylab.size `r .doc_opt("legend.ylab.size")`
+#' @param legend.ylab.fontface `r .doc_opt("legend.ylab.fontface")`
+#' @param legend.ylab.fontfamily `r .doc_opt("legend.ylab.fontfamily")`
+#' @param legend.ylab.alpha `r .doc_opt("legend.ylab.alpha")`
+#' @param legend.text.color `r .doc_opt("legend.text.color")`
+#' @param legend.text.size `r .doc_opt("legend.text.size")`
+#' @param legend.text.fontface `r .doc_opt("legend.text.fontface")`
+#' @param legend.text.fontfamily `r .doc_opt("legend.text.fontfamily")`
+#' @param legend.text.alpha `r .doc_opt("legend.text.alpha")`
+#' @param legend.frame `r .doc_opt("legend.frame")`
+#' @param legend.frame.lwd `r .doc_opt("legend.frame.lwd")`
+#' @param legend.frame.r `r .doc_opt("legend.frame.r")`
+#' @param legend.bg.color `r .doc_opt("legend.bg.color")`
+#' @param legend.bg.alpha `r .doc_opt("legend.bg.alpha")`
+#' @param legend.only `r .doc_opt("legend.only")`
+#' @param legend.absolute_fontsize `r .doc_opt("legend.absolute_fontsize")`
+#' @param legend.settings.standard.portrait `r .doc_opt("legend.settings.standard.portrait")`
+#' @param legend.settings.standard.landscape `r .doc_opt("legend.settings.standard.landscape")`
+#' @param chart.show `r .doc_opt("chart.show")`
+#' @param chart.plot.axis.x `r .doc_opt("chart.plot.axis.x")`
+#' @param chart.plot.axis.y `r .doc_opt("chart.plot.axis.y")`
+#' @param chart.position `r .doc_opt("chart.position")`
+#' @param chart.width `r .doc_opt("chart.width")`
+#' @param chart.height `r .doc_opt("chart.height")`
+#' @param chart.stack `r .doc_opt("chart.stack")`
+#' @param chart.group.frame `r .doc_opt("chart.group.frame")`
+#' @param chart.resize_as_group `r .doc_opt("chart.resize_as_group")`
+#' @param chart.reverse `r .doc_opt("chart.reverse")`
+#' @param chart.na.show `r .doc_opt("chart.na.show")`
+#' @param chart.title.color `r .doc_opt("chart.title.color")`
+#' @param chart.title.size `r .doc_opt("chart.title.size")`
+#' @param chart.title.fontface `r .doc_opt("chart.title.fontface")`
+#' @param chart.title.fontfamily `r .doc_opt("chart.title.fontfamily")`
+#' @param chart.title.alpha `r .doc_opt("chart.title.alpha")`
+#' @param chart.xlab.color `r .doc_opt("chart.xlab.color")`
+#' @param chart.xlab.size `r .doc_opt("chart.xlab.size")`
+#' @param chart.xlab.fontface `r .doc_opt("chart.xlab.fontface")`
+#' @param chart.xlab.fontfamily `r .doc_opt("chart.xlab.fontfamily")`
+#' @param chart.xlab.alpha `r .doc_opt("chart.xlab.alpha")`
+#' @param chart.ylab.color `r .doc_opt("chart.ylab.color")`
+#' @param chart.ylab.size `r .doc_opt("chart.ylab.size")`
+#' @param chart.ylab.fontface `r .doc_opt("chart.ylab.fontface")`
+#' @param chart.ylab.fontfamily `r .doc_opt("chart.ylab.fontfamily")`
+#' @param chart.ylab.alpha `r .doc_opt("chart.ylab.alpha")`
+#' @param chart.text.color `r .doc_opt("chart.text.color")`
+#' @param chart.text.size `r .doc_opt("chart.text.size")`
+#' @param chart.text.fontface `r .doc_opt("chart.text.fontface")`
+#' @param chart.text.fontfamily `r .doc_opt("chart.text.fontfamily")`
+#' @param chart.text.alpha `r .doc_opt("chart.text.alpha")`
+#' @param chart.frame `r .doc_opt("chart.frame")`
+#' @param chart.frame.lwd `r .doc_opt("chart.frame.lwd")`
+#' @param chart.frame.r `r .doc_opt("chart.frame.r")`
+#' @param chart.bg.color `r .doc_opt("chart.bg.color")`
+#' @param chart.bg.alpha `r .doc_opt("chart.bg.alpha")`
+#' @param chart.object.color `r .doc_opt("chart.object.color")`
+#' @param title.size `r .doc_opt("title.size")`
+#' @param title.color `r .doc_opt("title.color")`
+#' @param title.fontface `r .doc_opt("title.fontface")`
+#' @param title.fontfamily `r .doc_opt("title.fontfamily")`
+#' @param title.alpha `r .doc_opt("title.alpha")`
+#' @param title.bg.color `r .doc_opt("title.bg.color")`
+#' @param title.bg.alpha `r .doc_opt("title.bg.alpha")`
+#' @param title.padding `r .doc_opt("title.padding")`
+#' @param title.frame `r .doc_opt("title.frame")`
+#' @param title.frame.lwd `r .doc_opt("title.frame.lwd")`
+#' @param title.frame.r `r .doc_opt("title.frame.r")`
+#' @param title.stack `r .doc_opt("title.stack")`
+#' @param title.position `r .doc_opt("title.position")`
+#' @param title.width `r .doc_opt("title.width")`
+#' @param title.group.frame `r .doc_opt("title.group.frame")`
+#' @param title.resize_as_group `r .doc_opt("title.resize_as_group")`
+#' @param credits.size `r .doc_opt("credits.size")`
+#' @param credits.color `r .doc_opt("credits.color")`
+#' @param credits.fontface `r .doc_opt("credits.fontface")`
+#' @param credits.fontfamily `r .doc_opt("credits.fontfamily")`
+#' @param credits.alpha `r .doc_opt("credits.alpha")`
+#' @param credits.bg.color `r .doc_opt("credits.bg.color")`
+#' @param credits.bg.alpha `r .doc_opt("credits.bg.alpha")`
+#' @param credits.padding `r .doc_opt("credits.padding")`
+#' @param credits.frame `r .doc_opt("credits.frame")`
+#' @param credits.frame.lwd `r .doc_opt("credits.frame.lwd")`
+#' @param credits.frame.r `r .doc_opt("credits.frame.r")`
+#' @param credits.stack `r .doc_opt("credits.stack")`
+#' @param credits.position `r .doc_opt("credits.position")`
+#' @param credits.width `r .doc_opt("credits.width")`
+#' @param credits.height `r .doc_opt("credits.height")`
+#' @param credits.group.frame `r .doc_opt("credits.group.frame")`
+#' @param credits.resize_as_group `r .doc_opt("credits.resize_as_group")`
+#' @param compass.north `r .doc_opt("compass.north")`
+#' @param compass.type `r .doc_opt("compass.type")`
+#' @param compass.text.size `r .doc_opt("compass.text.size")`
+#' @param compass.size `r .doc_opt("compass.size")`
+#' @param compass.show.labels `r .doc_opt("compass.show.labels")`
+#' @param compass.cardinal.directions `r .doc_opt("compass.cardinal.directions")`
+#' @param compass.text.color `r .doc_opt("compass.text.color")`
+#' @param compass.color.dark `r .doc_opt("compass.color.dark")`
+#' @param compass.color.light `r .doc_opt("compass.color.light")`
+#' @param compass.lwd `r .doc_opt("compass.lwd")`
+#' @param compass.bg.color `r .doc_opt("compass.bg.color")`
+#' @param compass.bg.alpha `r .doc_opt("compass.bg.alpha")`
+#' @param compass.margins `r .doc_opt("compass.margins")`
+#' @param compass.stack `r .doc_opt("compass.stack")`
+#' @param compass.position `r .doc_opt("compass.position")`
+#' @param compass.frame `r .doc_opt("compass.frame")`
+#' @param compass.frame.lwd `r .doc_opt("compass.frame.lwd")`
+#' @param compass.frame.r `r .doc_opt("compass.frame.r")`
+#' @param compass.group.frame `r .doc_opt("compass.group.frame")`
+#' @param compass.resize_as_group `r .doc_opt("compass.resize_as_group")`
+#' @param logo.height `r .doc_opt("logo.height")`
+#' @param logo.margins `r .doc_opt("logo.margins")`
+#' @param logo.between_margin `r .doc_opt("logo.between_margin")`
+#' @param logo.stack `r .doc_opt("logo.stack")`
+#' @param logo.position `r .doc_opt("logo.position")`
+#' @param logo.frame `r .doc_opt("logo.frame")`
+#' @param logo.frame.lwd `r .doc_opt("logo.frame.lwd")`
+#' @param logo.frame.r `r .doc_opt("logo.frame.r")`
+#' @param logo.group.frame `r .doc_opt("logo.group.frame")`
+#' @param logo.resize_as_group `r .doc_opt("logo.resize_as_group")`
+#' @param scalebar.breaks `r .doc_opt("scalebar.breaks")`
+#' @param scalebar.width `r .doc_opt("scalebar.width")`
+#' @param scalebar.text.size `r .doc_opt("scalebar.text.size")`
+#' @param scalebar.text.color `r .doc_opt("scalebar.text.color")`
+#' @param scalebar.color.dark `r .doc_opt("scalebar.color.dark")`
+#' @param scalebar.color.light `r .doc_opt("scalebar.color.light")`
+#' @param scalebar.lwd `r .doc_opt("scalebar.lwd")`
+#' @param scalebar.bg.color `r .doc_opt("scalebar.bg.color")`
+#' @param scalebar.bg.alpha `r .doc_opt("scalebar.bg.alpha")`
+#' @param scalebar.size `r .doc_opt("scalebar.size")`
+#' @param scalebar.margins `r .doc_opt("scalebar.margins")`
+#' @param scalebar.stack `r .doc_opt("scalebar.stack")`
+#' @param scalebar.position `r .doc_opt("scalebar.position")`
+#' @param scalebar.frame `r .doc_opt("scalebar.frame")`
+#' @param scalebar.frame.lwd `r .doc_opt("scalebar.frame.lwd")`
+#' @param scalebar.frame.r `r .doc_opt("scalebar.frame.r")`
+#' @param scalebar.group.frame `r .doc_opt("scalebar.group.frame")`
+#' @param scalebar.resize_as_group `r .doc_opt("scalebar.resize_as_group")`
+#' @param grid.show `r .doc_opt("grid.show")`
+#' @param grid.labels.pos `r .doc_opt("grid.labels.pos")`
+#' @param grid.x `r .doc_opt("grid.x")`
+#' @param grid.y `r .doc_opt("grid.y")`
+#' @param grid.n.x `r .doc_opt("grid.n.x")`
+#' @param grid.n.y `r .doc_opt("grid.n.y")`
+#' @param grid.crs `r .doc_opt("grid.crs")`
+#' @param grid.col `r .doc_opt("grid.col")`
+#' @param grid.lwd `r .doc_opt("grid.lwd")`
+#' @param grid.alpha `r .doc_opt("grid.alpha")`
+#' @param grid.labels.show `r .doc_opt("grid.labels.show")`
+#' @param grid.labels.size `r .doc_opt("grid.labels.size")`
+#' @param grid.labels.col `r .doc_opt("grid.labels.col")`
+#' @param grid.labels.rot `r .doc_opt("grid.labels.rot")`
+#' @param grid.labels.format `r .doc_opt("grid.labels.format")`
+#' @param grid.labels.cardinal `r .doc_opt("grid.labels.cardinal")`
+#' @param grid.labels.margin.x `r .doc_opt("grid.labels.margin.x")`
+#' @param grid.labels.margin.y `r .doc_opt("grid.labels.margin.y")`
+#' @param grid.labels.space.x `r .doc_opt("grid.labels.space.x")`
+#' @param grid.labels.space.y `r .doc_opt("grid.labels.space.y")`
+#' @param grid.labels.inside_frame `r .doc_opt("grid.labels.inside_frame")`
+#' @param grid.ticks `r .doc_opt("grid.ticks")`
+#' @param grid.lines `r .doc_opt("grid.lines")`
+#' @param grid.ndiscr `r .doc_opt("grid.ndiscr")`
+#' @param mouse_coordinates.stack `r .doc_opt("mouse_coordinates.stack")`
+#' @param mouse_coordinates.position `r .doc_opt("mouse_coordinates.position")`
+#' @param mouse_coordinates.show `r .doc_opt("mouse_coordinates.show")`
+#' @param minimap.server `r .doc_opt("minimap.server")`
+#' @param minimap.toggle `r .doc_opt("minimap.toggle")`
+#' @param minimap.stack `r .doc_opt("minimap.stack")`
+#' @param minimap.position `r .doc_opt("minimap.position")`
+#' @param minimap.show `r .doc_opt("minimap.show")`
+#' @param panel.show `r .doc_opt("panel.show")`
+#' @param panel.labels `r .doc_opt("panel.labels")`
+#' @param panel.label.size `r .doc_opt("panel.label.size")`
+#' @param panel.label.color `r .doc_opt("panel.label.color")`
+#' @param panel.label.fontface `r .doc_opt("panel.label.fontface")`
+#' @param panel.label.fontfamily `r .doc_opt("panel.label.fontfamily")`
+#' @param panel.label.alpha `r .doc_opt("panel.label.alpha")`
+#' @param panel.label.bg.color `r .doc_opt("panel.label.bg.color")`
+#' @param panel.label.frame `r .doc_opt("panel.label.frame")`
+#' @param panel.label.frame.lwd `r .doc_opt("panel.label.frame.lwd")`
+#' @param panel.label.frame.r `r .doc_opt("panel.label.frame.r")`
+#' @param panel.label.height `r .doc_opt("panel.label.height")`
+#' @param panel.label.rot `r .doc_opt("panel.label.rot")`
+# For set_bounds, set_view, set_zoom_limits
+#' @inheritParams tm_view
+#' @param qtm.scalebar `r .doc_opt("qtm.scalebar")`
+#' @param qtm.minimap `r .doc_opt("qtm.minimap")`
+#' @param qtm.mouse_coordinates `r .doc_opt("qtm.mouse_coordinates")`
+#' @param earth_boundary The earth boundary
+#' @param earth_boundary.color `r .doc_opt("earth_boundary.color")`
+#' @param earth_boundary.lwd `r .doc_opt("earth_boundary.lwd")`
+#' @param earth_datum  Earth datum
+#' @param space.color `r .doc_opt("space.color")`
+#' @param check_and_fix Should attempt to fix an invalid shapefile
+#' @param basemap.show `r .doc_opt("basemap.show")`
+#' @param basemap.server `r .doc_opt("basemap.server")`
+#' @param basemap.alpha `r .doc_opt("basemap.alpha")`
+#' @param basemap.zoom `r .doc_opt("basemap.zoom")`
+#' @param tiles.show `r .doc_opt("tiles.show")`
+#' @param tiles.server `r .doc_opt("tiles.server")`
+#' @param tiles.alpha `r .doc_opt("tiles.alpha")`
+#' @param tiles.zoom `r .doc_opt("tiles.zoom")`
+#' @param attr.color `r .doc_opt("attr.color")`
+#' @param crs_extra Only used internally (work in progress)
+#' @param crs_global The used crs for world maps
+#' @param title deprecated See [tm_title()]
+#' @param main.title deprecated See [tm_title()]
+#' @param main.title.size,main.title.color,main.title.fontface,main.title.fontfamily,main.title.position deprecated. Use the `title.` options instead.
+#' @param fontface,fontfamily renamed to `text.fontface` and `text.fontfamily`
+#' @inheritParams tm_plot
+# For bbox
+#' @inheritParams tm_shape
 #' @export
-#' @seealso \code{\link{tm_layout}}, \code{\link{tm_view}}, and \code{\link{tmap_style}}
-tmap_options <- function(..., unit, limits, max.categories, max.raster, basemaps, basemaps.alpha, overlays, overlays.alpha, qtm.scalebar, qtm.minimap, qtm.mouse.coordinates, show.messages, show.warnings, output.format, output.size, output.dpi, output.dpi.animation, design.mode = NULL, check.and.fix) {
+#' @example ./examples/tmap_options.R
+#' @name tmap_options
+tmap_options = function(..., crs, facet.max, facet.flip, free.scales, raster.max_cells, raster.warp, show.messages, show.warnings, output.format, output.size, output.dpi, animation.dpi, value.const, value.na, value.null, value.blank, values.var, values.range, value.neutral, values.scale, scales.var, scale.misc.args, continuous.nclass_per_legend_break, continuous.nclasses, label.format, label.na, scale, asp, bg.color, outer.bg.color, frame, frame.lwd, frame.r, frame.double_line, outer.margins, inner.margins, inner.margins.extra, meta.margins, meta.auto_margins, between_margin, panel.margin, component.offset, component.stack_margin, grid.mark.height, xylab.height, coords.height, xlab.show, xlab.text, xlab.size, xlab.color, xlab.rotation, xlab.space, xlab.fontface, xlab.fontfamily, xlab.alpha, xlab.side, ylab.show, ylab.text, ylab.size, ylab.color, ylab.rotation, ylab.space, ylab.fontface, ylab.fontfamily, ylab.alpha, ylab.side, panel.type, panel.wrap.pos, panel.xtab.pos, unit, color.sepia_intensity, color.saturation, color_vision_deficiency_sim, text.fontface, text.fontfamily, text.alpha, component.position, component.autoscale, legend.show, legend.design, legend.orientation, legend.position, legend.width, legend.height, legend.stack, legend.group.frame, legend.resize_as_group, legend.reverse, legend.na.show, legend.title.color, legend.title.size, legend.title.fontface, legend.title.fontfamily, legend.title.alpha, legend.xlab.color, legend.xlab.size, legend.xlab.fontface, legend.xlab.fontfamily, legend.xlab.alpha, legend.ylab.color, legend.ylab.size, legend.ylab.fontface, legend.ylab.fontfamily, legend.ylab.alpha, legend.text.color, legend.text.size, legend.text.fontface, legend.text.fontfamily, legend.text.alpha, legend.frame, legend.frame.lwd, legend.frame.r, legend.bg.color, legend.bg.alpha, legend.only, legend.absolute_fontsize, legend.settings.standard.portrait, legend.settings.standard.landscape, chart.show, chart.plot.axis.x, chart.plot.axis.y, chart.position, chart.width, chart.height, chart.stack, chart.group.frame, chart.resize_as_group, chart.reverse, chart.na.show, chart.title.color, chart.title.size, chart.title.fontface, chart.title.fontfamily, chart.title.alpha, chart.xlab.color, chart.xlab.size, chart.xlab.fontface, chart.xlab.fontfamily, chart.xlab.alpha, chart.ylab.color, chart.ylab.size, chart.ylab.fontface, chart.ylab.fontfamily, chart.ylab.alpha, chart.text.color, chart.text.size, chart.text.fontface, chart.text.fontfamily, chart.text.alpha, chart.frame, chart.frame.lwd, chart.frame.r, chart.bg.color, chart.bg.alpha, chart.object.color, title.size, title.color, title.fontface, title.fontfamily, title.alpha, title.bg.color, title.bg.alpha, title.padding, title.frame, title.frame.lwd, title.frame.r, title.stack, title.position, title.width, title.group.frame, title.resize_as_group, credits.size, credits.color, credits.fontface, credits.fontfamily, credits.alpha, credits.bg.color, credits.bg.alpha, credits.padding, credits.frame, credits.frame.lwd, credits.frame.r, credits.stack, credits.position, credits.width, credits.height, credits.group.frame, credits.resize_as_group, compass.north, compass.type, compass.text.size, compass.size, compass.show.labels, compass.cardinal.directions, compass.text.color, compass.color.dark, compass.color.light, compass.lwd, compass.bg.color, compass.bg.alpha, compass.margins, compass.stack, compass.position, compass.frame, compass.frame.lwd, compass.frame.r, compass.group.frame, compass.resize_as_group, logo.height, logo.margins, logo.between_margin, logo.stack, logo.position, logo.frame, logo.frame.lwd, logo.frame.r, logo.group.frame, logo.resize_as_group, scalebar.breaks, scalebar.width, scalebar.text.size, scalebar.text.color, scalebar.color.dark, scalebar.color.light, scalebar.lwd, scalebar.bg.color, scalebar.bg.alpha, scalebar.size, scalebar.margins, scalebar.stack, scalebar.position, scalebar.frame, scalebar.frame.lwd, scalebar.frame.r, scalebar.group.frame, scalebar.resize_as_group, grid.show, grid.labels.pos, grid.x, grid.y, grid.n.x, grid.n.y, grid.crs, grid.col, grid.lwd, grid.alpha, grid.labels.show, grid.labels.size, grid.labels.col, grid.labels.rot, grid.labels.format, grid.labels.cardinal, grid.labels.margin.x, grid.labels.margin.y, grid.labels.space.x, grid.labels.space.y, grid.labels.inside_frame, grid.ticks, grid.lines, grid.ndiscr, mouse_coordinates.stack, mouse_coordinates.position, mouse_coordinates.show, minimap.server, minimap.toggle, minimap.stack, minimap.position, minimap.show, panel.show, panel.labels, panel.label.size, panel.label.color, panel.label.fontface, panel.label.fontfamily, panel.label.alpha, panel.label.bg.color, panel.label.frame, panel.label.frame.lwd, panel.label.frame.r, panel.label.height, panel.label.rot, bbox, qtm.scalebar, qtm.minimap, qtm.mouse_coordinates, earth_boundary, earth_boundary.color, earth_boundary.lwd, earth_datum, space.color, check_and_fix, basemap.show, basemap.server, basemap.alpha, basemap.zoom, tiles.show, tiles.server, tiles.alpha, tiles.zoom, attr.color,
+						crs_extra,
+						crs_global,
+						use_gradient, # plot mode
+						use_browser, use_WebGL, control.position, control.bases, control.overlays, control.collapse, set_bounds, # view mode
+						set_view, set_zoom_limits, use_circle_markers, leaflet.options, # view mode
+						title = NULL,
+						main.title = NULL,
+						main.title.size = NULL,
+						main.title.color = NULL,
+						main.title.fontface = NULL,
+						main.title.fontfamily = NULL,
+						main.title.position = NULL,
+						fontface = NULL,
+						fontfamily = NULL
+						) {
+	o = get("tmapOptions", envir = .TMAP)
+	nms = names(o)
+	show.warnings = o$show.warnings
 
-	
+	## case 1: option list is given. E.g. opts = list(crs = 3035, panel.show = TRUE); tmap_options(opts)
+	## case 2: option name is given. E.g. tmap_options("crs", "panel.show")
+	## case 3: named options are set. E.g. tmap_options(crs = 3035, panel.show = TRUE)
+	## case 4: tmap_options is called without arguments
 
-	.tmapOptions <- get("tmapOptions", envir = .TMAP_CACHE)	
-	show.warnings = .tmapOptions$show.warnings
-	
-	current.style <- getOption("tmap.style")
-	newstyle <- if (substr(current.style, nchar(current.style) - 9, nchar(current.style)) == "(modified)") {
-		current.style
-	} else paste(current.style, "(modified)")
-	
-	
-	optnames <- names(.tmapOptions)
-	
-	e1 <- parent.frame()
-	
-	set_new_style <- FALSE
-	
-	lst <- list(...)
-	if (length(lst) >= 1 && is.null(names(lst))) {
-		arg <- lst[[1]]
+
+	# get current style name (default: white), and set new style name (with "(modified)")
+	sty_cur = getOption("tmap.style")
+	sty_new = if (substr(sty_cur, nchar(sty_cur) - 9, nchar(sty_cur)) == "(modified)") sty_cur else paste(sty_cur, "(modified)")
+
+	args = lapply(as.list(rlang::call_match(dots_expand = TRUE)[-1]), eval, envir = parent.frame())
+	set_new_style = FALSE
+
+	#lst = list(...)
+	if (length(args) >= 1 && is.null(names(args[1]))) {
+		arg = args[[1]]
 		if (is.list(arg)) {
+			if (length(args) > 1 && show.warnings) warning("Only the first argument is used; the other arguments are ignored.")
 			## case 1: option list is given
-			args <- arg
-			
-			style_attr <- attr(args, "style")
+			args = arg
+
+			style_attr = attr(args, "style")
 			if (!is.null(style_attr)) {
-				newstyle <- style_attr
-				set_new_style <- TRUE
+				sty_new = style_attr
+				set_new_style = TRUE
 			}
-			
-			if (length(lst) > 1 && show.warnings) warning("The first argument is used, but the other arguments are ignored.")
+
 		} else {
 			## case 2: option name is given
-			args <- sapply(lst, "[", 1)
-			if (!all(args %in% optnames) && show.warnings) warning("the following options do not exist: ", paste(setdiff(args, optnames), collapse = ", "))
-			args <- intersect(args, optnames)
-			return(.tmapOptions[args])
+			args = sapply(args, "[", 1)
+			if (!all(args %in% nms) && show.warnings) warning("The following options do not exist: ", paste(setdiff(args, nms), collapse = ", "))
+			args = intersect(args, nms)
+			return(o[args])
 		}
-	} else {
-		## case 3: named options are set
-		## case 4: tmap_options is called without arguments
-		args <- lapply(as.list(match.call()[-1]), eval, envir = e1)	
 	}
-	
-	design_mode_specified = ("design.mode" %in% names(args))
-	if (design_mode_specified) {
-		if (show.warnings) warning("design.mode is not a tmap option anymore. As of version > 3.1, it can be set with tmap_design_mode", call. = FALSE)	
-		args$design.mode = NULL
-	} 
-	
 
-	unknown_args <- setdiff(names(args), names(.defaultTmapOptions))
+	mode_opts = setdiff(unique(unlist(lapply(o$modes, names))), "name")
+
+	all_opts = union(mode_opts, names(.defaultTmapOptions))
+
+	unknown_args = setdiff(names(args), all_opts)
+
+	fun = "tmap_options"
+	if ("view.legend.position" %in% unknown_args) {
+		args$legend.position = args$view.legend.position
+		args$view.legend.position = NULL
+		v3_opt(fun, "view.legend.position", "legend.position")
+	}
+	if ("set.bounds" %in% unknown_args) {
+		args$set_bounds = args$set.bounds
+		args$set.bounds = NULL
+		v3_opt(fun, "set.bounds", "set_bounds")
+	}
+	if ("set.view" %in% unknown_args) {
+		args$set_view = args$set.view
+		args$set.view = NULL
+		v3_opt(fun, "set.view", "set_view")
+	}
+	if ("set.zoom.limits" %in% unknown_args) {
+		args$set_zoom_limits = args$set.zoom.limits
+		args$set.zoom.limits = NULL
+		v3_opt(fun, "set.zoom.limits", "set_zoom_limits")
+	}
+	if ("max.raster" %in% unknown_args) {
+		args$raster.max_cells = args$max.raster
+		args$max.raster = NULL
+		v3_opt(fun, "max.raster", "raster.max_cells")
+	}
+	if ("fontfamily" %in% unknown_args) {
+		args$text.fontfamily = args$fontfamily
+		args$fontfamily = NULL
+		v3_opt(fun, "fontfamily", "text.fontfamily")
+	}
+	if ("fontface" %in% unknown_args) {
+		args$text.fontface = args$fontface
+		args$fontface = NULL
+		v3_opt(fun, "fontface", "text.fontface")
+	}
+	if ("overlays" %in% unknown_args) {
+		args$tiles.server = args$overlays
+		args$overlays = NULL
+		v3_opt(fun, "overlays", "tiles.server")
+	}
+	if ("basemaps" %in% unknown_args) {
+		args$basemap.server = args$basemaps
+		args$basemaps = NULL
+		v3_opt(fun, "basemaps", "basemap.server")
+	}
+
+
+	unknown_args = setdiff(names(args), all_opts)
 	if (length(unknown_args) == 1) {
 		stop("the following option does not exist: ", unknown_args)
 	} else if (length(unknown_args) > 1) {
 		stop("the following options do not exist: ", paste(unknown_args, collapse = ", "))
 	}
-	
-	if (!length(args) && !design_mode_specified) {
+
+	if (!length(args)) {
 		# case 4
-		return(.tmapOptions)	
+		return(o)
 	} else {
 		# case 1 and 3
-		backup <- .tmapOptions[names(args)]
-		.tmapOptions[names(args)] <- check_named_items(args, backup)
-		
-		options(tmap.style=newstyle)
-		attr(.tmapOptions, "style") <- newstyle
-		assign("tmapOptions", .tmapOptions, envir = .TMAP_CACHE)
-		
+		if (is.null(names(args))) {
+			stop("Option list is unnamed")
+		}
+		backup = o[names(args)]
+		o[names(args)] = complete_options(args, backup) # needed to impute position and value(s) args
+
+
+		options(tmap.style=sty_new)
+		attr(o, "style") = sty_new
+		attr(o, "specified") = names(args)
+		assign("tmapOptions", o, envir = .TMAP)
+
 		if (set_new_style) {
-			if (.tmapOptions$show.messages) message("tmap options successfully loaded as style \"", newstyle, "\"")
-			styles <- get("tmapStyles", envir = .TMAP_CACHE)
-			styles[[newstyle]] <- suppressMessages(tmap_options_diff())
-			assign("tmapStyles", styles, envir = .TMAP_CACHE)
-		} 
-		
+			if (o$show.messages) message("tmap options successfully loaded as style \"", sty_new, "\"")
+			styles = get("tmapStyles", envir = .TMAP)
+			styles[[sty_new]] = suppressMessages(tmap_options_diff())
+			assign("tmapStyles", styles, envir = .TMAP)
+		}
 		invisible(backup)
 	}
 }
 
+#' @param mode mode, e.g. `"plot"` or `"view"`
+#' @param style style. If specified, the style specific options are returned
+#' @param mode.specific Should only mode-specific options be returned? `TRUE` by default.
+#' @param default.options return the default options or the current options?
+#' @rdname tmap_options
+#' @export
+tmap_options_mode = function(mode = NA, style = NULL, mode.specific = TRUE, default.options = FALSE) {
+	if (default.options) {
+		o = .defaultTmapOptions
+	} else {
+		o = get("tmapOptions", envir = .TMAP)
 
-## function to check named items (such as max.raster and legend.format)
-check_named_items <- function(a, b) {
-	named_items <- which(vapply(b, FUN = function(i) !is.null(names(i)), FUN.VALUE = logical(1)))
-	
-	dynamic_vec_names <- c("basemaps", "overlays")
-	
-	show.warnings = get("tmapOptions", envir = .TMAP_CACHE)$show.warnings
-	
-	if (length(named_items) != 0L) {
-		a[named_items] <- mapply(function(an, bn, nm) {
-			if (nm %in% dynamic_vec_names) {
-				an
-			} else {
-				res <- bn
-				cls <- ifelse(is.list(bn), "list", "vector")
-				if (is.null(names(an))) {
-					if (show.warnings) warning("tmap option ", nm, " requires a named ", cls, call. = FALSE)
-				} else if (!all(names(an) %in% names(bn))) {
-					formatC_names <- setdiff(names(formals(formatC)), "x")
-					if (nm == "legend.format") {
-						invalid <- setdiff(names(an), c(names(bn), formatC_names))
-					} else {
-						invalid <- setdiff(names(an), names(bn))
-					}
-					
-					if (length(invalid) > 0 && show.warnings) warning("invalid ", cls, " names of tmap option ", nm, ": ", paste(invalid, collapse = ", "), call. = FALSE)
-					
-				}
-				res[names(an)] <- an
-				res
-			}
-		},a[named_items], b[named_items], names(b[named_items]), SIMPLIFY = FALSE)
+		if (!is.null(style)) {
+			check_style(style)
+			s = get("tmapStyles", envir = .TMAP)[[style]]
+			o = complete_options(s, o)
+		}
 	}
-	a
+
+	if (is.na(mode)) mode = getOption("tmap.mode")
+	opt2 = o$modes[[mode]]
+
+	specified = attr(o, "specified")
+
+	# all general options with mode-specific defaults (except the specified ones tmap_options(bg.color = "red")
+	int_opt = setdiff(intersect(names(o), names(opt2)), specified)
+
+	# all mode-specific options
+	diff_opt = setdiff(names(opt2), names(o))
+
+	if (length(int_opt)) o[int_opt] = opt2[int_opt]
+	if (length(diff_opt)) o = c(o, opt2[diff_opt])
+
+	o$modes = NULL
+
+	if (mode.specific) {
+		o[setdiff(names(opt2), "name")]
+	} else {
+		o
+	}
+}
+
+
+tmap_option = function(name, type = NULL) {
+	get_option_class(tmap_options()[[name]], class = type, spatial_class = FALSE)
 }
 
 
 
+tmap_graphics_name = function(mode) {
+	if (missing(mode)) mode = getOption("tmap.mode")
+	get("tmapOptions", envir = .TMAP)$modes[[mode]]$name
+}
+
+
+
+tmapOption = function(...) {
+	structure(list(...), class = "tmapOption")
+}
+
+
+
+
+#' Internal tmap function to add a default value for the layer functions
+#'
+#' Internal tmap function to add a default value for the layer functions
+#'
+#' @param option, one of: `"value.const"`, `"value.na"`, `"value.blank"`, `"values.var"`, `'values.range'`, `"value.neutral"`, `"scales.var"`
+#' @param id name of the visual variable with layer, in the format `"x.y"`,
+#'   where `x` is the visual variable and `y` is the layer.
+#'   It is also possible to set `x` only; then it applies to all layer functions.
+#' @param value value
+#' @keywords internal
+#' @export
+tmapAddLayerOptions = function(option, id, value) {
+	if (!(option %in% c("value.const", "value.na", "value.blank", "values.var", "values.range", "value.neutral", "scales.var"))) {
+		stop("Unknown option")
+	}
+	o = tmap_option(option)
+	o[[id]] = value
+	o2 = structure(list(o), names = option)
+	tmap_options(o2)
+}
+
 #' @rdname tmap_options
 #' @export
 tmap_options_diff <- function() {
-	.tmapOptions <- get("tmapOptions", envir = .TMAP_CACHE)	
+	.tmapOptions <- get("tmapOptions", envir = .TMAP)
 	iden <- mapply(identical, .tmapOptions, .defaultTmapOptions)
-	
+
 	if (all(iden)) {
 		message("current tmap options are similar to the default tmap options (style \"white\")")
 	} else {
@@ -489,47 +575,55 @@ tmap_options_diff <- function() {
 #' @rdname tmap_options
 #' @export
 tmap_options_reset <- function() {
-	assign("tmapOptions", .defaultTmapOptions, envir = .TMAP_CACHE)
+	assign("tmapOptions", .defaultTmapOptions, envir = .TMAP)
 	options(tmap.style="white")
 	message("tmap options successfully reset")
 	invisible(NULL)
 }
 
 #' @export
+#' @param style style, see [tmap_style()] for available styles
 #' @rdname tmap_options
 tmap_options_save <- function(style) {
-	show.messages <- get("tmapOptions", envir = .TMAP_CACHE)$show.messages
-	
+	show.messages <- get("tmapOptions", envir = .TMAP)$show.messages
+
 	stylediff <- suppressMessages(tmap_options_diff())
-	
-	.tmapOptions <- get("tmapOptions", envir = .TMAP_CACHE)	
-	
+
+	.tmapOptions <- get("tmapOptions", envir = .TMAP)
+
 	if (is.null(stylediff)) {
 		if (show.messages) message("current style is the same as the default style, so nothing to save")
 		return(invisible(.tmapOptions))
 	}
-	
+
 	options(tmap.style=style)
 	attr(.tmapOptions, "style") <- style
-	assign("tmapOptions", .tmapOptions, envir = .TMAP_CACHE)
-	
-	styles <- get("tmapStyles", envir = .TMAP_CACHE)
+	assign("tmapOptions", .tmapOptions, envir = .TMAP)
+
+	styles <- get("tmapStyles", envir = .TMAP)
 	styles[[style]] <- suppressMessages(tmap_options_diff())
-	assign("tmapStyles", styles, envir = .TMAP_CACHE)
-	
+	assign("tmapStyles", styles, envir = .TMAP)
+
 	if (show.messages) message("current tmap options saved as style \"", style, "\"")
 	invisible(.tmapOptions)
 }
 
-#' #' @export
-#' #' @rdname tmap_style
-#' #' @param x tmap options list (should be the same format as \code{tmap_options()})
-#' tmap_style_load <- function(x) {
-#' 	style <- attr(x, "style")
-#' 	attr(x, "style") <- NULL
-#' 	styles <- get("tmapStyles", envir = .TMAP_CACHE)
-#' 	styles[[style]] <- x
-#' 	assign("tmapStyles", styles, envir = .TMAP_CACHE)
-#' 	if (get("tmapOptions", envir = .TMAP_CACHE)$show.messages) message("style \"", style, "\" loaded successfully")
-#' 	invisible(NULL)
-#' }
+
+
+#' Internal method for submitting a new mode
+#'
+#' Internal method for submitting a new mode
+#'
+#' @param id id of the mode: please use lowercase and one-word. This will be used with [tmap_mode()].
+#' @param name name of the mode: please use title case. This will be used to recognize internal functions, e.g. `tmapLeafletInit`
+#' @param ... mode specific options
+#' @export
+#' @keywords internal
+tmapMode = function(id, name, ...) {
+	modes = tmap_options("modes")$modes
+
+	modes[[id]] = c(list(name = name), list(...))
+	tmap_options(modes = modes)
+}
+
+

@@ -1,50 +1,93 @@
-#' Add manual legend
-#' 
-#' Creates a \code{\link{tmap-element}} that adds a manual legend.
-#' 
-#' @param type type of legend. One of \code{"fill"}, \code{"symbol"}, \code{"text"}, \code{"line"}, or \code{"title"}. The last option only displays a title.
-#' @param labels legend labels
-#' @param col legend colors
-#' @param size legend symbol sizes (if \code{type=="symbol"}). See example how to replicate the sizes of symbols created with \code{\link{tm_symbols}}. If not specified, the symbols will have the same size as when calling \code{\link{tm_symbols}} without specifying the \code{size} argument.
-#' @param shape legend symbol shapes (if \code{type=="symbol"})
-#' @param lwd legend line widths (if \code{type=="line"})
-#' @param lty legend line types (if \code{type=="line"})
-#' @param text legend texts (if \code{type=="text"})
-#' @param alpha legend fill transparency
-#' @param border.col legend border col (if \code{type} is \code{"fill"} or \code{"symbol"})
-#' @param border.lwd legend border width (if \code{type} is \code{"fill"} or \code{"symbol"})
-#' @param border.alpha legend border alpha (if \code{type} is \code{"fill"} or \code{"symbol"})
-#' @param title legend title
-#' @param is.portrait is legend portrait (\code{TRUE}) or landscape (\code{FALSE})?
-#' @param legend.format options to format the legend, see \code{\link{tm_symbols}} (the description of the argument \code{legend.format}) for details. Note that many of these arguments are not applicable for \code{tm_add_legend} since \code{labels} should be a character vector. However, some options could still be handy, e.g. \code{list(text.align = "right")}.
-#' @param reverse are the legend items reversed (by default \code{FALSE})?
-#' @param z legend stack position
-#' @param zindex zindex of the pane in view mode to which the legend belongs (if any). 
-#' @param group name of the group to which this layer belongs in view mode. Each group can be selected or deselected in the layer control item. By default \code{NULL}, which means that the legend will not be shown in the layer control item.
+#' Map component: manual legend
+#'
+#' Map component that adds a manual legend.
+#'
+#' @param ... visual variables and arguments passed on to `tm_legend()`.
+#'   By default, the argument `type` is set to `"symbols"`, which means that the
+#'   supported visual variables are: `"fill"`, `"col"`, `"shape"`, `"size"`,
+#'   `"fill_alpha"`, `"col_alpha"`, `"lty"`, `"lwd"`, `"linejoin"`, and `"lineend"`.
+#'   The number of legend items will be equal to the maximum number of specific values (and specified labels.)
+#' @param labels labels by default `""` (so omitted)
+#' @param type the layer type from which the visual variables (see `...`) are taken.
+#'   Options: `"symbols"` (default), `"lines"`, `"polygons"`, and `"text"`.
+#' @param title `r .doc_opt("legend.title")`
+#' @param design `r .doc_opt("legend.design")`
+#' @param orientation `r .doc_opt("legend.orientation")`
+#' @param position `r .doc_opt("legend.position")`
+#' @param group Name of the group to which this layer belongs. This is only
+#'   relevant in view mode, where layer groups can be switched (see `group.control`)
+#' @param group.control In view mode, the group control determines how
+#'   layer groups can be switched on and off. Options: `"radio"` for radio
+#'   buttons (meaning only one group can be shown), `"check"` for check boxes
+#'   (so multiple groups can be shown), and `"none"` for no control
+#'   (the group cannot be (de)selected).
+#' @param resize.as.group resize.as.group
+#' @param z z
 #' @export
-#' @example ./examples/tm_add_legend.R
-#' @seealso \code{\link{tm_symbols}} for another example
-tm_add_legend <- function(type = c("fill", "symbol", "text", "line", "title"), 
-						  labels=NULL, 
-						  col=NULL, 
-						  size=NULL, 
-						  shape=NULL,
-						  lwd=NULL,
-						  lty=NULL,
-						  text=NULL, 
-						  alpha=NA,
-						  border.col="black",
-						  border.lwd=1,
-						  border.alpha=NA,
-						  title="", 
-						  is.portrait=TRUE, 
-						  legend.format=list(),
-						  reverse=FALSE,
-						  z=NA,
-						  zindex = NA,
-						  group=NULL) {
-	type <- match.arg(type)
-	g <- list(tm_add_legend=c(as.list(environment()), list(are.dots=FALSE, call=names(match.call(expand.dots = TRUE)[-1]))))
-	class(g) <- "tmap"
-	g
+tm_add_legend = function(...,
+						 labels = "",
+						 type = "symbols",
+						 title = "",
+						 design = NULL,
+						 orientation = NULL,
+						 position = NULL,
+						 group = NA,
+						 group.control = "check",
+						 resize.as.group = FALSE,
+						 z = NA_integer_) {
+
+	args = lapply(as.list(rlang::call_match(defaults = TRUE)[-1]), eval, envir = parent.frame())
+
+	if (type %in% c("fill", "symbol", "line")) {
+		args$type = v3_add_legend(type, names(args))
+		if ("col" %in% names(args) && !c("fill" %in% names(args)) && type != "line") {
+			args$fill = args$col
+			args$col = NULL
+		}
+		if ("border.col" %in% names(args)) {
+			args$col = args$border.col
+			args$border.col = NULL
+		}
+	}
+	tm_element_list(do.call(tm_element, c(args, list(subclass = c("tm_add_legend", "tm_component")))))
+}
+
+#' @export
+#' @rdname tmap_internal
+toTitleCase = function(x) {
+	paste0(toupper(substr(x,1,1)), tolower(substr(x,2, nchar(x))))
+}
+
+
+tmapAddedLegend = function(comp, o) {
+	#message("tm_mouse_coordinates ignored for 'plot' mode")
+	l = update_l(o = o, l = comp, v = "", mfun = toTitleCase(comp$type), unm = "", active = FALSE)
+
+	fun = paste0("tm_", comp$type)
+	if (!exists(fun)) {
+		stop(paste0("type \"", comp$type, "\" not supported because tm_", comp$type,  " not found"), call. = FALSE)
+	}
+	res = do.call(fun, args = list())
+	gp = res[[1]]$gpar
+
+	for (gpi in names(gp)) {
+		if (gpi %in% names(l)) {
+			gp[[gpi]] = l[[gpi]]
+		} else {
+			gp[[gpi]] = getAesOption("value.const", o, aes = gpi, layer = comp$type)
+		}
+	}
+
+	l$gp = gp
+
+	l2 = within(l, {
+		nitems = max(length(labels), vapply(gp, length, FUN.VALUE = integer(1), USE.NAMES = FALSE))
+		labels = rep(labels, length.out = nitems)
+		dvalues = 1:nitems
+		vvalues = 1:nitems
+		vneutral = NA
+		na.show = FALSE
+
+	})
+	l2
 }

@@ -7,37 +7,37 @@
 \usage{
 \method{print}{tmap}(
   x,
-  vp = NULL,
   return.asp = FALSE,
-  mode = getOption("tmap.mode"),
   show = TRUE,
+  vp = NULL,
   knit = FALSE,
   options = NULL,
+  in.shiny = FALSE,
+  proxy = FALSE,
   ...
 )
 
-knit_print.tmap(x, ..., options = NULL)
+\method{knit_print}{tmap}(x, ..., options = NULL)
 }
 \arguments{
-\item{x}{tmap object. A tmap object is created with \code{\link{qtm}} or by stacking \code{\link{tmap-element}}s.}
+\item{x}{tmap object.}
 
-\item{vp}{\code{\link[grid:viewport]{viewport}} to draw the plot in. This is particularly useful for insets.}
+\item{return.asp}{should the aspect ratio be returned?}
 
-\item{return.asp}{Logical that determines whether the aspect ratio of the map is returned. In that case, \code{\link[grid:grid.newpage]{grid.newpage()}} will be called, but without plotting of the map. This is used by \code{\link{tmap_save}} to determine the aspect ratio of the map.}
+\item{show}{show the map}
 
-\item{mode}{the mode of tmap: \code{"plot"} (static) or \code{"view"} (interactive). See \code{\link{tmap_mode}} for details.}
+\item{vp}{viewport (for \code{"plot"} mode)}
 
-\item{show}{logical that determines whether to show to map. Obviously \code{TRUE} by default, but \code{show=FALSE} can be useful for just obtaining the returned objects.}
+\item{knit}{A logical, should knit?}
 
-\item{knit}{should \code{\link[knitr:knit_print]{knit_print}} be enabled, or the normal \code{\link[base:print]{print}} function?}
+\item{options}{A vector of options}
 
-\item{options}{options passed on to knitprint}
+\item{in.shiny}{A logical, is the map drawn in \strong{shiny}?}
 
-\item{...}{not used}
-}
-\value{
-If \code{mode=="plot"}, then a list is returned with the processed shapes and the metadata. If \code{mode=="view"}, a \code{\link[leaflet:leaflet]{leaflet}} object is returned (see also \code{\link{tmap_leaflet}})
+\item{proxy}{A logical, if \code{in.shiny}, is \code{\link[=tmapProxy]{tmapProxy()}} used?}
+
+\item{...}{passed on internally (for developers: in \code{"view"} mode, the proxy leaflet object is passed to \code{tmapLeafletInit}).}
 }
 \description{
-Draw thematic map. If the tmap mode is set to \code{"plot"} (see \code{\link{tmap_mode}}), the map is plot in the current graphics device. If the mode is set to \code{"view"}, the map is shown interactively as an htmlwidget.
+Draw thematic map
 }

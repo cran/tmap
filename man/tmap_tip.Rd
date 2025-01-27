@@ -2,17 +2,13 @@
 % Please edit documentation in R/tmap_tip.R
 \name{tmap_tip}
 \alias{tmap_tip}
-\title{Get a tip about tmap}
+\title{Print a random tip to the console}
 \usage{
-tmap_tip(from.version = NULL)
+tmap_tip()
 }
-\arguments{
-\item{from.version}{version number. Only tips regarding features from this version are shown.}
+\value{
+A message
 }
 \description{
-Generates a tip with an example. The tip and example code are printed, and the example itself is executed.
-}
-\examples{
-tmap_tip()
-tmap_tip(from.version = "3.0")
+Print a random tip to the console
 }

@@ -7,33 +7,52 @@
 tmap_style(style)
 }
 \arguments{
-\item{style}{name of the style. When omitted, \code{tmap_style} returns the current style and also shows all available styles. When the style is specified, \code{tmap_style} sets the style accordingly. Note that in that case, all tmap options (see \code{\link{tmap_options}}) will be reset according to the style definition. See \code{\link{tm_layout}} for predefined styles, and \code{\link{tmap_style_catalogue}} for creating a catalogue.}
+\item{style}{Name of the style. When omitted, \code{tmap_style()} returns the current style
+and also shows all available styles. When the style is specified,\code{tmap_style()}
+sets the style accordingly. Note that in that case, all tmap options (see \code{\link[=tmap_options]{tmap_options()}})
+will be reset according to the style definition.
+See \code{\link[=tm_layout]{tm_layout()}} for predefined styles, and \code{tmap_style_catalogue()} for creating a catalogue.}
 }
 \value{
-the style before changing
+The style before changing
 }
 \description{
-Set or get the default tmap style. Without arguments, the current style is returned. Also the available styles are displayed. When a style is set, the corresponding tmap options  (see \code{\link{tmap_options}}) will be set accordingly. The default style (i.e. when loading the package) is \code{"white"}.
+Set or get the default tmap style. Without arguments, the current style is returned.
+Also the available styles are displayed. When a style is set, the corresponding tmap
+options (see \code{\link[=tmap_options]{tmap_options()}}) will be set accordingly.
+The default style (i.e. when loading the package) is \code{"white"}.
 }
 \details{
-Note that \code{\link{tm_style}} is used within a plot call (so it only affects that plot), whereas \code{tmap_style} sets the style globally.
+Note that \code{\link[=tm_style]{tm_style()}} is used within a plot call (so it only affects that plot),
+whereas \code{tmap_style()} sets the style globally.
 
-After loading a style, the options that defined this style (i.e. the difference with the default \code{"white"} style) can be obtained by \code{\link{tmap_options_diff}}.
+After loading a style, the options that defined this style
+(i.e. the difference with the default \code{"white"} style) can be obtained by \code{\link[=tmap_options_diff]{tmap_options_diff()}}.
 
-The documentation of \code{\link{tmap_options}} (details and the examples) shows how a new style is created.
+The documentation of \code{\link[=tmap_options]{tmap_options()}} (details and the examples) shows how to create a new style.
 }
 \examples{
-data(World)
+tmap_style()
 
-current.style <- tmap_style("classic")
-qtm(World, fill="life_exp", fill.title="Life expectancy")
+tm_shape(World) + tm_polygons("HPI")
 
 tmap_style("cobalt")
-qtm(World, fill="life_exp", fill.title="Life expectancy")
 
-# restore current style
-tmap_style(current.style)
+tm_shape(World) + tm_polygons("HPI")
+
+# for backwards compatibility, the styles of tmap versions 1-3 are also included:
+
+tmap_style("v3")
+
+tm_shape(World) + tm_polygons("HPI")
+
+tmap_style("cobalt_v3")
+
+tm_shape(World) + tm_polygons("HPI")
 }
 \seealso{
-\code{\link{tmap_options}} for tmap options, and \code{\link{tmap_style_catalogue}} to create a style catalogue of all available styles.
+\itemize{
+\item \code{\link[=tmap_options]{tmap_options()}} for tmap options
+\item \code{\link[=tmap_style_catalogue]{tmap_style_catalogue()}}  to create a style catalogue of all available styles.
+}
 }

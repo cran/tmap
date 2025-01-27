@@ -1,70 +1,98 @@
 #' Draw thematic map
-#' 
-#' Draw thematic map. If the tmap mode is set to \code{"plot"} (see \code{\link{tmap_mode}}), the map is plot in the current graphics device. If the mode is set to \code{"view"}, the map is shown interactively as an htmlwidget.
-#' 
-#' @param x tmap object. A tmap object is created with \code{\link{qtm}} or by stacking \code{\link{tmap-element}}s.
-#' @param vp \code{\link[grid:viewport]{viewport}} to draw the plot in. This is particularly useful for insets.
-#' @param return.asp Logical that determines whether the aspect ratio of the map is returned. In that case, \code{\link[grid:grid.newpage]{grid.newpage()}} will be called, but without plotting of the map. This is used by \code{\link{tmap_save}} to determine the aspect ratio of the map.
-#' @param mode the mode of tmap: \code{"plot"} (static) or \code{"view"} (interactive). See \code{\link{tmap_mode}} for details.
-#' @param show logical that determines whether to show to map. Obviously \code{TRUE} by default, but \code{show=FALSE} can be useful for just obtaining the returned objects.
-#' @param knit should \code{\link[knitr:knit_print]{knit_print}} be enabled, or the normal \code{\link[base:print]{print}} function?
-#' @param options options passed on to knitprint
-#' @param ... not used
-#' @return If \code{mode=="plot"}, then a list is returned with the processed shapes and the metadata. If \code{mode=="view"}, a \code{\link[leaflet:leaflet]{leaflet}} object is returned (see also \code{\link{tmap_leaflet}})
-#' @import tmaptools
-#' @import sf
-#' @import stars
-#' @importFrom units set_units as_units
-#' @import RColorBrewer
-#' @importFrom viridisLite viridis
-#' @import grid
-#' @import methods
-#' @importFrom graphics par
-#' @importFrom classInt classIntervals findCols
-#' @importFrom grDevices col2rgb colorRampPalette dev.off dev.set dev.cur is.raster png rgb dev.size
-#' @importFrom stats na.omit dnorm fft quantile rnorm runif 
-#' @importFrom grDevices xy.coords colors
-#' @importFrom utils capture.output data download.file head setTxtProgressBar tail txtProgressBar
-#' @importFrom leafem addStarsImage addStarsRGB addMouseCoordinates
-#' @import leaflet
-#' @importFrom htmlwidgets appendContent onRender
-#' @importFrom htmltools tags HTML htmlEscape
-#' @import leafsync
-#' @importFrom utils packageVersion
-#' @importFrom rlang missing_arg expr
-#' @importFrom abind adrop
+#'
+#' @param x tmap object.
+#' @param return.asp should the aspect ratio be returned?
+#' @param show show the map
+#' @param vp viewport (for `"plot"` mode)
+#' @param knit A logical, should knit?
+#' @param in.shiny A logical, is the map drawn in **shiny**?
+#' @param proxy A logical, if `in.shiny`, is [tmapProxy()] used?
+#' @param options A vector of options
+#' @param ... passed on internally (for developers: in `"view"` mode, the proxy leaflet object is passed to `tmapLeafletInit`).
 #' @export
-#' @method print tmap
-print.tmap <- function(x, vp=NULL, return.asp=FALSE, mode=getOption("tmap.mode"), show=TRUE, knit=FALSE, options=NULL, ...) {
-	print_tmap(x=x, vp=vp, return.asp=return.asp, mode=mode, show=show, knit=knit, options=options, ...)
+print.tmap = function(x, return.asp = FALSE, show = TRUE, vp = NULL, knit = FALSE, options = NULL, in.shiny = FALSE, proxy = FALSE, ...) {
+	args = list(...)
+
+	.TMAP$in.shiny = in.shiny
+	.TMAP$proxy = proxy
+	.TMAP$set_s2 = NA
+
+	# view mode will use panes, in principle one for each layer. They start at 400, unless shiny proxy is used
+
+	dev = getOption("tmap.devel.mode")
+	if (dev) timing_init()
+	x2 = step1_rearrange(x)
+	if (dev) timing_add("step 1")
+	x3 = step2_data(x2)
+	if (dev) timing_add("step 2")
+	x4 = step3_trans(x3)
+	if (dev) timing_add("step 3")
+	res = step4_plot(x4, vp = vp, return.asp = return.asp, show = show, in.shiny = in.shiny, knit = knit, args)
+	if (dev) timing_add("step 4")
+	if (dev) timing_eval()
+
+	v3_reset_flag()
+	if (!is.na(.TMAP$set_s2)) suppressMessages(sf::sf_use_s2(.TMAP$set_s2))
+
+	#if (return.asp) return(asp) else invisible(NULL)
+	if (knit && tmap_graphics_name() != "Grid") {
+		kp = get("knit_print", asNamespace("knitr"))
+		return(do.call(kp, c(list(x=res), args, list(options=options))))
+	} else {
+		invisible(res)
+	}
 }
 
 #' @rdname print.tmap
-#' @rawNamespace
-#' if(getRversion() >= "3.6.0") {
-#'   S3method(knitr::knit_print, tmap)
-#' } else {
-#'   export(knit_print.tmap)
-#' }
-knit_print.tmap <- function(x, ..., options=NULL) {
-	# @importFrom knitr knit_print
-	print_tmap(x, knit=TRUE, options=options, ...)
+#' @exportS3Method knitr::knit_print
+knit_print.tmap = function(x, ..., options=NULL) {
+	print.tmap(x, knit=TRUE, options=options, ...)
 }
 
-#' Create a leaflet widget from a tmap object
-#' 
-#' Create a leaflet widget from a tmap object. An interactive map (see \code{\link{tmap_mode}}) is an automatically generated leaflet widget. With this function, this leaflet widget is obtained, which can then be changed or extended by using leaflet's own methods.
-#'  
-#' @param x tmap object. A tmap object is created with \code{\link{qtm}} or by stacking \code{\link{tmap-element}}s.
-#' @param mode the mode of tmap, which is set to \code{"view"} in order to obtain the leaflet object. See \code{\link{tmap_mode}} for details.
-#' @param show should the leaflet map be shown? \code{FALSE} by default
-#' @param add.titles add titles to leaflet object
-#' @param in.shiny is the leaflet output going to be used in shiny? If so, two features are not supported and therefore disabled: facets and colored backgrounds.
-#' @param ... arguments passed on to \code{\link{print.tmap}}
-#' @return \code{\link[leaflet:leaflet]{leaflet}} object
-#' @example ./examples/tmap_leaflet.R
-#' @seealso \code{\link{tmapOutput}} for tmap in Shiny, \code{\link{tmap_mode}}, \code{\link{tm_view}}, \code{\link{print.tmap}}
-#' @export
-tmap_leaflet <- function(x, mode="view", show = FALSE, add.titles = TRUE, in.shiny = FALSE, ...) {
-	print.tmap(x, mode=mode, show=show, interactive_titles = add.titles, in.shiny = in.shiny, ...)
+
+timing_init = function() {
+	ts = data.table(s1 = "---------", s2 = "---------", s3 = "---------", s4 = "---------", t = Sys.time())
+	assign("timings", ts, envir = .TMAP)
+}
+
+timing_add = function(s1 = "", s2 = "", s3 = "", s4 = "") {
+	tsx = data.table(s1 = s1, s2 = s2, s3 = s3, s4 = s4, t = Sys.time())
+	ts = data.table::rbindlist(list(get("timings", envir = .TMAP), tsx))
+	assign("timings", ts, envir = .TMAP)
+}
+
+timing_eval = function() {
+	ts = get("timings", envir = .TMAP)
+
+	ts[, total := round(as.numeric(difftime(ts$t, ts$t[1], units = "secs")), 3)]
+
+	i1 = ts$s1 != ""
+	i2 = ts$s2 != "" | i1
+	i3 = ts$s3 != "" | i2
+	i4 = ts$s4 != "" | i3
+
+	ts[, ':='(t1=0,t2=0,t3=0,t4=0)]
+	ts[i1, t1:= c(0, ts$total[i1][-1] - head(ts$total[i1], -1))]
+	ts[i2, t2:= c(0, ts$total[i2][-1] - head(ts$total[i2], -1))]
+	ts[i3, t3:= c(0, ts$total[i3][-1] - head(ts$total[i3], -1))]
+	ts[i4, t4:= c(0, ts$total[i4][-1] - head(ts$total[i4], -1))]
+
+	ts[s2 == "", t2 := 0]
+	ts[s3 == "", t3 := 0]
+	ts[s4 == "", t4 := 0]
+
+	form = function(l, x) {
+		zero = (x==0)
+		y = sprintf("%.3f", x)
+		z = paste0(l, " (", y, ")")
+		z[zero] = ""
+		z
+	}
+
+	ts[, ':='(s1=form(s1, t1),
+			  s2=form(s2, t2),
+			  s3=form(s3, t3),
+			  s4=form(s4, t4))]
+
+	print(ts[, c("s1", "s2", "s3", "s4", "total")])
 }

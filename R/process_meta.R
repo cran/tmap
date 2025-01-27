@@ -1,465 +1,602 @@
-process_meta <- function(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, gmmc, nx, nxa, panel.names, along.names, layer_vary, gm, any.legend, interactive) {
-	attr.color <- aes.colors <- aes.color <- pc <- NULL
-	xlab.rotation <- xlab.text <- ylab.rotation <- ylab.text <- NULL
-	fontface <- fontfamily <- NULL
-	compass.text.size <- NULL
-	
-	credit.show <- !is.null(gc)
-	logo.show <- !is.null(gl)
-	scale.show <- !is.null(gsb)
-	compass.show <- !is.null(gcomp)
-	
-	gf <- within(gf, {
-		by <- NULL
-		if (is.na(ncol) && is.na(nrow)) {
-			nrowcol <- process_get_arrangement(nx = nxa, asp_ratio = gm$shape.asp_ratio)
-			nrow <- nrowcol[1]
-			ncol <- nrowcol[2]
+prepreprocess_meta = function(o, vp) {
+
+	within(o, {
+		vp = vp
+		if (is.null(vp)) {
+			devsize = graphics::par("fin") #dev.size() MAY NOT BE EQUAL IN RSTUDIO: https://github.com/rstudio/rstudio/issues/10723
 		} else {
-			if (is.na(ncol)) ncol <- ceiling(nxa / nrow)
-			if (is.na(nrow)) nrow <- ceiling(nxa / ncol)
+			if (is.character(vp)) seekViewport(vp) else pushViewport(vp)
+			devsize = c(grid::convertWidth(grid::unit(1, "npc"), unitTo = "inch", valueOnly = TRUE),
+						grid::convertHeight(grid::unit(1, "npc"), unitTo = "inch", valueOnly = TRUE))
 		}
+
+		# dasp device aspect ratio
+		dasp = devsize[1] / devsize[2]
+
+		# needed for spnc viewport (to retain aspect ratio)
+		if (dasp > 1) {
+			cw = dasp
+			ch = 1
+		} else {
+			ch = 1/dasp
+			cw = 1
+		}
+
+
+		lin = graphics::par("cin")[2]# * scale
+
+		lineH = lin / devsize[2] * scale
+		lineW = lin / devsize[1] * scale
+
+		# not needed?
+		#nlinesH = 1/lineH
+		#nlinesW = 1/lineW
+
 	})
-	
-	m <- gf$ncol * gf$nrow
-	
-	legend.only <- legend.frame <- legend.bg.alpha <- legend.hist.bg.alpha <- title.bg.alpha <- NULL
-	freescales <- names(gf)[substr(names(gf), 1, 11) == "free.scales"]
-	
-	gt <- within(gt, {
-		#nxa <- nxa
-		
-		## number of pages (np) and number of plots (small multiples) per page (pp)
-		if (length(along.names)==1) {
-			# wrap of plots
-			np <- ceiling(nx / (gf$nrow * gf$ncol))
-			pp <- min(gf$nrow * gf$ncol, nx)
-			along <- FALSE
-		} else {
-			# plots along
-			np <- nx / nxa
-			pp <- nxa
-			along <- TRUE
-		}
-		layer_vary <- layer_vary
+}
+preprocess_meta = function(o, cdt) {
+	within(o, {
+		nby = fn #get_nby(fl)
+		isdef = !sapply(fl, is.null)
+		n = prod(nby)
 
-		if (!any.legend || !legend.show) {
-			if (legend.only) stop("No legend to show.", call.=FALSE)
-			legend.show <- FALSE
-			legend.outside <- FALSE
-		} else {
-			if (is.na(legend.outside)) legend.outside <- (pp > 1) && !any(vapply(gf[freescales], "[", logical(1), 1))
-		}
-		
-		if (legend.outside) {
-			title.snap.to.legend <- TRUE
-		} else if (is.na(title.snap.to.legend)) {
-			title.snap.to.legend <- FALSE
-		}
-
-		if (is.na(panel.show)) panel.show <- !is.na(panel.names[1]) || !is.ena(panel.labels[1])
-		if (legend.only) {
-			title <- rep("", nx)
-			legend.width <- .9
-			legend.height <- .9
-			main.title <- rep("", np)
-		} else {
-			if (nx>1) {
-				title <- rep(nonna_text(title), length.out=nx)
-				
-				if (panel.show) {
-					if (is.ena(panel.labels[1])) {
-						if (!is.na(panel.names[1])) {
-							panel.labels <- panel.names
-						} else panel.labels <- rep("", nx)
-					} else if (is.list(panel.names)) {
-						if (!is.list(panel.labels) || length(panel.labels)!=2) stop("for cross table facets, panel.labels should be a list containing the row names in the first, and column names in the second item.", call. = FALSE)
-						if (length(panel.labels[[1]])!=length(panel.names[[1]])) stop("number of row names incorrect", call.=FALSE)
-						if (length(panel.labels[[2]])!=length(panel.names[[2]])) stop("number of column names incorrect", call.=FALSE)
-					} else if (is.list(panel.labels)) stop("unable to use row and column names unless panel.show in tm_layout is TRUE", call.=FALSE)
-				}
-				
-				#if (title.snap.to.legend) title <- title[1]
+		if (is.na(panel.type)) panel.type = if (identical(panel.show, FALSE)) {
+			"none"
+		} else if (identical(panel.show, TRUE)) {
+			# force panel labels
+			if (type %in% c("wrap", "stack", "page") || (n == 1)) {
+				"wrap"
 			} else {
-				if (is.ena(panel.labels[1])) {
-					if (!is.na(panel.names[1])) {
-						panel.labels <- panel.names[1]
-					} else panel.labels <- ""
-				}
-				title <- nonna_text(title[1])
+				"xtab"
 			}
-			if (panel.show) {
-				panel.names <- panel.labels
-				if (nxa > 1 && !is.list(panel.names)) {
-					panel.names <- rep(panel.names, np)
-				}
-			}
-			
-			if (!is.na(main.title[1]) || is.na(along.names[1])) {
-				main.title <- rep(nonna_text(main.title), length.out=np)
-			} else {
-				main.title <- along.names	
-			}
-		}
-
-		if (gm$shape.asp_ratio>1) {
-			asp_w <- 1
-			asp_h <- 1/gm$shape.asp_ratio
+		} else if ((n == 1) && is.na(panel.labels[[1]])) {
+			"none"
+		} else if (!(type %in% c("wrap", "stack")) && !isdef[1] && !isdef[2]) {
+			"none"
+		} else if ((type %in% c("wrap", "stack", "page")) || (n == 1)) {
+			"wrap"
 		} else {
-			asp_w <- gm$shape.asp_ratio
-			asp_h <- 1
+			"xtab"
 		}
-		scale.extra <- (min(1/ (asp_w * gf$ncol), 1 / (asp_h * gf$nrow))) ^ (1/gf$scale.factor)
-		asp_w <- asp_h <- NULL
-		scale <- scale * scale.extra
 
-		title.size <- title.size * scale
-		legend.title.size <- legend.title.size * scale
-		legend.text.size <- legend.text.size * scale
-		legend.hist.size <- legend.hist.size * scale
-		
-		panel.label.size <- panel.label.size * scale
-				
-		#if (is.null(bg.color)) bg.color <- "white"
-		space.color <- ifelse(is.null(space.color), bg.color, space.color[1])
-		earth.boundary.color <- ifelse(is.null(earth.boundary.color), attr.color, earth.boundary.color[1])
-		legend.text.color <-  ifelse(is.null(legend.text.color), attr.color, legend.text.color[1])
-		legend.title.color <- ifelse(is.null(legend.title.color), attr.color, legend.title.color[1])
-		title.color <- ifelse(is.null(title.color), attr.color, title.color[1])
+		inner.margins = get_option_class(inner.margins, class = main_class)
 
-		if (is.null(legend.hist.width)) legend.hist.width <- legend.width
-		
-		
-		legend.inside.box <- if (!is.logical(legend.frame)) TRUE else legend.frame
-		if (identical(title.bg.color, TRUE)) title.bg.color <- bg.color
-		
-		if (identical(frame, TRUE)) frame <- attr.color else if (identical(frame, FALSE)) frame <- NA 
+		# legend.present.auto:
+		#   find out whether there are legends for all facets, per row, per col
+		#   use them to automatically determine meta.margins (in preprocess_meta)
+		# # legend.present.fix
+		#	find legend boxes that are assigned to outer margins
 
-		if (is.logical(legend.frame)) if (identical(legend.frame, TRUE)) legend.frame <- attr.color else legend.frame <- NA 
-# 		
-# 		between.margin.in <- convertHeight(unit(between.margin, "lines") * scale, "inch", valueOnly=TRUE)
-# 		
-# 		between.margin.y <-convertHeight(unit(between.margin.in, "inch"), "npc", valueOnly=TRUE) * gf$nrow
-# 		between.margin.x <-convertWidth(unit(between.margin.in, "inch"), "npc", valueOnly=TRUE) * gf$ncol
-# 		
-		
-		outer.margins <- rep(outer.margins, length.out=4)
-		#outer.margins <- rep(0, length.out=4)
-		# 		if (m>1) {
-# 			outer.margins <- c(between.margin.y, between.margin.x, between.margin.y, between.margin.x)
-# 		}
-		
-		inner.margins <- if (is.na(inner.margins[1])) {
-			if (gm$shape.is_raster_master) rep(0, 4) else rep(0.02, 4)
-		} else rep(inner.margins, length.out=4)
-		
- 		attr.color.light <- is_light(attr.color)
- 		aes.color.light <- is_light(aes.colors)
-
-		title.color <- do.call("process_color", c(list(col=title.color), pc))
-		main.title.color <- do.call("process_color", c(list(col=main.title.color), pc))
-		legend.text.color <- do.call("process_color", c(list(col=legend.text.color), pc))
-		legend.title.color <- do.call("process_color", c(list(col=legend.title.color), pc))
-		if (!is.na(frame)) frame <- do.call("process_color", c(list(col=frame), pc))
-		if (!is.na(legend.frame)) legend.frame <- do.call("process_color", c(list(col=legend.frame), pc))
-		
-		panel.label.color <- do.call("process_color", c(list(col=panel.label.color), pc))
-		panel.label.bg.color <- do.call("process_color", c(list(col=panel.label.bg.color), pc))
-		
-		#if (is.na(earth.boundary.color)) earth.boundary.color <- attr.color
-		earth.boundary.color <- do.call("process_color", c(list(col=earth.boundary.color), pc))
-		
-		#attr.color <- do.call("process_color", c(list(col=attr.color), pc))
-		bg.color <- do.call("process_color", c(list(col=bg.color), pc))
-
-		if (!is.null(outer.bg.color)) outer.bg.color <- do.call("process_color", c(list(col=outer.bg.color), pc))
-		
-		if (is.na(legend.bg.color)) legend.bg.color <- !is.na(legend.frame)
-		if (!is.na(legend.bg.color)) {
-			legend.bg.color <- if (identical(legend.bg.color, FALSE)) {
-				NA
-			} else if (identical(legend.bg.color, TRUE)) {
-				bg.color
-			} else {
-				do.call("process_color", c(list(col=legend.bg.color, alpha=legend.bg.alpha), pc))				}
-		} 
-		if (!is.na(legend.hist.bg.color)) legend.hist.bg.color <- do.call("process_color", c(list(col=legend.hist.bg.color, alpha=legend.hist.bg.alpha), pc))
-		if (!is.na(title.bg.color)) title.bg.color <- do.call("process_color", c(list(col=title.bg.color, alpha=title.bg.alpha), pc))
-		if (!is.na(earth.boundary.color)) earth.boundary.color <- do.call("process_color", c(list(col=earth.boundary.color), pc))
-		space.color <- do.call("process_color", c(list(col=space.color), pc))
-		
-		earth.bounds <- if (is.logical(earth.boundary)) {
-			c(-180, -90, 180, 90)
+		if (nrow(cdt) == 0) {
+			legend.present.auto = c(all = FALSE, per_row = FALSE, per_col = FALSE, per_facet = FALSE)
+			legend.present.fix = rep(FALSE, 4)
 		} else {
-			as.vector(bb(earth.boundary))
+			if (type %in% c("wrap", "stack", "page")) {
+				#o$legend.present.auto = c(all = any(is.na(cdt$by1__) & cdt$class == "autoout"), per_row = any(!is.na(cdt$by1__) & cdt$class == "autoout"), per_col = FALSE)
+				legend.present.auto = c(all = any(cdt$class == "autoout" & is.na(cdt$by1__)),
+										per_row = FALSE, per_col = FALSE,
+										per_facet = any(cdt$class == "autoout" & !is.na(cdt$by1__)))
+			} else {
+				legend.present.auto = c(all = any(is.na(cdt$by1__) & is.na(cdt$by2__) & cdt$class == "autoout"),
+										per_row = any(!is.na(cdt$by1__) & is.na(cdt$by2__) & cdt$class == "autoout"),
+										per_col = any(is.na(cdt$by1__) & !is.na(cdt$by2__) & cdt$class == "autoout"),
+										per_facet = any(!is.na(cdt$by1__) & !is.na(cdt$by2__) & cdt$class == "autoout"))
+			}
+			legend.present.fix = c(any(cdt$class == "out" & cdt$cell.v == "bottom"),
+								   any(cdt$class == "out" & cdt$cell.h == "left"),
+								   any(cdt$class == "out" & cdt$cell.v == "top"),
+								   any(cdt$class == "out" & cdt$cell.h == "right"))
 		}
-		earth.boundary <- !identical(earth.boundary, FALSE)
-		
-		earth.boundary.lwd <- earth.boundary.lwd * scale
-		frame.lwd <- frame.lwd * scale
-		
-		if (is.na(attr.outside.size)) attr.outside.size <- (credit.show*.1 + logo.show*.15 + scale.show*.1 + compass.show * .15) * scale
-		
-		# set font face and family
-		
-		if (is.null(legend.title.fontface)) legend.title.fontface <- fontface
-		if (is.null(legend.title.fontfamily)) legend.title.fontfamily <- fontfamily
 
-		if (is.null(legend.text.fontface)) legend.text.fontface <- fontface
-		if (is.null(legend.text.fontfamily)) legend.text.fontfamily <- fontfamily
-		
-		if (is.null(title.fontface)) title.fontface <- fontface
-		if (is.null(title.fontfamily)) title.fontfamily <- fontfamily
-		
-		if (is.null(main.title.fontface)) main.title.fontface <- fontface
-		if (is.null(main.title.fontfamily)) main.title.fontfamily <- fontfamily
-		
-		if (is.null(panel.label.fontface)) panel.label.fontface <- fontface
-		if (is.null(panel.label.fontfamily)) panel.label.fontfamily <- fontfamily
-		
-		
-		## overrule margins if interactive
-		if (interactive) {
-			inner.margins <- rep(0, 4)
-			outer.margins <- rep(0, 4)
-			asp <- NA
-			if (title[1]=="" && !is.ena(panel.names[1]) && panel.names[1]!="") {
-				if (is.list(panel.names)) {
-					title <- unlist(lapply(panel.names[[1]], function(n1) {
-						lapply(panel.names[[2]], function(n2) {
-							paste(n1, n2, sep = " / ")
-						})
-					}), use.names = FALSE)
+
+		# in case there are per-facet legends but no no marginal legends, and nrows or ncols equals 1, place them outside (to do this, set them to all-facet here, change legend.position.all below accordingly, and finally determine legend position in step4_plot)
+		if (legend.present.auto[4] && (!any(legend.present.auto[2:3]))) {
+
+			if (type == "stack") {
+				legend.present.auto[1] = TRUE
+				legend.present.auto[4] = FALSE
+				set_to_stack_message = FALSE
+			} else {
+				set_to_stack_message = TRUE
+			}
+		} else {
+			set_to_stack_message = FALSE
+		}
+
+	})
+}
+
+process_meta = function(o, d, cdt, aux) {
+
+	if (o$legend.only) {
+		return(within(o, {
+			meta.buffers = c(0, 0, 0, 0)
+			meta.margins = c(0, 0, 0, 0)
+			xylab.margins = rep(0, 4)
+			panel.xtab.size = c(0, 0, 0, 0)
+			panel.xtab.margin = rep(0, 4)
+			panel.wrap.margin = rep(0, 4)
+			grid.buffers = c(0, 0, 0, 0)
+			grid.margins = c(0, 0, 0, 0)
+			panel.wrap.size = c(0, 0, 0, 0)
+			fixedMargins  =  outer.margins + meta.buffers * 2 + meta.margins
+			nrows = 1L
+			ncols = 1L
+
+			between_marginH = between_margin * lineH
+			between_marginW = between_margin * lineW
+
+
+			#overall scale down factor for facets
+			width_forn = max(1e-9, ((1 - sum(fixedMargins[c(2, 4)])) - (ncols * sum(panel.wrap.size[c(2,4)])) - (ncols - 1) * between_marginW) / ncols)
+			width_for1 = max(1e-9, ((1 - sum(fixedMargins[c(2, 4)])) - (sum(panel.wrap.size[c(2,4)]))))
+
+			height_forn = max(1e-9, ((1 - sum(fixedMargins[c(1, 3)])) - (nrows * sum(panel.wrap.size[c(1,3)])) - (nrows - 1) * between_marginH) / nrows)
+			height_for1 = max(1e-9, ((1 - sum(fixedMargins[c(1, 3)])) - (sum(panel.wrap.size[c(1,3)]))))
+
+			scale_down = (1 / sqrt((width_for1 * height_for1) / (width_forn * height_forn))) ^ (1 / scale.factor)
+
+		}))
+	}
+
+
+	gs = tmap_graphics_name()
+
+	# add tm_grid values to o
+	gid = which(vapply(aux, FUN = inherits, "tm_grid", FUN.VALUE = logical(1)))[1]
+	if (!is.na(gid)) {
+		a = aux[[gid]]$args
+		a$zindex = NULL
+		a$group = NULL
+		o[paste0("grid.", names(a))] = a
+	}
+
+	# add credits into to o (for view mode in order to reset default attribution text)
+	cid = which(vapply(cdt$comp, FUN = inherits, "tm_credits", FUN.VALUE = logical(1)))[1]
+	o$credits.defined = (!is.na(cid))
+
+	bbx = d$bbox[[1]]
+	within(o, {
+		# sasp shape aspect ratio (NA if free coordinates)
+		diff_asp = any(d$asp != d$asp[1])
+		sasp = ifelse(diff_asp, NA, d$asp[1])
+
+		# preferred aspect ratio (just for this function): if asp is defined (not 0 or NA), use that, otherwise use sasp (shape asp) if available (if not; 1)
+		pasp = if (is.na(sasp)) {
+			if (!is.na(asp) && asp > 0) {
+				asp
+			} else {
+				1
+			}
+		} else {
+			if (!is.na(asp) && asp > 0) {
+				asp
+			} else {
+				sasp
+			}
+		}
+
+
+		if (gs == "Grid") {
+
+			bufferH = lineH / 2
+			bufferW = lineW / 2
+
+			# calculate space for margins, panels, etc
+
+			meta.automatic = is.na(meta.margins[1])
+
+			#one.row = (!is.na(o$nrows) && o$nrows == 1)
+			#one.col = (!is.na(o$ncols) && o$ncols == 1)
+
+			if (meta.automatic) meta.margins = c(0, 0, 0, 0) else meta.margins = rep(meta.margins, length.out = 4)
+
+			meta.buffers = sign(meta.margins) * c(bufferH, bufferW, bufferH, bufferW) # outside and inside
+
+			panel.xtab.size = if (panel.type == "xtab") {
+				c(ifelse("bottom" %in% panel.xtab.pos, panel.label.height * lineH, 0),
+				  ifelse("left" %in% panel.xtab.pos, panel.label.height * lineW, 0),
+				  ifelse("top" %in% panel.xtab.pos, panel.label.height * lineH, 0),
+				  ifelse("right" %in% panel.xtab.pos, panel.label.height * lineW, 0))
+			} else c(0, 0, 0, 0)
+
+			panel.margin = get_option_class(panel.margin, panel.type, spatial_class = FALSE)
+
+			panel.xtab.margin = if (panel.type == "xtab") {
+				c(ifelse("bottom" %in% panel.xtab.pos, panel.margin * lineH, 0),
+				  ifelse("left" %in% panel.xtab.pos, panel.margin * lineW, 0),
+				  ifelse("top" %in% panel.xtab.pos, panel.margin * lineH, 0),
+				  ifelse("right" %in% panel.xtab.pos, panel.margin * lineW, 0))
+			} else c(0, 0, 0, 0)
+
+			panel.wrap.margin =	if (panel.type == "wrap") {
+				c(ifelse(panel.wrap.pos == "bottom", panel.margin * lineH, 0),
+				  ifelse(panel.wrap.pos == "left", panel.margin * lineW, 0),
+				  ifelse(panel.wrap.pos == "top", panel.margin * lineH, 0),
+				  ifelse(panel.wrap.pos == "right", panel.margin * lineW, 0))
+			} else c(0, 0, 0, 0)
+
+
+			panel.wrap.size = if (panel.type == "wrap") {
+				c(ifelse(panel.wrap.pos == "bottom", panel.label.height * lineH, 0),
+				  ifelse(panel.wrap.pos == "left", panel.label.height * lineW, 0),
+				  ifelse(panel.wrap.pos == "top", panel.label.height * lineH, 0),
+				  ifelse(panel.wrap.pos == "right", panel.label.height * lineW, 0))
+			} else c(0, 0, 0, 0)
+
+			xylab.margins = rep(0, 4)
+			if (xlab.show) {
+				#if (is.na(xlab.fontface)) xlab.fontface = text.fontface
+				xylab.margins[ifelse(xlab.side == "bottom", 1, 3)] = if (xlab.rotation %in% c(0, 180)) {
+					(number_text_lines(xlab.text) + xlab.space)  * lineH
 				} else {
-					title <- panel.names
+					(text_width_inch(xlab.text, space = FALSE) / lin) * lineH
 				}
-				
 			}
+			if (ylab.show) {
+				#if (is.na(ylab.fontface)) ylab.fontface = text.fontface
+				xylab.margins[ifelse(ylab.side == "left", 2, 4)] = if (ylab.rotation %in% c(90, 270)) {
+					(number_text_lines(ylab.text) + ylab.space)  * lineW
+				} else {
+					(text_width_inch(ylab.text, space = FALSE) / lin) * lineW
+				}
+			}
+
+
+			grid.buffers = if (grid.show) {
+				as.integer(c("bottom", "left", "top", "right") %in% grid.labels.pos) * c(bufferH, bufferW, bufferH, bufferW)
+			} else {
+				rep(0, 4)
+			}
+
+
+
+			grid.labels.show = rep(grid.labels.show, length.out = 2) # also happens in tmapGridGridPrep
+			if (grid.show && any(grid.labels.show) && !grid.labels.inside_frame) {
+				proj = sf::st_crs(bbx)
+				if (!is.na(o$grid.crs)) {
+					bbx_orig <- bbx
+					bbx <- suppressWarnings(bb(bbx, current.projection = proj, projection = o$grid.crs))
+				}
+
+				lineHin <- convertHeight(unit(grid.labels.size, "lines"), "inch", valueOnly=TRUE)
+
+				if (grid.labels.show[1]) {
+					gridx = pretty30(bbx[c(1,3)], n = 5, longlat = !is.na(o$grid.crs) && sf::st_is_longlat(proj))
+					xbbstringWin <- max(convertWidth(stringWidth(do.call("fancy_breaks", c(list(vec=gridx, intervals = FALSE), grid.labels.format))), "inch", valueOnly = TRUE)) * grid.labels.size
+					xgridHin <- ifelse(!is.na(grid.labels.space.x), grid.labels.space.x * lineHin, ifelse(grid.labels.rot[1] %in% c(0, 180), 1.375 * lineHin, xbbstringWin + lineHin * .75) + grid.labels.margin.x * lineHin)
+
+				} else {
+					xgridHin = 0
+				}
+
+				if (grid.labels.show[2]) {
+					gridy = pretty30(bbx[c(2,4)], n = 5, longlat = !is.na(o$grid.crs) && sf::st_is_longlat(proj))
+					ybbstringWin = max(
+						convertWidth(
+							stringWidth(do.call("fancy_breaks", c(
+								list(vec=gridy, intervals=FALSE), grid.labels.format))), "inch", valueOnly = TRUE)
+						)
+
+					ybbstringWin = ybbstringWin * grid.labels.size
+					ygridWin = ifelse(!is.na(grid.labels.space.y), grid.labels.space.y * lineHin, ifelse(grid.labels.rot[2] %in% c(0, 180), ybbstringWin + lineHin * .75, 1.375 * lineHin) + grid.labels.margin.y * lineHin)
+				} else {
+					ygridWin = 0
+				}
+
+				marks_new = c(xgridHin, ygridWin, xgridHin, ygridWin) / lin
+				grid.margins = as.integer(c("bottom", "left", "top", "right") %in% grid.labels.pos) * marks_new * c(lineH, lineW, lineH, lineW)
+			} else {
+				grid.margins = rep(0, 4)
+			}
+
+			between_marginH = between_margin * lineH
+			between_marginW = between_margin * lineW
+
+			fixedMargins = outer.margins + meta.buffers * 2 + meta.margins + xylab.margins + panel.xtab.size + grid.buffers + grid.margins
+		} else {
+			grid.buffers = rep(0, 4)
+			grid.labels.show = c(FALSE, FALSE)
+			grid.margins = rep(0, 4)
+			fixedMargins = rep(0, 4)
+			panel.wrap.size = rep(0, 4)
+			between_marginH = 0
+			between_marginW = 0
 		}
-		
-	})	
-
-	gg <- process_meta_grid(gg, gt, interactive)
-
-	if (credit.show) {
-		gc <- within(gc, {
-		 	credits.col[is.na(credits.col)] <- gt$attr.color
-			credits.col <- do.call("process_color", c(list(col=credits.col), gt$pc))
-			credits.size <- credits.size * gt$scale
-			credits.fontface[is.na(credits.fontface)] <-gt$fontface
-			credits.fontfamily[is.na(credits.fontfamily)] <-gt$fontfamily
-			credits.text <- lapply(credits.text, rep, length.out=nx)
-			credits.show <- lapply(credits.text, nonempty_text)
-		})
-	} else {
-		gc <- list(credits.show=list(rep(FALSE, nx)))
-	}
-	
-	if (logo.show) {
-		gl <- within(gl, {
-			# get local file names
-			logo.file <- lapply(gl$logo.file, function(lf){
-				# loop over different tm_logos
-				lapply(lf, function(lf2) {
-					lf3 <- lf2
-					lf3[lf2!=""] <- tmap_icons(lf2[lf2!=""])$iconUrl
-					lf3
-				})
-				# loop over different multiples
-			})
-			
-			
-			# one for each small multiple
-			logo.height <- lapply(logo.height, function(lh) rep(lh, length.out=nx))
-			logo.file <- lapply(logo.file, rep, length.out=nx)
-			
-			
-			# make heights consistent with files
-			logo.height <- mapply(function(lf, lh) {
-				mapply(function(lf2, lh2) {
-					hts <- rep(lh2, length.out=length(lf2))
-					hts[lf2==""] <- 0
-					hts * gt$scale
-				}, lf, lh, SIMPLIFY=FALSE)
-			}, logo.file, logo.height, SIMPLIFY=FALSE)
-			
-			# which ones to show
-			logo.show <- lapply(logo.file, function(lf) vapply(lf, function(lf2) any(nonempty_text(lf2)), logical(1)))
-			
-			# calculate widths per icon
-			logo.width <- mapply(function(lf, lh) {
-				# loop over different tm_logos
-				mapply(function(lf2, lh2) {
-					# loop over different multiples
-					mapply(function(lf3, lh3) {
-						# loop over different icons in a row
-						if (lf3=="") return(0)
-						ti <- tmap_icons(lf3, height = 1e3 * lh3, width = 1e6 * lh3)
-						ti$iconWidth / 1e3
-					}, lf2, lh2, USE.NAMES = FALSE)
-				}, lf, lh, SIMPLIFY=FALSE)
-			}, logo.file, logo.height, SIMPLIFY=FALSE)
-		})
-	} else {
-		gl <- list(logo.show=list(rep(FALSE, nx)))
-	}	
-	
-	gsb <- process_meta_scale_bar(gsb, interactive, gt)
-	
-	compass.show.labels <- NULL
-	if (compass.show) {
-		gcomp <- within(gcomp, {
-			if (is.na(compass.text.color)) compass.text.color <- gt$attr.color
-			compass.text.color <- do.call("process_color", c(list(col=compass.text.color), gt$pc))
-			
-			if (is.na(compass.color.dark)) compass.color.dark <- ifelse(gt$attr.color.light, gt$attr.color, gt$attr.color)
-			if (is.na(compass.color.light)) compass.color.light <- ifelse(gt$attr.color.light, "black", "white")
-			compass.color.dark <- do.call("process_color", c(list(col=compass.color.dark), gt$pc))
-			compass.color.light <- do.call("process_color", c(list(col=compass.color.light), gt$pc))
-			
-			compass.text.size <- compass.text.size * gt$scale
-			compass.lwd <- compass.lwd * gt$scale
-			
-			compass.show <- TRUE
-			if (is.na(compass.type)) compass.type <- gt$compass.type
-			if (is.na(compass.size)) compass.size <- switch(compass.type, arrow=2, radar=6, rose=6, 4)
-			#compass.size = compass.size * gt$scale
-			compass.nlines <- compass.size + ifelse(compass.show.labels==0, 0, ifelse(compass.show.labels==1, 1, 2))
-		})
-	} else {
-		gcomp <- list(compass.show=FALSE)
-	}
-	
-	if (!is.null(glab)) {
-		glab <- within(glab, {
-			if (!is.null(xlab.text)) {
-				xlab.nlines <- if (xlab.rotation %in% c(90, 270)) {
-					convertHeight(stringWidth(xlab.text), "lines", valueOnly = TRUE)	
-				} else number_text_lines(xlab.text)
-				#if (is.na(xlab.space)) xlab.space <- ifelse(gg$grid.show && !gg$grid.labels.inside.frame, gg$grid.labels.size / xlab.size, 0)
-				xlab.size <- xlab.size * gt$scale
-				xlab.show <- TRUE
-			} else {
-				xlab.show <- FALSE
-			}
-			if (!is.null(ylab.text)) {
-				ylab.nlines <- if (ylab.rotation %in% c(0, 180)) {
-					convertWidth(stringWidth(ylab.text), "lines", valueOnly = TRUE)	
-				} else number_text_lines(ylab.text)
-				#if (is.na(ylab.space)) ylab.space <- ifelse(gg$grid.show && !gg$grid.labels.inside.frame, gg$grid.labels.size / ylab.size, 0)
-				ylab.size <- ylab.size * gt$scale
-				ylab.show <- TRUE
-			} else {
-				ylab.show <- FALSE
-			}
-		})
-	} else {
-		glab <- list(xlab.show=FALSE, ylab.show=FALSE)
-	}
-	
-
-	gt[c("compass.type", "compass.size")] <- NULL
-	
-	gmm <- process_meta_minimap(gmm, interactive, gt)
-	if (is.null(gmmc)) gmmc = list(mouse.show = FALSE)
-	
-	c(gt, gf, gg, gc, gl, gsb, gcomp, glab, gmm, gmmc, gm)
-}
-
-process_meta_minimap <- function(gmm, interactive, gt) {
-	if (!is.null(gmm) && interactive) {
-		if (is.na(gmm$minimap.position[1])) gmm$minimap.position <- gt$attr.position
-		gmm$minimap.position <- find_leaflet_position(gmm$minimap.position)
-		gmm$minimap.show <- TRUE
-	} else {
-		gmm <- list(minimap.show = FALSE)
-	}
-	gmm
-}
 
 
-find_leaflet_position <- function(position) {
-	if (is_num_string(position[1])) {
-		paste(ifelse(as.numeric(position[2])<.5, "bottom", "top"),
-								ifelse(as.numeric(position[1])<.5, "left", "right"), sep="")
-	} else {
-		paste(ifelse(position[2] %in% c("BOTTOM", "bottom"), "bottom", "top"),
-								ifelse(position[1] %in% c("LEFT", "left"), "left", "right"), sep="")
-	}	
-}
+		masp = ((1 - sum(fixedMargins[c(2, 4)])) / (1 - sum(fixedMargins[c(1, 3)]))) * dasp
+
+		# Aspect ratios:
+		# sasp: shape
+		# asp: user specified
+		# pasp: prefered (asp or if not specified, sasp)
+		# masp: multiples (facets) area
+
+		# determine where to place automatic legends (i.e. legends with local legend.position = NA and with legend.position = tm_pos_auto_out() enabled)
+		# this is also neede to find out which margins are taken from meta.auto_margins
+
+		legend.position.sides = legend.position
+		legend.position.all = legend.position
+
+	#	legsG = cdt[, leg]
+
+		# determine orientation of stacked maps
+		# it also implies where legends will be drawn: horizontal orientation=legends bottom or top, vertical orientation=legends left or right
+		# !!! this also applies for single maps
+		mx_width = (1 - sum(fixedMargins[c(1, 3)])) * devsize[1]
+		mx_height = (1 - sum(fixedMargins[c(2, 4)])) * devsize[2]
+
+		# cdt[, scale := pmax(legW/mx_width, legH/mx_height, 1)]
+		# cdt[, ":="(legW_sc = legW/scale, legH_sc = legH/scale)]
 
 
-process_meta_scale_bar <- function(gsb, interactive, gt) {
-	show.messages <- gt$show.messages
-	show.warnings = gt$show.warnings
-	
-	if (!is.null(gsb)) {
-		gsb <- within(gsb, {
-			if (!exists("scale.call")) scale.call <- ""
-			if (interactive) {
-				if ("breaks" %in% scale.call && show.warnings) warning("In view mode, scale bar breaks are ignored.", call. = FALSE)
-				
-				if (is.na(scale.width))
-					scale.width <- 100
-				else if (scale.width < 1) {
-					if (show.messages) message("Scale bar width set to 100 pixels")
-					scale.width <- 100
-				}
-				
-				if (is.na(scale.position[1])) scale.position <- gt$attr.position
-				scale.position <- find_leaflet_position(scale.position)
-			} else {
-				if (all(c("breaks", "width") %in% scale.call) && show.warnings) {
-					warning("For tm_scale_bar, breaks and width cannot be used together. The width is being ignored.", call. = FALSE)	
-				}
-				if ("breaks" %in% scale.call) {
-					if (scale.breaks[1] != 0) {
-						if (show.warnings) warning("First scale_bar breaks value should be 0.", call. = FALSE)
-						scale.breaks <- c(0, scale.breaks)
+		if (gs == "Grid") {
+			if (type %in% c("stack", "page")) {
+				if (is.na(orientation)) {
+					if (nrow(cdt)) {
+						legs_auto = cdt[class=="autoout"]
+					} else {
+						legs_auto = cdt
+					}
+
+
+					if (type == "page" || (nrow(legs_auto) && n == 1)) {
+
+						legWmax = min(max(legs_auto$legW) / devsize[1], max(meta.auto_margins[c(2,4)]))
+						legHmax = min(max(legs_auto$legH) / devsize[2], max(meta.auto_margins[c(1,3)]))
+
+
+						av_width = mx_width - legWmax * devsize[1]
+						av_height = mx_height - legHmax * devsize[2]
+
+						shp_height_hor = if ((av_width / mx_height) < pasp) av_width / pasp else mx_height
+						shp_height_ver = if ((mx_width / av_height) < pasp) mx_width / pasp else av_height
+
+						orientation = if (shp_height_hor >= shp_height_ver) "vertical" else "horizontal"
+					} else {
+						orientation = if ((!is.na(nrows) && nrows == 1) || (!is.na(ncols) && ncols == n)) {
+							"horizontal"
+						} else if ((!is.na(nrows) && nrows == n) || (!is.na(ncols) && ncols == 1)) {
+							"vertical"
+						} else if ((n == 1 && (pasp > masp)) || (n > 1 && (pasp < masp))) "horizontal" else "vertical"
 					}
 				}
-				
-				if (is.na(scale.width))
-					scale.width <- .25
-				else if (scale.width > 1) {
-					if (show.messages) message("Scale bar width set to 0.25 of the map width")
-					scale.width <- .25
+			}
+		} else {
+			orientation = if ((n == 1 && (pasp > masp)) || (n > 1 && (pasp < masp))) "horizontal" else "vertical"
+		}
+
+		if (gs == "Grid") {
+			## find position for all-facet legend
+			if (legend.present.auto[1]) {
+				if (!legend.present.auto[2] & !legend.present.auto[3]) {
+					# only 'all facets' outside legends (either bottom or right)
+					# was: n > 1 && masp > pasp
+					if ((type != "stack" && n == 1 && pasp > masp) || (type != "stack" && n > 1 && masp < 1) || (type == "stack" && orientation == "horizontal")) {
+						legend.position.all = list(cell.h = "center", cell.v = legend.position$cell.v)
+					} else {
+						legend.position.all = list(cell.h = legend.position$cell.h, cell.v = "center")
+					}
+				} else if (legend.present.auto[2] & !legend.present.auto[3]) {
+					# central goes center bottom
+					legend.position.all = list(cell.h = "center", cell.v = legend.position$cell.v)
+				} else if (!legend.present.auto[2] & legend.present.auto[3]) {
+					# central goes right center
+					legend.position.all = list(cell.h = legend.position$cell.h, cell.v = "center")
 				}
 			}
-			if (is.na(scale.text.color)) scale.text.color <- gt$attr.color
-			scale.text.size <- scale.text.size * gt$scale
-			scale.lwd <- scale.lwd * gt$scale
-			scale.show <- TRUE
-		})
-	} else {
-		gsb <- list(scale.show=FALSE)
-	}
+
+			margins.used.all = c(legend.position.all$cell.v == "bottom",
+								 legend.position.all$cell.h == "left",
+								 legend.position.all$cell.v == "top",
+								 legend.position.all$cell.h == "right") * legend.present.auto[1]
+
+			margins.used.sides = c(bottom = legend.position.sides$cell.v == "bottom",
+								   left = legend.position.sides$cell.h == "left",
+								   top = legend.position.sides$cell.v == "top",
+								   right = legend.position.sides$cell.h == "right") * legend.present.auto[c(3,2,3,2)]
+
+
+			margins.used =  margins.used.all | margins.used.sides | legend.present.fix
+
+			# tm_shape(World) + tm_polygons(fill = "HPI", lwd = "life_exp")
+
+			if (nrow(cdt)) {
+				cdt2 = data.table::copy(cdt[cdt$class %in% c("autoout", "out"),])
+
+				# CODE COPIED FROM STEP4_plot L157
+				# TO DO: fix this
+				if (o$type != "grid" && o$n > 1) {
+					#if (o$nrows == 1 && o$ncols == 1)
+					if (identical(orientation, "horizontal")) {
+						# -use by2 and not by1 when they form a row
+						cdt2[, by2__ := by1__]
+						cdt2[, by1__ := NA]
+					}
+				}
+
+
+				stacks = o$legend.stack
+
+				cdt2[is.na(by1__) & is.na(by2__) & class == "autoout", ':='(cell.h = legend.position.all$cell.h, cell.v = legend.position.all$cell.v)]
+				cdt2[!is.na(by1__) & is.na(by2__) & class == "autoout", ':='(cell.h = legend.position.sides$cell.h, cell.v = "by")]
+				cdt2[is.na(by1__) & !is.na(by2__) & class == "autoout", ':='(cell.h = "by", cell.v = legend.position.sides$cell.v)]
+
+				cdt2[is.na(by1__) & is.na(by2__) & class == "autoout", ':='(stack = ifelse(stack_auto, ifelse(cell.h == "center", stacks["all_col"], ifelse(cell.v == "center", stacks["all_row"], stacks["all"])), stack))]
+				cdt2[!is.na(by1__) & is.na(by2__) & class == "autoout", ':='(stack = ifelse(stack_auto, stacks["per_row"], stack))]
+				cdt2[is.na(by1__) & !is.na(by2__) & class == "autoout", ':='(stack = ifelse(stack_auto, stacks["per_col"], stack))]
+
+
+				cdt2[class == "autoout", class := "out"]
+
+
+
+				if (nrow(cdt2) == 0) {
+					meta.auto_margins = c(0, 0, 0, 0)
+				} else {
+					if (type == "stack") {
+						# workaround: stacking mode is determined later (step4 L156), because it requires ncols and nrows
+						# for stack, this is already known, so therefore we can better estimate the meta width and height
+
+						cdt2[is.na(by1__), by1__:=1]
+
+						meta.auto_margins = pmin(meta.auto_margins, do.call(pmax, lapply(unique(cdt2$by1__), function(b1) {
+							cdt2b = cdt2[by1__==b1, ]
+
+							cdt2b[stack_auto == TRUE, stack:= ifelse(n==1, ifelse(cell.h %in% c("left", "right"), o$legend.stack["all_row"], o$legend.stack["all_col"]), ifelse(orientation == "vertical", o$legend.stack["per_row"], o$legend.stack["per_col"]))]
+
+							c(sum(sum(c(0,cdt2b[cell.v == "bottom" & stack == "vertical", legH,by = c("cell.h", "cell.v")]$legH)),
+								  max(c(0,cdt2b[cell.v == "bottom" & stack == "horizontal", legH,by = c("cell.h", "cell.v")]$legH))) / o$devsize[2],
+							  sum(sum(c(0,cdt2b[cell.h == "left" & stack == "horizontal", legW,by = c("cell.h", "cell.v")]$legW)),
+							  	max(c(0,cdt2b[cell.h == "left" & stack == "vertical", legW,by = c("cell.h", "cell.v")]$legW))) / o$devsize[1],
+							  sum(sum(c(0,cdt2b[cell.v == "top" & stack == "vertical", legH,by = c("cell.h", "cell.v")]$legH)),
+							  	max(c(0,cdt2b[cell.v == "top" & stack == "horizontal", legH,by = c("cell.h", "cell.v")]$legH))) / o$devsize[2],
+							  sum(sum(c(0,cdt2b[cell.h == "right" & stack == "horizontal", legW,by = c("cell.h", "cell.v")]$legW)),
+							  	max(c(0,cdt2b[cell.h == "right" & stack == "vertical", legW,by = c("cell.h", "cell.v")]$legW))) / o$devsize[1])
+						})))
+					} else {
+						meta.auto_margins = pmin(meta.auto_margins,
+												 c(max(cdt$legH[cdt$cell.v == "bottom" & cdt$class %in% c("autoout", "out")], 0) / o$devsize[2],
+												   max(cdt$legW[cdt$cell.h == "left" & cdt$class %in% c("autoout", "out")], 0) / o$devsize[1],
+												   max(cdt$legH[cdt$cell.v == "top" & cdt$class %in% c("autoout", "out")], 0) / o$devsize[2],
+												   max(cdt$legW[cdt$cell.h == "right" & cdt$class %in% c("autoout", "out")], 0) / o$devsize[1]))
+					}
+
+					# add margins (compensate for legend frames)
+					# the final calculations of these margins are computed in tmapGridComp (this is just to compute the meta.auto_margins)
+					# those calculations are take the component.offset into account
+
+					sel_tb = c(3,1)[meta.auto_margins[c(3,1)]!=0]
+					sel_lr = c(2,4)[meta.auto_margins[c(2,4)]!=0]
+					if (length(sel_tb)) meta.auto_margins[sel_tb] = meta.auto_margins[sel_tb] + 2 * (o$frame.lwd * o$scale / 144) / o$devsize[2]
+					if (length(sel_lr)) meta.auto_margins[sel_lr] = meta.auto_margins[sel_lr] + 2 * (o$frame.lwd * o$scale / 144) / o$devsize[1]
+				}
+			}
+
+			if (meta.automatic && any(margins.used)) {
+				meta.auto_margins = rep(meta.auto_margins, length.out = 4)
+				meta.margins[margins.used] = meta.auto_margins[margins.used]
+
+				# redo calculations
+				meta.buffers = sign(meta.margins) * c(bufferH, bufferW, bufferH, bufferW) # outside and inside
+				fixedMargins  =  outer.margins + meta.buffers * 2 + meta.margins + xylab.margins + panel.xtab.size + grid.buffers + grid.margins
+			}
+		} else {
+			meta.buffers = c(0, 0, 0, 0)
+			meta.margins = c(0, 0, 0, 0)
+		}
+
+
+		# determine number of rows and cols
+		if (type == "grid") {
+			nrows = nby[1]
+			ncols = nby[2]
+		} else if (type == "page") {
+			if (is.na(nrows)) nrows = 1
+			if (is.na(ncols)) ncols = 1
+		} else if (type == "stack") {
+			if (orientation == "horizontal") {
+				nrows = 1
+				ncols = n
+			} else {
+				nrows = n
+				ncols = 1
+			}
+		} else {
+			if (is.na(nrows) && !is.na(ncols)) {
+				nrows = ceiling((nby[1] / ncols))
+			} else if (!is.na(nrows) && is.na(ncols)) {
+				ncols = ceiling((nby[1] / nrows))
+			} else if (is.na(nrows) && is.na(ncols)) {
+
+				# loop through col row combinations to find best nrow/ncol
+				# b needed to compare landscape vs portrait. E.g if prefered asp is 2, 1 is equally good as 4
+				ncols = which.min(vapply(1L:n, function(nc) {
+					nr = ceiling(n / nc)
+
+					# calculate available width and height. They can be negative, at this stage this is avoided my taking at least a small number
+					width = max(1e-9, ((1 - sum(fixedMargins[c(2, 4)])) - (nc * sum(panel.wrap.size[c(2,4)])) - (nc - 1) * between_marginW) / nc)
+					height = max(1e-9, ((1 - sum(fixedMargins[c(1, 3)])) - (nr * sum(panel.wrap.size[c(1,3)])) - (nr - 1) * between_marginH) / nr)
+
+					a = (width / height) * dasp
+					b = ifelse(a<pasp, pasp/a, a/pasp)
+					b
+				}, FUN.VALUE = numeric(1)))
+
+
+				nrows = ceiling(n / ncols)
+			}
+			if ((nrows == 1 || ncols == 1) && set_to_stack_message) message_wrapstack(nrows == 1)
+		}
+
+		#overall scale down factor for facets
+		width_forn = max(1e-9, ((1 - sum(fixedMargins[c(2, 4)])) - (ncols * sum(panel.wrap.size[c(2,4)])) - (ncols - 1) * between_marginW) / ncols)
+		width_for1 = max(1e-9, ((1 - sum(fixedMargins[c(2, 4)])) - (sum(panel.wrap.size[c(2,4)]))))
+
+		height_forn = max(1e-9, ((1 - sum(fixedMargins[c(1, 3)])) - (nrows * sum(panel.wrap.size[c(1,3)])) - (nrows - 1) * between_marginH) / nrows)
+		height_for1 = max(1e-9, ((1 - sum(fixedMargins[c(1, 3)])) - (sum(panel.wrap.size[c(1,3)]))))
+
+		scale_down = (1 / sqrt((width_for1 * height_for1) / (width_forn * height_forn))) ^ (1 / scale.factor)
+
+		#
+		# title.size = title.size * scale
+		# legend.title.size = legend.title.size * scale
+		# legend.text.size = legend.text.size * scale
+		#
+		# panel.label.size = panel.label.size * scale
+
+
+		# update panel labels
+		if (is.na(panel.labels[1])) {
+			panel.labels = fl[1:2]
+		} else {
+			if (!is.list(panel.labels)) panel.labels = list(panel.labels, "")
+			panel.labels = mapply(FUN = function(p, f) {
+				if (is.null(f)) {
+					if (length(p) > 1) warning("the number of supplied panel labels is", length(p), "but only one is supported because no facets are defined", call. = FALSE)
+					p[1]
+				} else {
+					if (length(p[p!=""]) != length(f)) warning("the number of supplied panel labels does not correspond to the number of panels", call. = FALSE)
+					rep_len(p, length(f))
+				}
+			}, panel.labels, fl[1:2], SIMPLIFY = FALSE)
+		}
+
+
+
+
+		npages = ceiling(n / (nrows * ncols))
+
+		legend.position = NA
+
+		if (!is.logical(set_bounds)) if (length(set_bounds) !=4 || !is.numeric(set_bounds)) stop("Incorrect set_bounds argument", call.=FALSE)
+
+
+		if (!is.na(set_view[1])) {
+			if (!is.numeric(set_view)) stop("set_view is not numeric")
+			if (!length(set_view) %in% c(1, 3)) stop("set_view does not have length 1 or 3")
+		}
+		if (!is.na(set_zoom_limits[1])) {
+			if (!is.numeric(set_zoom_limits)) stop("set_zoom_limits is not numeric")
+			if (!length(set_zoom_limits)==2) stop("set_zoom_limits does not have length 2")
+			if (set_zoom_limits[1] >= set_zoom_limits[2]) stop("incorrect set_zoom_limits")
+		} else {
+			set_zoom_limits <- c(NA, NA)
+		}
+		if (!is.na(set_view[1]) && !is.na(set_zoom_limits[1])) {
+			if (set_view[length(set_view)] < set_zoom_limits[1]) {
+				if (show.warnings) warning("default zoom smaller than minimum zoom, now it is set to the minimum zoom")
+				set_view[length(set_view)] <- set_zoom_limits[1]
+			}
+			if (set_view[length(set_view)] > set_zoom_limits[2]) {
+				if (show.warnings) warning("default zoom larger than maximum zoom, now it is set to the maximum zoom")
+				set_view[length(set_view)] <- set_zoom_limits[2]
+			}
+		}
+
+
+	})
+
 }
 
-process_meta_grid <- function(gg, gt, interactive) {
-	grid.alpha <- grid.labels.inside.frame <- grid.labels.rot <- NULL
-	if (!is.null(gg)) {
-		gg <- within(gg, {
-			grid.show <- TRUE
-			if (is.na(grid.col)) grid.col <- ifelse(gt$attr.color.light, darker(gt$attr.color, .5), lighter(gt$attr.color, .5))
-			if (is.na(grid.labels.col)) grid.labels.col <- ifelse(gt$attr.color.light, darker(gt$attr.color, .2), lighter(gt$attr.color, .2))
-			if (!is.numeric(grid.labels.rot) || length(grid.labels.rot) != 2) stop("labels.rot should be a numeric vector of length two")
-			grid.col <- do.call("process_color", c(list(col=grid.col, alpha=grid.alpha), gt$pc))
-			grid.labels.col <- do.call("process_color", c(list(col=grid.labels.col), gt$pc))
-			grid.lwd <- grid.lwd * gt$scale
-			grid.is.projected <- !(grid.projection=="longlat" || tryCatch(sf::st_is_longlat(grid.projection), error = function(e) TRUE))
-			
-			grid.projection <- sf::st_crs(grid.projection)
-			
-			if (!interactive && !grid.labels.inside.frame && any(gt$outer.margins[1:2]==0)) stop("When grid labels are plotted outside the frame, outer.margins (the bottom and the left) should be greater than 0. When using tmap_save, notice that outer.margins are set to 0 by default, unless set to NA.")
-			if (!"scientific" %in% names(grid.labels.format)) grid.labels.format$scientific <- FALSE
-			if (!"digits" %in% names(grid.labels.format)) grid.labels.format$digits <- NA
-			
-			grid.labels.show <- rep(grid.labels.show, length.out = 2)
-			grid.ticks <- rep(grid.ticks, length.out = 2)
-			
-		})
-	} else {
-		gg <- list(grid.show=FALSE)
-	}
-}

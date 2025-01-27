@@ -21,29 +21,46 @@ tmap_animation(
 )
 }
 \arguments{
-\item{tm}{tmap or a list of tmap objects. If \code{tm} is a tmap object, facets should be created, where nrow and ncol in \code{\link{tm_facets}} have to be set to 1 in order to create one map per frame.}
+\item{tm}{tmap or a list of tmap objects. If \code{tm} is a tmap object,
+facets should be created, where \code{nrow} and \code{ncol} in \code{\link[=tm_facets]{tm_facets()}} have to
+be set to 1 in order to create one map per frame.}
 
-\item{filename}{filename. If omitted (default), the animation will be shown in the viewer or browser. If specified, it should be a gif file or a video file (i.e. mp4). The package \code{gifski} is required to create a gif animation. The package \code{av} (which uses the \code{FFmpeg} library) is required for video formats. The mp4 format is recommended but many other video formats are supported, such as wmv, avi, and mkv.}
+\item{filename}{filename. If omitted (default), the animation will be shown
+in the viewer or browser. If specified, it should be a gif file or a video
+file (i.e. mp4). The package \code{gifski} is required to create a gif animation.
+The package \code{av} (which uses the \code{FFmpeg} library) is required for video formats.
+The mp4 format is recommended but many other video formats are supported,
+such as wmv, avi, and mkv.}
 
-\item{width, height}{width and height of the animation file (in pixels). Required when \code{tm} is a list, and recommended to specify in advance when \code{tm} is a \code{tmap} object. If not specified in the latter case, it will be determined by the aspect ratio of the map.}
+\item{width, height}{Dimensions of the animation file (in pixels).
+Required when \code{tm} is a list, and recommended to specify in advance when
+\code{tm} is a \code{tmap} object. If not specified in the latter case, it will be
+determined by the aspect ratio of the map.}
 
-\item{dpi}{dots per inch. By default 100, but this can be set with the option \code{output.dpi.animation} in \code{\link{tmap_options}}.}
+\item{dpi}{dots per inch. By default 100, but this can be set with the option
+\code{animation.dpi} in \code{\link[=tmap_options]{tmap_options()}}.}
 
 \item{delay}{delay time between images (in 1/100th of a second). See also \code{fps}}
 
-\item{fps}{frames per second, calculated as \code{100 / delay}. If \code{fps} is specified, the \code{delay} will be set to \code{100/fps}.}
+\item{fps}{frames per second, calculated as \code{100 / delay}. If \code{fps} is specified,
+the \code{delay} will be set to \code{100/fps}.}
 
-\item{loop}{logical that determined whether the animation is looped, or an integer value that determines how many times the animation is looped.}
+\item{loop}{logical that determined whether the animation is looped, or an
+integer value that determines how many times the animation is looped.}
 
-\item{outer.margins}{(passed on to \code{\link{tmap_save}}) overrides the outer.margins argument of \code{\link{tm_layout}} (unless set to \code{NA})}
+\item{outer.margins}{(passed on to \code{\link[=tmap_save]{tmap_save()}}) overrides the outer.margins
+argument of \code{tm_layout()} (unless set to \code{NA})}
 
-\item{asp}{(passed on to \code{\link{tmap_save}}) if specified, it overrides the asp argument of \code{\link{tm_layout}}. Tip: set to \code{0} if map frame should be placed on the edges of the image.}
+\item{asp}{(passed on to \code{\link[=tmap_save]{tmap_save()}}) if specified, it overrides the \code{asp}
+argument of \code{tm_layout()}. Tip: set to \code{0} if map frame should be placed on
+the edges of the image.}
 
-\item{scale}{(passed on to \code{\link{tmap_save}}) overrides the scale argument of \code{\link{tm_layout}} (unless set to \code{NA})}
+\item{scale}{(passed on to \code{\link[=tmap_save]{tmap_save()}}) overrides the scale argument of
+\code{\link[=tm_layout]{tm_layout()}} (unless set to \code{NA})}
 
-\item{restart.delay}{not used anymore}
+\item{restart.delay}{not used anymore.}
 
-\item{...}{arguments passed on to \code{\link[av:av_encode_video]{av_encode_video}}}
+\item{...}{arguments passed on to \code{\link[av:encoding]{av::av_encode_video()}}}
 }
 \description{
 Create a gif animation or video from a tmap plot.
@@ -81,7 +98,7 @@ m3 <- lapply(seq(50, 85, by = 5), function(age) {
 	tm_shape(World) +
 		tm_polygons("at_most", palette = c("gray95", "gold"), legend.show = FALSE) +
 		tm_shape(World_sel) +
-		tm_text("name", size = "AREA", root = 5, remove.overlap = TRUE) +
+		tm_text("name", size = "AREA", root = 5, remove_overlap = TRUE) +
 		tm_layout(main.title = paste0("Life expectency at most ", age), frame = FALSE)
 })
 
@@ -92,7 +109,7 @@ m4 <- tm_shape(World) +
 tm_shape(metro) +
 	tm_bubbles(col = "red") +
 	tm_text("name", ymod = -1) +
-tm_facets(by = "name", free.coords = F, nrow = 1, ncol = 1) +
+tm_facets(by = "name", free.coords = FALSE, nrow = 1, ncol = 1) +
 	tm_layout(panel.show = FALSE, frame = FALSE)
 
 tmap_animation(m4, filename = "World_cities.mp4", 

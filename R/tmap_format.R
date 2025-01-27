@@ -1,44 +1,55 @@
-#' Get or add format options
-#' 
-#' Format options are tmap options that are shape dependent. With \code{tmap_format()} the predefined formats can be retrieved. The values for a specific format can be retrieved with \code{tmap_format(format)}, where format is the name of the format. The function \code{tmap_format_add} is used to add a format.
-#' 
-#' @param format name of the format. Run \code{tmap_format()} to see the choices.
-#' @return the function \code{tmap_format()} returns the names of the available formats. When \code{format} is defined, it returns the option list corresponding the that format.
-#' @seealso \code{\link{tm_layout}} for predefined styles, \code{\link{tmap_style_catalogue}} to create a style catalogue of all available styles, and \code{\link{tmap_options}} for tmap options.
-#' @example ./examples/tmap_format.R
-#' @seealso \code{\link{tmap_options}} for tmap options
-#' @rdname tmap_format
+#' Deprecated: format
+#'
+#' In tmap < 4.0 it was possible to set shape-specific options, such as margins and legend position. However, this has become superfluous because in tmap > 4.0 legends are by default placed outside the map area. If needed, a shape-specific set of options can be stored as a style with tmap_options_save.
+#'
+#' @param format Name of the format
+#' @param ... not used
+#' @param name Name of the format
+#' @keywords internal
+#' @rdname tmap-deprecated
 #' @export
-tmap_format <- function(format) {
-	.tmapFormats <- get("tmapFormats", envir = .TMAP_CACHE)
-	
-	formats <- names(.tmapFormats)
-	
-	if (missing(format)) {
-		if (get("tmapOptions", envir = .TMAP_CACHE)$show.messages) message("available formats are: \"", paste(formats, collapse = "\", \""), "\" ")
-		return(invisible(formats))
-	} else if (format %in% formats) {
-		return(.tmapFormats[[format]])
+tmap_format = function(format) {
+	if (format == "World") {
+		x = list(inner.margins=c(0, 0.05, 0.025, 0.01), legend.position=tm_pos_in("left", "bottom"), component.position=c("right", "bottom"), scale=.8, title.size = 1.3)
+	} else if (format == "World_wide") {
+		x = list(inner.margins=c(0, 0.2, 0.025, 0.01), legend.position=tm_pos_in("left", "bottom"), component.position=c("right", "bottom"), scale=.8)
+	} else if (format == "NLD") {
+		x = list(frame = FALSE, inner.margins = c(.02, .2, .06, .02), legend.position = tm_pos_in("left", "top"), component.position=c("left", "bottom"))
+	} else if (format == "NLD_wide") {
+		x = list(frame = FALSE, inner.margins = c(.02, .3, .06, .02), legend.position = tm_pos_in("left", "top"), component.position=c("left", "bottom"))
 	} else {
-		stop("format unknown")
+		x = NULL
 	}
+	v3_tmap_format(format)
+	x
 }
 
-#' @rdname tmap_format
-#' @name tmap_format_add
-#' @param ...  options from \code{\link{tm_layout}} or \code{\link{tm_view}}. Can also be a list of those options.
-#' @param name name of the new format.
+#' @rdname tmap-deprecated
 #' @export
-tmap_format_add <- function(..., name) {
-	args <- list(...)
-	if (length(args)==1 && is.list(args[[1]])) args <- args[[1]]
-
-	.tmapFormats <- get("tmapFormats", envir = .TMAP_CACHE)
-
-	.tmapFormats[[name]] <- args
-	assign("tmapFormats", .tmapFormats, envir = .TMAP_CACHE)
-	
-	if (get("tmapOptions", envir = .TMAP_CACHE)$show.messages) message("format ", name, " succesfully added. Use this format with tm_format(\"", name, "\")")
+tmap_format_add = function(..., name) {
+	v3_tmap_format_add(name)
 	invisible(NULL)
 }
 
+
+#' @rdname tmap-deprecated
+#' @export
+tm_format = function(format, ...) {
+	if (format == "World") {
+		x = tm_layout(inner.margins=c(0, 0.05, 0.025, 0.01), legend.position=tm_pos_in("left", "bottom"), component.position=c("right", "bottom"), scale=.8, title.size = 1.3)
+		code = "tm_layout(inner.margins=c(0, 0.05, 0.025, 0.01), legend.position=tm_pos_in(\"left\", \"bottom\"), component.position=c(\"right\", \"bottom\"), scale=.8, title.size = 1.3)" } else if (format == "World_wide") {
+			x = tm_layout(inner.margins=c(0, 0.2, 0.025, 0.01), legend.position=tm_pos_in("left", "bottom"), component.position=c("right", "bottom"), scale=.8)
+			code = "tm_ayout(inner.margins=c(0, 0.2, 0.025, 0.01), legend.position=tm_pos_in(\"left\", \"bottom\"), component.position=c(\"right\", \"bottom\"), scale=.8)"
+		} else if (format == "NLD") {
+			x = tm_layout(frame = FALSE, inner.margins = c(.02, .2, .06, .02), legend.position = tm_pos_in("left", "top"), component.position=c("left", "bottom"))
+			code = "tm_layout(frame = FALSE, inner.margins = c(.02, .2, .06, .02), legend.position = tm_pos_in(\"left\", \"top\"), component.position=c(\"left\", \"bottom\"))"
+		} else if (format == "NLD_wide") {
+			x = tm_layout(frame = FALSE, inner.margins = c(.02, .3, .06, .02), legend.position = tm_pos_in("left", "top"), component.position=c("left", "bottom"))
+			code = "tm_layout(frame = FALSE, inner.margins = c(.02, .3, .06, .02), legend.position = tm_pos_in(\"left\", \"top\"), component.position=c(\"left\", \"bottom\"))"
+		} else {
+			x = NULL
+			code = ""
+		}
+	v3_tm_format(format, code)
+	x
+}
