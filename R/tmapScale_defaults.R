@@ -4,14 +4,14 @@ tmapValuesCheck_col = function(x, is_var = TRUE) {
 	isnum = is.numeric(x)
 	if (isnum) {
 		structure(FALSE,
-				  info = {if (is_var) "Variable should be data varible name or color name" else " Values should be numeric (between -50 and 50)."}
+				  info = {if (is_var) "Variable should be data variable name or color name" else " Values should be numeric (between -50 and 50)."}
 		)
 	} else {
 		is_c4a = !is.null(getPalMeta(x[1])) && length(x) == 1L && !valid_colors(x[1])
 		if (is_c4a) {
 			if (is_var) {
 				structure(FALSE,
-						  info = " Variable should be a data variable name or a single color (not a color palette).")
+						  info = "Variable should be a data variable name or a single color (not a color palette).")
 			} else {
 				TRUE
 			}
@@ -19,7 +19,7 @@ tmapValuesCheck_col = function(x, is_var = TRUE) {
 			all_cols = all(valid_colors(x))
 			if (!all_cols) {
 				structure(FALSE,
-						  info = if (is_var) " Variable should a data variable name or a single color." else " Values should be color names or a color palette (run  cols4all::c4a_palettes() for available ones.")
+						  info = if (is_var) "Variable should a data variable name or a single color." else "Values should be color names or a color palette (run {.run cols4all::c4a_palettes()} for available ones.")
 			} else {
 				TRUE
 			}
@@ -413,16 +413,44 @@ tmapValuesVV_fill = function(x, value.na, isdiv, n, dvalues, are_breaks, midpoin
 
 
 	if (isdiv) {
-		cat0 = (are_breaks != any(dvalues==midpoint))
+		if (are_breaks) {
+			# scale_interval
+			outside = (all(midpoint < dvalues) || all(midpoint > dvalues))
+			cat0 = !any(dvalues==midpoint) && !outside
 
-		nneg = max(0L, sum(dvalues < midpoint) - cat0) # max 0L needed when midpoint is outside range (and cat0 is true)
-		npos = max(0L, sum(dvalues > midpoint) - cat0)
+			nneg = max(0L, sum(dvalues < midpoint) - cat0 - outside) # max 0L needed when midpoint is outside range (and cat0 is true)
+			npos = max(0L, sum(dvalues > midpoint) - cat0 - outside)
 
-		nmax = max(nneg, npos)
+			nmax = max(nneg, npos)
 
-		ntot = 2L * nmax + cat0
+			ntot = 2L * nmax + cat0
 
-		ids = (1L + max(0L, (npos-nneg))):(ntot - max(0L, (nneg-npos)))
+			ids = (1L + max(0L, (npos-nneg))):(ntot - max(0L, (nneg-npos)))
+		} else {
+			# scale_discrete
+			outside = (all(midpoint < dvalues) || all(midpoint > dvalues))
+			cat0 = any(dvalues==midpoint)
+			between = !outside && !cat0
+
+			if (between) {
+				# suppose 4 break values, and m is between 1st and 2nd:
+				# x m x    x    x
+				# create palette of half steps, and take odd numbers at the end
+				nneg = max(0L, (sum(dvalues < midpoint) * 2 - 1L))
+				npos = max(0L, (sum(dvalues > midpoint) * 2 - 1L))
+				nmax = max(nneg, npos)
+				ntot = 2L * nmax + 1L
+				ids = (1L + max(0L, (npos-nneg))):(ntot - max(0L, (nneg-npos)))
+				ids = ids[seq(1L, length(ids), by = 2L)]
+			} else {
+				nneg = max(0L, sum(dvalues < midpoint))
+				npos = max(0L, sum(dvalues > midpoint))
+				nmax = max(nneg, npos)
+				ntot = 2L * nmax + cat0
+				ids = (1L + max(0L, (npos-nneg))):(ntot - max(0L, (nneg-npos)))
+			}
+
+		}
 	} else {
 		ntot = n
 		ids = 1L:n
@@ -770,9 +798,10 @@ tmapValuesColorize_angle = function(x, pc) x
 #' The perceived area of larger symbols is often underestimated. Flannery (1971) experimentally derived a method to compensate this for symbols. This compensation is obtained by using the power exponent of 0.5716 instead of 0.5, or by setting `power` to `"sqrt_perceptual"`
 #'
 #' @param from,to The numeric range, default 0 and 1 respectively
-#' @param power The power component, or one of `"lin"`, `"sqrt"`, `"sqrt_perceptual"`, `"quadratic"`, which correspond to 1, 0.5, 0.5716, 2 respectively. See details.
+#' @param power The power component, a number or or one of `"lin"`, `"sqrt"`, `"sqrt_perceptual"`, `"quadratic"`, which correspond to 1, 0.5, 0.5716, 2 respectively. See details.
 #' @export
 tm_seq = function(from = 0, to = 1, power = c("lin", "sqrt", "sqrt_perceptual", "quadratic")) {
+	if (length(power) > 1) power = power[1]
 	structure(as.list(environment()), class = "tmapSeq")
 }
 

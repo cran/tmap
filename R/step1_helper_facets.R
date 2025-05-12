@@ -11,14 +11,14 @@ update_grp_vars = function(lev = NULL, m = NULL) {
 				vn = length(lev)
 			}
 		} else if (m > 1L && vn > 1L && m != vn) {
-			stop("Inconsistent number of aesthetic variables.", call. = FALSE)
+			stop("Inconsistent number of map variable values.", call. = FALSE)
 		} else if (m > vn) {
 			vl = lev
 			vn = length(lev)
 		}
 	} else if (!missing(m)) {
 		if (m > 1L && vn > 1L && m != vn) {
-			stop("Inconsistent number of aesthetic variables.", call. = FALSE)
+			stop("Inconsistent number of map variable values.", call. = FALSE)
 		} else if (m > vn) {
 			vn = m
 			vl = NULL
@@ -61,6 +61,8 @@ remove_min = function(x) substr(x, 2, nchar(x))
 
 # ## estimate number of facets
 step1_rearrange_facets = function(tmo, o) {
+	nframes = NULL
+
 	#o = tmap_options_mode()
 	dev = getOption("tmap.devel.mode")
 
@@ -182,6 +184,11 @@ step1_rearrange_facets = function(tmo, o) {
 							vars = shpvars
 						}
 						names(vars) = vars
+
+						if (value$animate) {
+							.TMAP$animate = c(.TMAP$animate, vars)
+						}
+
 						if (value$multivariate) {
 							value = structure(list(unname(vars)), names = paste(vars, collapse = "_"), class = "tmapStandard")
 						} else {
@@ -235,10 +242,29 @@ step1_rearrange_facets = function(tmo, o) {
 			b
 		}
 
+		gs = tmap_graphics_name()
 
 		# preprocess layers: check aes values
 		tmg$tmls = lapply(tmg$tmls, function(tml) {
 			within(tml, {
+				if (!exists(paste0("tmap", gs, mapping.fun))) {
+					mode = getOption("tmap.mode")
+
+					modes = get_modes()
+					gss = vapply(modes, tmap_graphics_name, FUN.VALUE = character(1))
+
+					exs = vapply(1L:length(modes), function(i) {
+						exists(paste0("tmap", gss[i], mapping.fun))
+					}, FUN.VALUE = logical(1))
+					modes2 = modes[exs]
+
+					if (length(modes2)) {
+						cli::cli_abort("Map layer {.code tm_{layer}} not available for mode {.str {mode}}. This map layer is only available for modes {.str {modes2}}")
+					} else {
+						cli::cli_abort("Map layer {.code tm_{layer}} not available for mode {.str {mode}} and also not for the other modes")
+					}
+				}
+
 				if (length(trans.aes)) trans.aes = lapply(trans.aes, precheck_aes, layer = tml$layer, shpvars = smeta$vars, args = trans.args)
 				if (length(mapping.aes)) mapping.aes = lapply(mapping.aes, precheck_aes, layer = tml$layer, shpvars = smeta$vars, args = mapping.args)
 
@@ -246,7 +272,7 @@ step1_rearrange_facets = function(tmo, o) {
 				split_stars_dim = get_split_stars_dim(mapping.aes)
 
 		        if (length(hover) > 1) {
-		          stop("hover should have length <= 1", call. = FALSE)
+		          cli::cli_abort("hover should have length <= 1, not {length(hover)}.", call = NULL)
 		        }
 
 				if (is.na(hover)) {
@@ -266,16 +292,6 @@ step1_rearrange_facets = function(tmo, o) {
 					popup.vars = character(0)
 				} else if (is.na(popup.vars[1])) {
 					popup.vars = smeta$vars
-						# local({
-						# 	uvars = get("used_vars", envir = .TMAP)
-						# 	is_title = attr(uvars, "is_title") # TRUE if id or hover is set
-						#
-						# 	if (length(uvars) && is_title) {
-						# 		setdiff(uvars, c("AREA", "LENGTH", "MAP_COLORS"))
-						# 	} else {
-						# 		unname(smeta$vars)
-						# 	}
-						# })
 				}
 
 				if (!all(popup.vars %in% smeta$vars)) {
@@ -315,9 +331,7 @@ step1_rearrange_facets = function(tmo, o) {
 		if (split_stars_dim != "") {
 			smeta = tmapGetShapeMeta1(shp, o)
 			if (dev) timing_add(s3 = "get_shape_meta1_2")
-
 		}
-
 
 		nrsd = length(smeta$dims) # number of required shape dimensions
 		nrvd = as.integer(vn > 1L) # number of required variable dimensions (0 or 1)
@@ -325,66 +339,64 @@ step1_rearrange_facets = function(tmo, o) {
 
 
 		tmg$tmf = within(tmg$tmf, {
-			#fl = flvar
-			#nfl = nflvar
-			if (is.na(type)) type = if (nrd <= 1L) "wrapstack" else "grid"
-
-			if (type %in% c("wrapstack", "wrap", "stack", "page")) {
-				rev1 = is_rev(by)
-				rev2 = FALSE
-				rev3 = FALSE
-
-				if (rev1) by = remove_min(by)
-
-				by1 = by
-				by2 = NULL
-				by3 = NULL
-
-				nsbd = as.integer(!is.null(by1) && !by1 == "VARS__" && !(by1 %in% smeta$dims)) # number of required by="varX" dimensions (0 or 1)
-
-
-
-				if (nrd > 1L) {
-					if (nrsd > 1L) stop("Cannot use tm_facets_wrap/tm_facets_stack, because there are several dimensions. Pleae use tm_facets_grid instead", call. = FALSE)
-					# so there is exactly 1 shape dim
-					nrvd = 0L
-					nrd = 1L
-					if (nsbd == 1L) {
-						warning("by variable specified and multiple variables while there is a shape dimensions which cannot be ignored. The by variable will therefore be ignored. Also, only the first variable is shown. Use tm_facet_grid to show multiple variables", call. = FALSE)
-					}
-					by1 = NULL
-					limitvars = TRUE
-				} else if (nrd == 1L) {
-					if (nrsd == 1L) {
-						if (nsbd == 1L) {
-							warning("by variable specified while there is a shape dimension which cannot be ignored. The by variable will therefore be ignored", call. = FALSE)
-						}
-						by1 = NULL
-						limitvars = FALSE
-					} else {
-						if (nsbd == 1L) {
-							warning("by variable specified while there are multiple variables. Therefore, only the first variable is taken. Please use tm_facet_grid to combine multiple variables with a 'by'-variable", call. = FALSE)
-							nrvd = 0L
-							limitvars = TRUE
-						} else {
-							limitvars = FALSE
-						}
-					}
-				} else {
-					limitvars = FALSE
-				}
-				if (is.null(by1)) {
-					by1 = if (nrsd == 1L) {
-						smeta$dims[1]
-					} else {
-						"VARS__"
-					}
-				}
-
-			} else {
 				by1 = rows
 				by2 = columns
 				by3 = pages
+
+				trans_animate = !is.null(.TMAP$animate)
+				nad = as.integer(trans_animate)
+
+				if (trans_animate) {
+					if (is.null(by3)) {
+						by3 = "FRAME__"
+					} else {
+						if (by3 == "VARS__") {
+							if (nrvd == 0) {
+								by3 = "FRAME__"
+							} else {
+								if (is.null(by1)) {
+									by1 = "VARS__"
+									by3 = "FRAME__"
+								} else if (is.null(by2)) {
+									by2 = "VARS__"
+									by3 = "FRAME__"
+								} else {
+									ani = names(.TMAP$animate)
+									cli::cli_abort("transformation animation for variable {.val {ani}} cannot be used when pages is already specified to multiple variables")
+								}
+
+							}
+						} else {
+							ani = names(.TMAP$animate)
+							cli::cli_abort("transformation animation for variable {.val {ani}} cannot be used when pages is already specified to {.val {by3}}")
+						}
+					}
+				}
+
+
+
+				# if (animate) {
+				# 	if (!is.null(by3) {
+				#
+				# 		if (nrvd == 1) {
+				#
+				# 	} else if ()
+				#
+				# 	}
+				# }
+
+
+				if (!is.null(by)) {
+					if (is.null(by1)) {
+						by1 = by
+					} else if (is.null(by2)) {
+						by2 = by
+					} else if (is.null(by3)) {
+						by3 = by
+					} else {
+						stop("Too many dimensions") # quick&dirty, to do: move to other checks
+					}
+				}
 
 				rev1 = is_rev(by1)
 				rev2 = is_rev(by2)
@@ -395,8 +407,10 @@ step1_rearrange_facets = function(tmo, o) {
 				if (rev3) by3 = remove_min(by3)
 
 
+
+
 				if (nrd > 3L) {
-					if (nrsd > 3L) stop("The shape object has more than 3 dimensions, so even tm_facets_grid cannot be used.", call. = FALSE)
+					if (nrsd > 3L) cli::cli_abort("The shape object has more than 3 dimensions, so even {.fn tm_facets_grid} cannot be used.")
 					nrvd = 0L
 					nrd = 3L
 					limitvars = TRUE
@@ -425,15 +439,20 @@ step1_rearrange_facets = function(tmo, o) {
 					}
 				}
 
-			}
+			# }
 
 			bys = c(by1, by2, by3)
 			if (length(bys)) {
 				byvars = intersect(smeta$vars, bys)
 				if (length(byvars)) add_used_vars(byvars)
 			}
-			if (!all(bys %in% c("VARS__", smeta$vars, smeta$dims))) stop("unknown facet variables", call. = FALSE)
+			if (!all(bys %in% c("VARS__", "FRAME__", smeta$vars, smeta$dims))) stop("unknown facet variables", call. = FALSE)
 			if (is.na(na.text)) na.text = o$label.na
+
+			if (is.na(type)) {
+				type = if (!is.null(by1) && !is.null(by2)) "grid" else "wrapstack"
+			}
+
 		})
 
 		smeta$vars = get("used_vars", envir = .TMAP)
@@ -445,7 +464,7 @@ step1_rearrange_facets = function(tmo, o) {
 			for (v in convert2density) {
 				sunit = tmg$tms$unit
 				if (is.null(sunit)) sunit = o$unit
-				shape.unit <- ifelse(sunit=="metric", "km", ifelse(sunit=="imperial", "mi", sunit))
+				shape.unit <- ifelse(sunit == "metric", "km", ifelse(sunit == "imperial", "mi", sunit))
 				u = paste(shape.unit, shape.unit)
 				if (is.numeric(shp[[v]])) shp[[v]] = shp[[v]] / units::set_units(shp$AREA, u, mode = "standard")
 			}
@@ -465,6 +484,10 @@ step1_rearrange_facets = function(tmo, o) {
 			for (i in 1L:3L) {
 				byi = get(paste0("by", i))
 				if (!is.null(byi)) {
+					if (byi == "FRAME__") {
+						gl[i] = list(NULL)
+						gn[i] = as.integer(nframes)
+					} else
 					if (byi == "VARS__") {
 						gl[i] = list(vl)
 						gn[i] = vn
@@ -479,7 +502,7 @@ step1_rearrange_facets = function(tmo, o) {
 			}
 
 			if (is.na(free.coords)) {
-				if (type %in% c("wrapstack", "wrap", "stack", "page")) {
+				if (type %in% c("wrapstack", "wrap", "stack")) {
 					free.coords = rep(!any(c(by1, by2, by3) == "VARS__"), 3)
 				} else {
 					free.coords = c((!is.null(rows) && (rows != "VARS__")), (!is.null(columns)) && (columns != "VARS__"), (!is.null(pages)) && (pages != "VARS__"))
@@ -489,10 +512,9 @@ step1_rearrange_facets = function(tmo, o) {
 			}
 
 
-			v = which(c(by1, by2, by3) == "VARS__")
-			b = setdiff(which(!vapply(list(by1, by2, by3), is.null, FUN.VALUE = logical(1))), v)
+			v = which(vapply(list(by1, by2, by3), identical, FUN.VALUE = logical(1), "VARS__"))
 
-			#n = length(v) + length(b)
+			b = setdiff(which(!vapply(list(by1, by2, by3), is.null, FUN.VALUE = logical(1))), v)
 
 			by123 = paste0("by", 1L:3L)
 			by123__ = paste0("by", 1L:3L, "__")

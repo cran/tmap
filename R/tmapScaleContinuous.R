@@ -25,15 +25,6 @@ substr2 = function(x, start, stop) {
 
 
 tmapScaleContinuous = function(x1, scale, legend, chart, o, aes, layer, layer_args, sortRev, bypass_ord, submit_legend = TRUE) {
-	# style = if (inherits(scale, "tm_scale_continuous")) {
-	# 	"cont"
-	# } else if (inherits(scale, "tm_scale_log10")) {
-	# 	"log10"
-	# } else if (inherits(scale, "tm_scale_rank")) {
-	# 	"rank"
-	# }
-	#
-
 
 
 	# update misc argument from tmap option scale.misc.args
@@ -276,7 +267,21 @@ tmapScaleContinuous = function(x1, scale, legend, chart, o, aes, layer, layer_ar
 			if (!(aes %in% c("col", "fill"))) b = b[b!=0]
 			b_t = do.call(tr$fun, c(list(x = b), trargs))
 		}
-		sel = if (length(b_t) == 2) TRUE else (b_t>=limits_t[1] & b_t<=limits_t[2])
+		if (length(b_t) == 2) {
+			sel = TRUE
+			labels_select = TRUE
+		} else {
+			# #1039
+			# to include min/max if they are closer to the next 'not included' tick than the included tick
+			# e.g. tm_shape(World) + tm_polygons("gender", fill.scale = tm_scale_continuous())
+			# lowest value is 0.009 whereas ticks are 0.2, 0.4, 0.6, 0.8.
+			stp1 = (b_t[2] - b_t[1]) / 2
+			stp2 = (b_t[length(b_t)] - b_t[length(b_t) - 1L]) / 2
+			limits_t_tmp = c(limits_t[1] - stp1, limits_t[2] + stp2)
+			sel = (b_t>=limits_t_tmp[1] & b_t<=limits_t_tmp[2])
+
+			labels_select = ((b_t>=limits_t[1] & b_t<=limits_t[2])[sel])
+		}
 		b_t = b_t[sel]
 		b = b[sel]
 
@@ -288,6 +293,24 @@ tmapScaleContinuous = function(x1, scale, legend, chart, o, aes, layer, layer_ar
 			vvalues = transform_values(b_t, limits_t, values.range, values$power, values.scale * o$scale, include.neutral = FALSE)
 		} else {
 			id = as.integer(cut(b_t, breaks=breaks, include.lowest = TRUE))
+
+			if (sum(!is.na(id)) < 2) {
+				if (is.null(scale$ticks)) {
+					cli::cli_abort("{.field [tm_scale_continuous]} too few tick labels specified. Either increase {.arg n} or specify tick values via {.arg ticks}")
+				} else {
+					cli::cli_abort("{.field [tm_scale_continuous]} too few tick labels specified via {.arg ticks}")
+				}
+			}
+
+			# impute missing head and tail (#1039)
+			missing_head = is.na(id[1])
+			if (missing_head) id[1] = 2 * id[2] - id[3]
+
+			nid = length(id)
+
+			missing_tail = is.na(id[nid])
+			if (missing_tail) id[nid] = 2 * id[nid-1] - id[nid-2]
+
 			id_step = id[-1] - head(id, -1)
 			id_step = c(id_step[1], id_step, id_step[length(id_step)])
 			id_lst = mapply(function(i, s1, s2){
@@ -338,13 +361,14 @@ tmapScaleContinuous = function(x1, scale, legend, chart, o, aes, layer, layer_ar
 		if (na.show) {
 			labels.align = attr(labels, "align")
 			labels = c(labels, label.na)
+			labels_select = c(labels_select, TRUE)
 			attr(labels, "align") = labels.align
 		}
-
 
 		legend = within(legend, {
 			nitems = length(labels)
 			labels = labels
+			labels_select = labels_select
 			dvalues = values
 			vvalues = vvalues
 			vneutral = value.neutral
@@ -354,6 +378,8 @@ tmapScaleContinuous = function(x1, scale, legend, chart, o, aes, layer, layer_ar
 			limits = limits
 			layer_args = layer_args
 		})
+
+
 		# NOTE: tr and limits are included in the output to facilitate the transformation of the leaflet continuous legend ticks (https://github.com/rstudio/leaflet/issues/665)
 		#vvalues_mids = sapply(cont_split(vvalues), "[", nvv/2)
 		#vvalues_mids[vvalues_mids == "NA"] = NA
@@ -363,7 +389,7 @@ tmapScaleContinuous = function(x1, scale, legend, chart, o, aes, layer, layer_ar
 
 		chart = do.call(chartFun, list(chart,
 									   bin_colors = NULL,
-									   breaks_def = NULL,
+									   breaks_def = chart$breaks,
 									   na.show = na.show,
 									   x1 = x1))
 

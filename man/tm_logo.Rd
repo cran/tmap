@@ -11,11 +11,12 @@ tm_logo(
   between_margin,
   stack,
   position,
+  group_id,
   frame,
+  frame.color,
+  frame.alpha,
   frame.lwd,
   frame.r,
-  group.frame,
-  resize_as_group,
   z
 )
 }
@@ -32,19 +33,21 @@ If multiple logos are specified by a vector or list, the heights can be specifie
 
 \item{stack}{stack with other map components, either \code{"vertical"} or \code{"horizontal"}.}
 
-\item{position}{An object created with \code{tm_pos_in()} or \code{tm_pos_out()}. Or, as a shortcut, a vector of two values, specifying the x and y coordinates. The first is \code{"left"}, \code{"center"} or \code{"right"} (or upper case, meaning tighter to the map frame), the second \code{"top"}, \code{"center"} or \code{"bottom"}. Numeric values are also supported, where 0, 0 means left bottom and 1, 1 right top. See also \href{https://r-tmap.github.io/tmap/articles/adv_positions}{vignette about positioning}.}
+\item{position}{The position specification of the component: an object created with \code{tm_pos_in()} or \code{tm_pos_out()}. Or, as a shortcut, a vector of two values, specifying the x and y coordinates. The first is \code{"left"}, \code{"center"} or \code{"right"} (or upper case, meaning tighter to the map frame), the second \code{"top"}, \code{"center"} or \code{"bottom"}. Numeric values are also supported, where 0, 0 means left bottom and 1, 1 right top. See also \href{https://r-tmap.github.io/tmap/articles/adv_positions}{vignette about positioning}. In case multiple components should be combined (stacked), use \code{group_id} and specify \code{component} in \code{\link[=tm_comp_group]{tm_comp_group()}}.}
 
-\item{frame}{frame}
+\item{group_id}{Component group id name. All components (e.g. legends, titles, etc) with the same \code{group_id} will be grouped. The specifications of how they are placed (e.g. stacking, margins etc.) are determined in \code{\link[=tm_comp_group]{tm_comp_group()}} where its argument \code{id} should correspond to \code{group_id}.}
+
+\item{frame}{frame should a frame be drawn?}
+
+\item{frame.color}{frame color}
+
+\item{frame.alpha}{frame alpha transparancy}
 
 \item{frame.lwd}{frame line width}
 
 \item{frame.r}{Radius of the rounded frame corners. 0 means no rounding.}
 
-\item{group.frame}{group.frame}
-
-\item{resize_as_group}{resize_as_group}
-
-\item{z}{z}
+\item{z}{z index, e.g. the place of the component relative to the other componets}
 }
 \description{
 Map component that adds a logo.
@@ -57,8 +60,7 @@ tm_shape(World) +
 	tm_logo(c("https://www.r-project.org/logo/Rlogo.png",
 			  system.file("help", "figures", "logo.png", package = "tmap"))) +
 	tm_logo("http://blog.kulikulifoods.com/wp-content/uploads/2014/10/logo.png",
-			height=5, position = c("left", "top")) +
-	tm_format("World")
+			height=5, position = c("left", "top"))
 }
 \seealso{
 \href{https://r-tmap.github.io/tmap/articles/basics_components}{Vignette about components}

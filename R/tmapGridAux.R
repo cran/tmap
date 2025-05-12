@@ -15,19 +15,25 @@ tmapGridTilesPrep = function(a, bs, id, o) {
 
 	crs = sf::st_crs(bs[[1]])
 
+	crs3857 = (crs == 3857 || crs == st_crs(3857))
+
 	isproj = !sf::st_is_longlat(crs)
 
 	if (isproj) {
+		# plain lat-lon to find zoom levels
 		bs_orig = bs
 		bs = lapply(bs, function(b) {
 			sf::st_bbox(sf::st_transform(sf::st_as_sfc(b), crs = "EPSG:4326"))
 		})
 	}
 
+	# tiles are in mercator
+	bs3857 = lapply(bs, sf::st_transform, crs = "EPSG:3857")
+
 	bs = lapply(bs, function(b) {
+		# not sure why needed
 		bb_ll_valid(bb_asp(b, g$fasp))
 	})
-
 
 	if (is.na(a$zoom)) {
 		zs = vapply(bs, findZoom, FUN.VALUE = integer(1))
@@ -35,12 +41,48 @@ tmapGridTilesPrep = function(a, bs, id, o) {
 		zs = rep(a$zoom, length(bs))
 	}
 
+	serv = a$server[1]
+
+	if (substr(serv, 1, 4) == "http") {
+		if (serv %in% .TMAP_GRID$maptiles_urls) {
+			tile_id = which(serv == .TMAP_GRID$maptiles_urls)[1]
+		} else {
+			tile_id = length(.TMAP_GRID$maptiles_urls) + 1L
+			.TMAP_GRID$maptiles_urls = c(.TMAP_GRID$maptiles_urls, serv)
+		}
+		sub = if (is.na(a$sub)) NA else strsplit(a$sub, split = "")[[1]]
+		serv = maptiles::create_provider(paste0("id_", tile_id), url = serv, citation = "", sub = sub)
+		api = if (!is.null(a$api)) {
+			a$api
+		} else NULL
+	} else if (substr(serv, 1, 6) %in% c("Thunde", "Stadia")) {
+		is_stadia = substr(serv, 1, 6) == "Stadia"
+		api = if (!is.null(a$api)) {
+			a$api
+		} else if (is_stadia) {
+			Sys.getenv("STADIA_MAPS")
+		} else {
+			Sys.getenv("THUNDERFOREST_MAPS")
+		}
+		if (api == "") message_basemaps(is_stadia)
+	} else {
+		api = NULL
+	}
+
 	xs = mapply(function(b, z) {
 		m = tryCatch({
-			maptiles::get_tiles(x = b, provider = a$server[1], zoom = z, crop = FALSE)
+			if (is.null(api)) {
+				maptiles::get_tiles(x = b, provider = serv, zoom = z, crop = FALSE)
+			} else {
+				maptiles::get_tiles(x = b, provider = serv, apikey = api, zoom = z, crop = FALSE)
+			}
 		}, error = function(e) {
 			tryCatch({
-				maptiles::get_tiles(x = b, provider = a$server[1], zoom = z - 1, crop = FALSE)
+				if (is.null(api)) {
+					maptiles::get_tiles(x = b, provider = serv, zoom = z - 1, crop = FALSE)
+				} else {
+					maptiles::get_tiles(x = b, provider = serv, apikey = api, zoom = z - 1, crop = FALSE)
+				}
 			}, error = function(e) {
 				NULL
 			})
@@ -50,14 +92,14 @@ tmapGridTilesPrep = function(a, bs, id, o) {
 			if (terra::nlyr(m) == 4) names(m)[4] = "alpha"
 
 		} else {
-			message("Tiles from ", a$server[1], " at zoom level ", z, " couldn't be loaded")
+			message_basemaps_none(serv, z)
 		}
 		m
-	}, bs, zs, SIMPLIFY = FALSE)
+	}, bs3857, zs, SIMPLIFY = FALSE)
 
-	if (isproj) {
+	if (isproj && !crs3857) {
 		if (!all(vapply(xs, is.null, FUN.VALUE = logical(1)))) {
-			message("Tiles from ", a$server[1], " will be projected so details (e.g. text) could appear blurry")
+			message_basemaps_blurry(serv)
 			xs = mapply(function(x,b) {
 				if (is.null(x)) return(NULL)
 
@@ -85,7 +127,7 @@ tmapGridTilesPrep = function(a, bs, id, o) {
 	ds = lapply(ss, function(s) {
 		if (is.null(s)) return(NULL)
 		d = s$dt
-		d[, c("col", "legnr", "crtnr") := do.call(srgb$FUN, list(x1 = red, x2 = green, x3 = blue, scale = srgb, legend = list(), o = o, aes = "col", layer = "raster", layer_args = opt_tm_rgb()$mapping.args, sortRev = NA, bypass_ord = TRUE))]
+		d[, c("col", "legnr", "crtnr") := do.call(srgb$FUN, list(x1 = red, x2 = green, x3 = blue, scale = srgb, legend = list(), o = o, aes = "col", layer = "raster", layer_args = opt_tm_rgb(interpolate = TRUE)$mapping.args, sortRev = NA, bypass_ord = TRUE))]
 		if ("alpha" %in% names(d)) {
 			d[, col_alpha:=alpha/255 * a$alpha]
 			d[is.na(col_alpha), col_alpha:=0]
@@ -146,7 +188,7 @@ tmapGridGridPrep = function(a, bs, id, o) {
 
 	#alpha <- labels.inside_frame <- labels.rot <- NULL
 	a2 = within(a, {
-		if (labels.inside_frame && !identical(labels.pos, c("left", "bottom"))) warning("label.pos not implemented yet for labels.inside_frame==TRUE (only c(\"left\", \"bottom\"))")
+		if (labels.inside_frame && !identical(labels.pos, c("left", "bottom"))) cli::cli_warn("label.pos not implemented yet for {.code labels.inside_frame==TRUE} (only {.val left} and {.val bottom})")
 		show <- TRUE
 		if (is.na(col)) col <- ifelse(o$attr.color.light, darker(o$attr.color, .5), lighter(o$attr.color, .5))
 		if (is.na(labels.col)) labels.col <- ifelse(o$attr.color.light, darker(o$attr.color, .2), lighter(o$attr.color, .2))
@@ -171,8 +213,6 @@ tmapGridGridPrep = function(a, bs, id, o) {
 	})
 
 	o$scale.extra = 1
-
-	#grid.n.x <- grid.n.y <- projection <- grid.is.projected <- grid.ndiscr <- NULL
 
 	a3s = lapply(bs, function(bbx) {
 		crs_bb = sf::st_crs(bbx)
@@ -370,7 +410,7 @@ tmapGridTiles = function(bi, bbx, facet_row, facet_col, facet_page, id, pane, gr
 	shpTM = g$bmaps_shpTHs[[id2]][[bi]]
 	gp = list()
 
-	if (!is.null(dt)) tmapGridRaster(shpTM, dt, gp, bbx, facet_row, facet_col, facet_page, id, pane, group, o, interpolate = FALSE)
+	if (!is.null(dt)) tmapGridRaster(shpTM, dt, gp, bbx, facet_row, facet_col, facet_page, id, pane, group, o, interpolate = TRUE)
 }
 
 
@@ -417,8 +457,8 @@ tmapGridGridXLab = function(bi, bbx, facet_row, facet_col, facet_page, o) {
 	cogridx2 = cogridx[selx2]
 
 
-	spacerX <- convertHeight(unit(.5, "lines"), unitTo="inch", valueOnly=TRUE) * cex / H
-	marginX <- convertHeight(unit(a$labels.margin.x, "lines"), unitTo="inch", valueOnly=TRUE) * cex / H
+	spacerX <- grid::convertHeight(unit(.5, "lines"), unitTo="inch", valueOnly=TRUE) * cex / H
+	marginX <- grid::convertHeight(unit(a$labels.margin.x, "lines"), unitTo="inch", valueOnly=TRUE) * cex / H
 
 	just <- ifelse(a$labels.rot[1] == 90, "right",
 		    ifelse(a$labels.rot[1] == 270, "left",
@@ -426,21 +466,21 @@ tmapGridGridXLab = function(bi, bbx, facet_row, facet_col, facet_page, o) {
 
 	if (a$ticks[1]) {
 		if (is_top) {
-			ticks <- polylineGrob(x=rep(cogridx2, each = 2), y = rep(c(0, spacerX*.5+marginX), length(cogridx2)), id = rep(1:length(cogridx2), each = 2), gp=gpar(col=a$col, lwd=a$lwd))
+			ticks <- grid::polylineGrob(x=rep(cogridx2, each = 2), y = rep(c(0, spacerX*.5+marginX), length(cogridx2)), id = rep(1:length(cogridx2), each = 2), gp=grid::gpar(col=a$col, lwd=a$lwd))
 		} else {
-			ticks <- polylineGrob(x=rep(cogridx2, each = 2), y = rep(c(1-spacerX*.5-marginX,1), length(cogridx2)), id = rep(1:length(cogridx2), each = 2), gp=gpar(col=a$col, lwd=a$lwd))
+			ticks <- grid::polylineGrob(x=rep(cogridx2, each = 2), y = rep(c(1-spacerX*.5-marginX,1), length(cogridx2)), id = rep(1:length(cogridx2), each = 2), gp=grid::gpar(col=a$col, lwd=a$lwd))
 		}
 	} else {
 		ticks <- NULL
 	}
 
 	if (is_top) {
-		labels <- textGrob(labelsx2, y=1-spacerX/2, x=cogridx2, just=just, rot=a$labels.rot[1], gp=gpar(col=a$labels.col, cex=cex, fontface=a$labels.fontface, fontfamily=a$labels.fontfamily))
+		labels <- grid::textGrob(labelsx2, y=1-spacerX/2, x=cogridx2, just=just, rot=a$labels.rot[1], gp=grid::gpar(col=a$labels.col, cex=cex, fontface=a$labels.fontface, fontfamily=a$labels.fontfamily))
 	} else {
-		labels <- textGrob(labelsx2, y=1-spacerX-marginX, x=cogridx2, just=just, rot=a$labels.rot[1], gp=gpar(col=a$labels.col, cex=cex, fontface=a$labels.fontface, fontfamily=a$labels.fontfamily))
+		labels <- grid::textGrob(labelsx2, y=1-spacerX-marginX, x=cogridx2, just=just, rot=a$labels.rot[1], gp=grid::gpar(col=a$labels.col, cex=cex, fontface=a$labels.fontface, fontfamily=a$labels.fontfamily))
 	}
 
-	res = gTree(children = gList(ticks, labels), name = "gridTicksLabelsX")
+	res = grid::gTree(children = gList(ticks, labels), name = "gridTicksLabelsX")
 
 	#res = gTree(children = gList(rectGrob(gp=gpar(fill="red"))), name = "gridTicksLabelsX")
 
@@ -496,7 +536,21 @@ tmapGridGridYLab = function(bi, bbx, facet_row, facet_col, facet_page, o) {
 	spacerY <- grid::convertWidth(grid::unit(.5, "lines"), unitTo="inch", valueOnly=TRUE) * cex / W
 	marginY <- grid::convertWidth(grid::unit(a$labels.margin.y, "lines"), unitTo="inch", valueOnly=TRUE) * cex / W
 
-	just <- ifelse(a$labels.rot[2] == 90, "bottom", ifelse(a$labels.rot[2] == 270, "top", ifelse(a$labels.rot[2] == 180, "left", "right")))
+	if (is_left) {
+		just <- ifelse(a$labels.rot[2] == 90, "bottom", ifelse(a$labels.rot[2] == 270, "top", ifelse(a$labels.rot[2] == 180, "left", "right")))
+	} else {
+		just <- ifelse(a$labels.rot[2] == 90, "bottom", ifelse(a$labels.rot[2] == 270, "top", ifelse(a$labels.rot[2] == 180, "right", "left")))
+	}
+
+	if (a$labels.rot[2] %in% c(90, 270)) {
+		x = 0.5 - (is_left - 0.5) * 2 * (spacerY + 0.5* marginY)
+	} else {
+		if (is_left) {
+			x = 1 - spacerY - marginY
+		} else {
+			x = spacerY + marginY
+		}
+	}
 
 	if (a$ticks[2]) {
 		if (is_left) {
@@ -508,11 +562,8 @@ tmapGridGridYLab = function(bi, bbx, facet_row, facet_col, facet_page, o) {
 		ticks <- NULL
 	}
 
-	if (is_left) {
-		labels = grid::textGrob(labelsy2, y=cogridy2, x=1 - spacerY - marginY, just=just, rot=a$labels.rot[2], gp=gpar(col=a$labels.col, cex=cex, fontface=a$labels.fontface, fontfamily=a$labels.fontfamily))
-	} else {
-		labels = grid::textGrob(labelsy2, y=cogridy2, x=1-spacerY*.5-marginY, just=just, rot=a$labels.rot[2], gp=gpar(col=a$labels.col, cex=cex, fontface=a$labels.fontface, fontfamily=a$labels.fontfamily))
-	}
+	labels = grid::textGrob(labelsy2, y=cogridy2, x=x,
+							just=just, rot=a$labels.rot[2], gp=gpar(col=a$labels.col, cex=cex, fontface=a$labels.fontface, fontfamily=a$labels.fontfamily))
 	res = gTree(children = gList(ticks, labels), name = "gridTicksLabelsY")
 
 
@@ -562,7 +613,7 @@ tmapGridGrid = function(bi, bbx, facet_row, facet_col, facet_page, id, pane, gro
 	sely <- (length(cogridy) > 0)
 
 	# find margins due to grid labels
-	if (!is.na(o$frame)) {
+	if (o$frame) {
 		if (o$frame.double_line) {
 			fw <- (6 * grid::convertWidth(unit(1, "points"), unitTo = "inch", valueOnly = TRUE) * o$frame.lwd) / fW
 			fh <- (6 * grid::convertHeight(unit(1, "points"), unitTo = "inch", valueOnly = TRUE) * o$frame.lwd) / fH
@@ -694,16 +745,16 @@ tmapGridGrid = function(bi, bbx, facet_row, facet_col, facet_page, id, pane, gro
 		if (!a$lines) {
 			grobGridX <- NULL
 		} else if (is.na(a$crs)) {
-			grobGridX <- polylineGrob(x=rep(cogridx2, each=2), y=rep(c(labelsXw+spacerX+marginX,1), length(cogridx2)),
-									  id=rep(1:length(cogridx2), each=2), gp=gpar(col=a$col, lwd=a$lwd))
+			grobGridX <- grid::polylineGrob(x=rep(cogridx2, each=2), y=rep(c(labelsXw+spacerX+marginX,1), length(cogridx2)),
+									  id=rep(1:length(cogridx2), each=2), gp=grid::gpar(col=a$col, lwd=a$lwd))
 		} else {
-			grobGridX <- polylineGrob(x=cogridxlns$x, y=cogridxlns$y, id=cogridxlns$ID, gp=gpar(col=a$col, lwd=a$lwd))
+			grobGridX <- grid::polylineGrob(x=cogridxlns$x, y=cogridxlns$y, id=cogridxlns$ID, gp=grid::gpar(col=a$col, lwd=a$lwd))
 		}
 
 		grobGridTextX <- if (a$add.labels[1] && any(selx2)) {
 			just <- ifelse(a$labels.rot[1] == 90, "right", ifelse(a$labels.rot[1] == 270, "left", ifelse(a$labels.rot[1] == 180, "bottom", "top")))
 
-			textGrob(labelsx, y=labelsXw+spacerX*.5+marginX, x=cogridx3, just=just, rot=a$labels.rot[1], gp=gpar(col=a$labels.col, cex=cex, , fontface=a$labels.fontface, fontfamily=a$labels.fontfamily))
+			grid::textGrob(labelsx, y=labelsXw+spacerX*.5+marginX, x=cogridx3, just=just, rot=a$labels.rot[1], gp=grid::gpar(col=a$labels.col, cex=cex, fontface=a$labels.fontface, fontfamily=a$labels.fontfamily))
 		} else NULL
 	} else {
 		grobGridX <- NULL
@@ -720,16 +771,16 @@ tmapGridGrid = function(bi, bbx, facet_row, facet_col, facet_page, id, pane, gro
 		if (!a$lines) {
 			grobGridY <- NULL
 		} else if (is.na(a$crs)) {
-			grobGridY <- polylineGrob(y=rep(cogridy2, each=2), x=rep(c(labelsYw+spacerY+marginY,1), length(cogridy2)),
-									  id=rep(1:length(cogridy2), each=2), gp=gpar(col=a$col, lwd=a$lwd))
+			grobGridY <- grid::polylineGrob(y=rep(cogridy2, each=2), x=rep(c(labelsYw+spacerY+marginY,1), length(cogridy2)),
+									  id=rep(1:length(cogridy2), each=2), gp=grid::gpar(col=a$col, lwd=a$lwd))
 		} else {
-			grobGridY <- polylineGrob(x=cogridylns$x, y=cogridylns$y, id=cogridylns$ID, gp=gpar(col=a$col, lwd=a$lwd))
+			grobGridY <- grid::polylineGrob(x=cogridylns$x, y=cogridylns$y, id=cogridylns$ID, gp=grid::gpar(col=a$col, lwd=a$lwd))
 		}
 
 		grobGridTextY <- if (a$add.labels[2] && any(sely2)) {
 			just <- ifelse(a$labels.rot[2] == 90, "bottom", ifelse(a$labels.rot[2] == 270, "top", ifelse(a$labels.rot[2] == 180, "left", "right")))
 
-			textGrob(labelsy, x=labelsYw+spacerY*.5+marginY, y=cogridy3, just=just, rot=a$labels.rot[2], gp=gpar(col=a$labels.col, cex=a$labels.size*o$scale, , fontface=a$labels.fontface, fontfamily=a$labels.fontfamily))
+			grid::textGrob(labelsy, x=labelsYw+spacerY*.5+marginY, y=cogridy3, just=just, rot=a$labels.rot[2], gp=grid::gpar(col=a$labels.col, cex=a$labels.size*o$scale, fontface=a$labels.fontface, fontfamily=a$labels.fontfamily))
 		} else NULL
 	} else {
 		grobGridY <- NULL

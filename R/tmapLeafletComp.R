@@ -112,8 +112,17 @@ make_equal_list = function(x) {
 tmapLeaflet_legend = function(cmp, lf, o, orientation) {
 	group = cmp$group
 	leg_className = paste("info legend", gsub(" ", "", group, fixed = TRUE))
-	layerId =  paste0("legend", sprintf("%02d", .TMAP_LEAFLET$leg_id)) # "legend401" #todo
-	.TMAP_LEAFLET$leg_id = .TMAP_LEAFLET$leg_id + 1
+
+
+
+	if ("layerId" %in% names(cmp)) {
+		layerId = cmp$layerId
+		group = "always_on"
+	} else {
+		layerId =  paste0("legend", sprintf("%02d", .TMAP_LEAFLET$leg_id)) # "legend401" #todo
+		.TMAP_LEAFLET$leg_id = .TMAP_LEAFLET$leg_id + 1
+	}
+
 
 
 	lab = cmp$labels
@@ -143,7 +152,30 @@ tmapLeaflet_legend = function(cmp, lf, o, orientation) {
 		lf
 	} else if (cmp$type == "gradient") {
 		nbins = length(val)
-		val = c(val, cmp$limits)
+
+
+
+		incl.na = cmp$na.show
+		if (incl.na) {
+			sel = head(cmp$labels_select, -1)
+		} else {
+			sel = cmp$labels_select
+		}
+
+		bins = val[sel]
+		val = val[sel]
+
+		if (!head(sel, 1)) {
+			val = c(cmp$limits[1], val)
+		} else {
+			val = c(val[1] - (val[2] - val[1]) * 0.5, val)
+		}
+
+		if (!tail(sel, 1)) {
+			val = c(val, cmp$limits[2])
+		} else {
+			val = c(val, val[length(val)] + diff(tail(val, 2))/2)
+		}
 
 		vary = if ("fill" %in% cmp$varying) "fillColor" else "color"
 		#vary_alpha = paste0(vary, "_alpha")
@@ -153,11 +185,14 @@ tmapLeaflet_legend = function(cmp, lf, o, orientation) {
 			pal = head(cmp$gp2[[vary]], -1)
 			colNA = tail(cmp$gp2[[vary]], 1)
 			textNA = lab[length(lab)]
+			labs = head(lab, -1)[sel]
 			val = c(val, NA)
+			#labs = c(labs, "")
 		} else {
 			pal = cmp$gp2[[vary]]
 			colNA = NA
 			textNA = NA
+			labs = lab[sel]
 		}
 		pal = colorNumeric(palette = pal,
 						   domain = val,
@@ -179,6 +214,14 @@ tmapLeaflet_legend = function(cmp, lf, o, orientation) {
 			cmp$gp2$opacity
 		}
 
+		if (orientation == "horizontal") {
+			cli::cli_inform("{.field [landscape legend in view mode]} doesn't support labels yet",
+							.frequency_id = "landscape_legend_view",
+							.frequency = "once")
+			labs = NULL
+
+		}
+
 		lf %>% leaflegend::addLegendNumeric(position=legpos,
 										   orientation = orientation,
 										   group = group,
@@ -190,7 +233,8 @@ tmapLeaflet_legend = function(cmp, lf, o, orientation) {
 										   # 	prettyNum(trns(x), format = "f", big.mark = ",", digits =
 										   # 			  	3, scientific = FALSE)
 										   # },
-										   bins = head(val, -2),
+										   labels = labs,
+										   bins = bins,
 										   naLabel = textNA,
 										   title=title,
 										   fillOpacity=opacity,
@@ -245,7 +289,6 @@ tmapLeaflet_legend = function(cmp, lf, o, orientation) {
 		}
 
 		#symbols = symbols$iconUrl
-
 
 
 		lf %>% leaflegend::addLegendImage(symbols$iconUrl,

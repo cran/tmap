@@ -79,9 +79,9 @@ tmapGridInit = function(o, return.asp = FALSE, vp, prx, ...) {
 	cols_panel_ids = cols_facet_ids + ifelse(o$panel.wrap.pos  == "left", -2, ifelse(o$panel.wrap.pos  == "right", 2, 0))
 	rows_panel_ids = rows_facet_ids + ifelse(o$panel.wrap.pos  == "top", -2, ifelse(o$panel.wrap.pos  == "bottom", 2, 0))
 
-	panel_col_rot = 0
-	panel_row_rot = ifelse(o$panel.xtab.pos[1] == "left", 90, 270)
-	panel_rot = ifelse(o$panel.wrap.pos  == "left", 90, ifelse(o$panel.wrap.pos  == "right", 270, 0))
+	panel_col_rot = ifelse(o$panel.xtab.pos[2] == "top", o$panel.label.rot[2], o$panel.label.rot[4])
+	panel_row_rot = ifelse(o$panel.xtab.pos[1] == "left", o$panel.label.rot[1], o$panel.label.rot[3])
+	panel_rot = ifelse(o$panel.wrap.pos  == "left", o$panel.label.rot[1], ifelse(o$panel.wrap.pos  == "right", o$panel.label.rot[3], ifelse(o$panel.wrap.pos  == "top", o$panel.label.rot[2], o$panel.label.rot[4])))
 
 	#}
 	#####
@@ -115,6 +115,7 @@ tmapGridInit = function(o, return.asp = FALSE, vp, prx, ...) {
 	# needed for tmap save and arrange
 	if (return.asp) return(gasp2)
 
+
 	if (gasp2 > gasp) {
 		extra.height =   (1 - ((1 - sum(pcols))/(gasp2/o$dasp))) - sum(prows)
 		rows[c(1, length(rows))] = rows[c(1, length(rows))] + grid::unit(extra.height / 2, "npc")
@@ -136,13 +137,9 @@ tmapGridInit = function(o, return.asp = FALSE, vp, prx, ...) {
 							grid::viewport(layout = grid::grid.layout(nrow = length(rows), ncol = length(cols), widths = cols, heights = rows), name = "vp_main")
 	)
 
-	bgcol = if (is.na(o$frame) && !o$earth_boundary) {
-		o$bg.color
-	} else if (is.na(o$frame) && o$earth_boundary) {
-		o$space.color
-	} else o$outer.bg.color
+	bgcol = o$outer.bg.color
 
-	outerRect = if (!is.na(bgcol)) rndrectGrob(gp=grid::gpar(col=NA, lwd = 0, fill = bgcol), name = "outer_rect") else NULL
+	outerRect = if (o$outer.bg) rndrectGrob(gp=grid::gpar(lwd = NA, fill = bgcol), name = "outer_rect") else NULL
 
 	gts = lapply(1L:o$npages, function(ip) {
 		grid::grobTree(
@@ -182,6 +179,48 @@ tmapGridInit = function(o, return.asp = FALSE, vp, prx, ...) {
 		rowsIn = rowsIn
 	)
 
+
+	# design mode: widths and heights (and asp) for subset of cols/rows
+	res = do.call(rbind, lapply(1:7, function(i) {
+		tot_col = sum(g$colsIn[i:(nc-(i-1))])
+		tot_row = sum(g$rowsIn[i:(nr-(i-1))])
+		c(tot_col, tot_row, tot_col/ tot_row)
+	}))
+
+
+	# take make rows and columns
+	g$mapColsIn = g$colsIn[g$cols_facet_ids]
+	g$mapRowsIn = g$rowsIn[g$rows_facet_ids]
+
+	# add w/h/asp for first map
+	res = rbind(res, c(g$mapColsIn[1], g$mapRowsIn[1], g$mapColsIn[1]/ g$mapRowsIn[1]))
+
+	## show aspect ratios in design mode
+	if (getOption("tmap.design.mode")) {
+		posttext <- apply(format(res[c(1,2,4, 8),], digits = 3), FUN = paste, MARGIN = 1, collapse = " ")
+		pretext <- c("device", "plot area", "facets area", "map area")
+
+		lns <- nchar(pretext) + nchar(posttext)
+		l <- max(max(nchar(pretext)) + max(nchar(posttext)) + 1, 25)
+		medtext <- vapply(l-lns, function(i)paste(rep(" ", i), collapse=""), character(1))
+
+		texts <- c("----------------W (in)--H (in)--asp---",
+				   paste("|", pretext, medtext, posttext, "|"),
+				   paste(rep("-", l+6), collapse=""))
+
+		for (tx in texts) message(tx)
+	}
+
+	# margins around first map (needed for georeferencing)
+	rid = g$rows_facet_ids[1]
+	cid = g$cols_facet_ids[1]
+	map_all_margins = c(
+		sum(g$rowsIn[(rid+1L):nr]),
+		sum(g$colsIn[1:(cid-1L)]),
+		sum(g$rowsIn[1:(rid-1L)]),
+		sum(g$colsIn[(cid+1L):nc]))
+
+
 	if (getOption("tmap.design.mode")) {
 		gts = lapply(gts, function(gt) {
 
@@ -220,10 +259,6 @@ tmapGridInit = function(o, return.asp = FALSE, vp, prx, ...) {
 	}
 
 
-
-	g$mapColsIn = g$colsIn[g$cols_facet_ids]
-	g$mapRowsIn = g$rowsIn[g$rows_facet_ids]
-
 	if (is.null(vp)) {
 		grid.newpage()
 	}# else {
@@ -231,7 +266,9 @@ tmapGridInit = function(o, return.asp = FALSE, vp, prx, ...) {
 	#}
 	assign("gts", gts, envir = .TMAP_GRID)
 	assign("g", g, envir = .TMAP_GRID)
+	assign("gasp2", gasp2, envir = .TMAP_GRID)
 	.TMAP$start_pane_id = 401
+	list(dev = res[1,],map = res[8,], margins = map_all_margins)
 }
 
 tmapGridAux = function(o, q) {

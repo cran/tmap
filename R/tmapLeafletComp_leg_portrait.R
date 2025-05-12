@@ -71,7 +71,7 @@ tmapLeafletCompHeight.tm_legend_standard_portrait = function(comp, o) {
 	within(comp, {
 		if (type == "gradient") {
 			height = if (is.na(height)) {
-				get_legend_option(item.height, "gradient") * nitems * absolute_fontsize
+				get_legend_option(item.height, "gradient") * nitems * absolute_fontsize * 0.7
 			} else {
 				if (height < 0) {
 					-height
@@ -135,7 +135,8 @@ tmapLeafletCompWidth.tm_legend_standard_landscape = function(comp, o) {
 	within(comp, {
 		if (type == "gradient") {
 			width = if (is.na(width)) {
-				get_legend_option(item.width, "gradient") * nitems * absolute_fontsize
+				# nitems set to 2 because labels are not supported yet
+				get_legend_option(item.width, "gradient") * 2 * absolute_fontsize
 			} else {
 				if (width < 0) {
 					-width

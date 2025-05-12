@@ -1,3 +1,15 @@
+# tmap 4.1 (in development)
+
+This fixes a few regressions in the tmap v4 release and adds improvements.
+
+- [!] basemaps in plot mode much sharper, added `tmap_providers()` (#1041, #1042)
+- [!] tm_comp_group() added to specify grouped components (incl legends)
+- [!] added tm_animate() (main use case: cartograms)
+- for the background and frame we introduce: `bg`/`bg.color` and `frame`/`frame.color`
+- `tm_remove_layer()` works again in Shiny (#1044)
+- `tm_logo()` works again in view mode (#1038).
+- few fixes in legend computing and size (#1039, #1032)
+
 # tmap 4.0
 
 tmap v4 is a major release and has been rewritten from scratch. It contains tons of new features. Although we did our best to make changes backwards compatible, some things may not work as expected.

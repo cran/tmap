@@ -18,7 +18,7 @@ do_trans = function(tdt, FUN, shpDT, plot.order, args, scale) {
 
 		shp = shpTM$shp[match(ids, shpTM$tmapID)]
 
-		shpX = list(shp = shp, tmapID = ids)
+		shpX = list(shp = shp, tmapID = ids, bbox = shpTM$bbox)
 
 		x = as.list(tdt[match(tmapID__, ids), aesvars, with = FALSE])
 
@@ -190,6 +190,7 @@ tmapTransCentroid = function(shpTM, xmod = NULL, ymod = NULL, ord__, plot.order,
 					} else {
 						shp[ids_poly] = ctds
 					}
+					rm(ctds)
 				}
 			}
 
@@ -222,7 +223,7 @@ tmapTransCentroid = function(shpTM, xmod = NULL, ymod = NULL, ord__, plot.order,
 				rm(tmapID_1n)
 			}
 
-			rm(geom_types, geom_types2)
+			rm(geom_types, geom_types2, ids_point, ids_line, ids_poly, geom_all, geom_all2, is_stars)
 		}
 	})
 }

@@ -17,13 +17,13 @@ tm_credits(
   frame,
   frame.lwd,
   frame.r,
+  bg,
   bg.color,
   bg.alpha,
   position,
+  group_id,
   width,
   height,
-  group.frame,
-  resize_as_group,
   z,
   ...
 )
@@ -47,25 +47,25 @@ tm_credits(
 
 \item{just}{just}
 
-\item{frame}{frame}
+\item{frame}{frame should a frame be drawn?}
 
 \item{frame.lwd}{frame line width}
 
 \item{frame.r}{Radius of the rounded frame corners. 0 means no rounding.}
 
+\item{bg}{Show background?}
+
 \item{bg.color}{Background color}
 
 \item{bg.alpha}{Background transparency}
 
-\item{position}{An object created with \code{tm_pos_in()} or \code{tm_pos_out()}. Or, as a shortcut, a vector of two values, specifying the x and y coordinates. The first is \code{"left"}, \code{"center"} or \code{"right"} (or upper case, meaning tighter to the map frame), the second \code{"top"}, \code{"center"} or \code{"bottom"}. Numeric values are also supported, where 0, 0 means left bottom and 1, 1 right top. See also \href{https://r-tmap.github.io/tmap/articles/adv_positions}{vignette about positioning}.}
+\item{position}{The position specification of the component: an object created with \code{tm_pos_in()} or \code{tm_pos_out()}. Or, as a shortcut, a vector of two values, specifying the x and y coordinates. The first is \code{"left"}, \code{"center"} or \code{"right"} (or upper case, meaning tighter to the map frame), the second \code{"top"}, \code{"center"} or \code{"bottom"}. Numeric values are also supported, where 0, 0 means left bottom and 1, 1 right top. See also \href{https://r-tmap.github.io/tmap/articles/adv_positions}{vignette about positioning}. In case multiple components should be combined (stacked), use \code{group_id} and specify \code{component} in \code{\link[=tm_comp_group]{tm_comp_group()}}.}
 
-\item{width, height}{width and height of the text box.}
+\item{group_id}{Component group id name. All components (e.g. legends, titles, etc) with the same \code{group_id} will be grouped. The specifications of how they are placed (e.g. stacking, margins etc.) are determined in \code{\link[=tm_comp_group]{tm_comp_group()}} where its argument \code{id} should correspond to \code{group_id}.}
 
-\item{group.frame}{group.frame}
+\item{width, height}{width and height of the component.}
 
-\item{resize_as_group}{resize_as_group}
-
-\item{z}{z}
+\item{z}{z index, e.g. the place of the component relative to the other componets}
 
 \item{...}{to catch deprecated arguments}
 }

@@ -17,12 +17,12 @@ tm_chart_histogram(
   plot.axis.y,
   extra.ggplot2,
   position,
+  group_id,
   width,
   height,
   stack,
   z,
-  group.frame,
-  resize_as_group
+  ...
 )
 
 tm_chart_bar(
@@ -30,39 +30,23 @@ tm_chart_bar(
   plot.axis.y,
   extra.ggplot2,
   position,
+  group_id,
   width,
   height,
   stack,
   z,
-  group.frame,
-  resize_as_group
+  ...
 )
 
-tm_chart_donut(position, width, height, stack, z, group.frame, resize_as_group)
+tm_chart_donut(position, group_id, width, height, stack, z, ...)
 
-tm_chart_violin(
-  position,
-  width,
-  height,
-  stack,
-  z,
-  group.frame,
-  resize_as_group
-)
+tm_chart_violin(position, group_id, width, height, stack, z, ...)
 
-tm_chart_box(position, width, height, stack, z, group.frame, resize_as_group)
+tm_chart_box(position, group_id, width, height, stack, z, ...)
 
 tm_chart_none()
 
-tm_chart_heatmap(
-  position,
-  width,
-  height,
-  stack,
-  z,
-  group.frame,
-  resize_as_group
-)
+tm_chart_heatmap(position, group_id, width, height, stack, z, ...)
 }
 \arguments{
 \item{breaks}{The breaks of the bins (for histograms)}
@@ -71,19 +55,17 @@ tm_chart_heatmap(
 
 \item{extra.ggplot2}{Extra ggplot2 code}
 
-\item{position}{Position of the chart. An object created with \code{tm_pos_in()} or \code{tm_pos_out()}. Or, as a shortcut, a vector of two values, specifying the x and y coordinates. The first is \code{"left"}, \code{"center"} or \code{"right"} (or upper case, meaning tighter to the map frame), the second \code{"top"}, \code{"center"} or \code{"bottom"}. Numeric values are also supported, where 0, 0 means left bottom and 1, 1 right top. See also \href{https://r-tmap.github.io/tmap/articles/adv_positions}{vignette about positioning}.}
+\item{position}{The position specification of the component: an object created with \code{tm_pos_in()} or \code{tm_pos_out()}. Or, as a shortcut, a vector of two values, specifying the x and y coordinates. The first is \code{"left"}, \code{"center"} or \code{"right"} (or upper case, meaning tighter to the map frame), the second \code{"top"}, \code{"center"} or \code{"bottom"}. Numeric values are also supported, where 0, 0 means left bottom and 1, 1 right top. See also \href{https://r-tmap.github.io/tmap/articles/adv_positions}{vignette about positioning}. In case multiple components should be combined (stacked), use \code{group_id} and specify \code{component} in \code{\link[=tm_comp_group]{tm_comp_group()}}.}
 
-\item{width}{in number of text lines (height of it)}
+\item{group_id}{Component group id name. All components (e.g. legends, titles, etc) with the same \code{group_id} will be grouped. The specifications of how they are placed (e.g. stacking, margins etc.) are determined in \code{\link[=tm_comp_group]{tm_comp_group()}} where its argument \code{id} should correspond to \code{group_id}.}
 
-\item{height}{in number of text lines}
+\item{width, height}{width and height of the component.}
 
 \item{stack}{stack with other map components, either \code{"vertical"} or \code{"horizontal"}.}
 
-\item{z}{stacking order}
+\item{z}{z index, e.g. the place of the component relative to the other componets}
 
-\item{group.frame}{group.frame}
-
-\item{resize_as_group}{resize_as_group}
+\item{...}{passed on to \code{tm_title()}}
 }
 \description{
 Legend charts are small charts that are added to the map, usually in addition to legends.

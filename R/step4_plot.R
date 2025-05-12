@@ -21,12 +21,6 @@ process_components = function(cdt, o) {
 	cdt$pos.v = sapply(cdt$comp, function(l) {x = l$position$pos.v; if (is.null(x)) NA else x})
 	cdt$z = sapply(cdt$comp, function(l) {x = l$z; if (is.null(x)) NA_integer_ else x})
 
-	# to make sure legends positions are based on one-facet-per-page
-	if (o$type == "page") {
-		cdt[, by3__ := by1__]
-		cdt[, by1__ := NA]
-	}
-
 
 	if (gs != "Grid") {
 		cdt[class == "out", class := "in"]
@@ -65,57 +59,43 @@ process_components = function(cdt, o) {
 	}
 
 
-
-
-
-
-
-
-
 	# filter components that are not shown (e.g. not implemented), which is determined in the Prepare step
 	cdt$show = sapply(cdt$comp, function(l) l$show)
 	cdt = cdt[cdt$show,][,show:=NULL]
 
 
-	## do to: proper S3 methods
-	#if (gs == "Grid") {
-		cdt$comp = lapply(cdt$comp, function(comp) do.call(funW, list(comp = comp, o = o)))
-		cdt$comp = lapply(cdt$comp, function(comp) do.call(funH, list(comp = comp, o = o)))
+	cdt$comp = lapply(cdt$comp, function(comp) do.call(funW, list(comp = comp, o = o)))
+	cdt$comp = lapply(cdt$comp, function(comp) do.call(funH, list(comp = comp, o = o)))
 
-		cdt[, ':='(facet_row = character(), facet_col = character())]
-		cdt$stack_auto = vapply(cdt$comp, function(l) {
-			s = l$stack
-			length(s) > 1
-		}, FUN.VALUE = logical(1))
-		cdt$stack = vapply(cdt$comp, function(l) {
-			s = l$stack
-			if (length(s) > 1 && "manual" %in% names(s)) s["manual"] else s[1]
-		}, FUN.VALUE = character(1))
+	cdt[, ':='(facet_row = character(), facet_col = character())]
+	cdt$stack_auto = vapply(cdt$comp, function(l) {
+		s = l$stack
+		length(s) > 1
+	}, FUN.VALUE = logical(1))
+	cdt$stack = vapply(cdt$comp, function(l) {
+		s = l$stack
+		if (length(s) > 1 && "manual" %in% names(s)) s["manual"] else s[1]
+	}, FUN.VALUE = character(1))
 
 
-		getLW = function(x) sapply(x, function(y) {
-			yW = y$Win
-			yW %||% 0
-		})
-		getLH = function(x) sapply(x, function(y) {
-			yH = y$Hin
-			yH %||% 0
-		})
-		# attempt to determine margins
-		cdt[, legW := getLW(comp)]
-		cdt[, legH := getLH(comp)]
+	getLW = function(x) sapply(x, function(y) {
+		yW = y$Win
+		yW %||% 0
+	})
+	getLH = function(x) sapply(x, function(y) {
+		yH = y$Hin
+		yH %||% 0
+	})
+	# attempt to determine margins
+	cdt[, legW := getLW(comp)]
+	cdt[, legH := getLH(comp)]
 
-		if (any(is.na(cdt$z))) {
-			cdt[is.na(z), z := seq(1L,(sum(is.na(z))))]
-		}
-		if (nrow(cdt)>0L) {
-			data.table::setorder(cdt, "z")
-		}
-	# } else if (gs == "Leaflet") {
-	#
-	# }
-
-	#cdt[, page := NA_integer_]
+	if (any(is.na(cdt$z))) {
+		cdt[is.na(z), z := seq(1L,(sum(is.na(z))))]
+	}
+	if (nrow(cdt)>0L) {
+		data.table::setorder(cdt, "z")
+	}
 
 
 	cdt
@@ -169,15 +149,6 @@ process_components2 = function(cdt, o) {
 		cdt[class == "autoin", ":="(pos.h = ifelse(is.na(pos.h), o$legend.autoin.pos[1], pos.h),
 									pos.v = ifelse(is.na(pos.v), o$legend.autoin.pos[2], pos.v),
 									class = "in")]
-
-
-		# cdt$comp = lapply(cdt$comp, function(l) {
-		# 	if (is.na(l$position$pos.h)) o$legend.autoin.pos[1]
-		# 	if (is.na(l$position$pos.v)) o$legend.autoin.pos[2]
-		# 	#l$position[c("pos.h", "pos.v")] = as.list(o$legend.autoin.pos)
-		# 	l
-		# })
-		# cdt[class == "autoin", ":="(pos.h = o$legend.autoin.pos[1], pos.v = o$legend.autoin.pos[2], class = "in")]
 	}
 
 	vby = any(cdt$cell.v == "by" & !is.na(cdt$cell.v))
@@ -188,25 +159,24 @@ process_components2 = function(cdt, o) {
 	}
 
 
+	# # manual outside legends -2 is top or left, -1 is bottom or right
+	# cdt[class %in% c("autoout", "out"), ':='(facet_row =
+	# 		ifelse(cell.v == "center", ifelse(vby, "1", toC(1:o$nrows)),
+	# 		ifelse(cell.v == "by", as.character(by1__),
+	# 		ifelse(cell.v == "top", as.character(-2), as.character(-1)))),
+	# 	facet_col =
+	# 		ifelse(cell.h == "center", ifelse(hby, "1", toC(1:o$ncols)),
+	# 		ifelse(cell.h == "by", as.character(by2__),
+	# 		ifelse(cell.h == "left", as.character(-2), as.character(-1)))))]
 	# manual outside legends -2 is top or left, -1 is bottom or right
 	cdt[class %in% c("autoout", "out"), ':='(facet_row =
-			ifelse(cell.v == "center", ifelse(vby, "1", toC(1:o$nrows)),
-			ifelse(cell.v == "by", as.character(by1__),
-			ifelse(cell.v == "top", as.character(-2), as.character(-1)))),
-		facet_col =
-			ifelse(cell.h == "center", ifelse(hby, "1", toC(1:o$ncols)),
-			ifelse(cell.h == "by", as.character(by2__),
-			ifelse(cell.h == "left", as.character(-2), as.character(-1)))))]
-	if (o$type == "page") {
-		cdt[cell.v == "by", facet_row := "1"]
-		cdt[cell.h == "by", facet_col := "1"]
-	}
-
-	if (o$type == "page") {
-		cdt[, by1__ := by3__]
-		cdt[, by3__ := NA]
-	}
-
+											 	ifelse(cell.v == "center", toC(1:o$nrows),
+											 		   ifelse(cell.v == "by", as.character(by1__),
+											 		   	   ifelse(cell.v == "top", as.character(-2), as.character(-1)))),
+											 facet_col =
+											 	ifelse(cell.h == "center", toC(1:o$ncols),
+											 		   ifelse(cell.h == "by", as.character(by2__),
+											 		   	   ifelse(cell.h == "left", as.character(-2), as.character(-1)))))]
 
 	cdt
 }
@@ -217,6 +187,12 @@ step4_plot = function(tm, vp, return.asp, show, in.shiny, knit, args) {
 	aux = tm$aux
 	cmp = tm$cmp
 	prx = tm$prx
+
+	# check if mode is the same as in step1
+	# tmap_mode() may be executed in between (#1082)
+	gs = tmap_graphics_name()
+	if (o$name != gs) cli::cli_abort("tmap mode changed during execution; did you run {.code tmap_mode()} inside a shiny app?")
+
 
 	# shortcut if no data layers are used, but only a tm_shape
 	if (length(tmx)) {
@@ -262,6 +238,82 @@ step4_plot = function(tm, vp, return.asp, show, in.shiny, knit, args) {
 
 	# split tm in case of as.layers in tm_facets
 	# TODO
+
+	# function to subset data
+	get_dt = function(dt, by1, by2, by3, remove_by = FALSE) {
+		b = list(by1, by2, by3)
+		bynames = intersect(names(dt), paste0("by", 1:3, "__"))
+		byids = as.integer(substr(bynames, 3, 3))
+
+		sel = rep(TRUE, nrow(dt))
+		if (length(bynames)) {
+			for (i in 1:length(bynames)) {
+				sel = sel & (is.na(dt[[bynames[i]]]) | dt[[bynames[i]]] %in% b[[byids[i]]])
+			}
+		}
+		if (remove_by) {
+			nms = setdiff(names(dt), bynames)
+			dt[which(sel), nms, with = FALSE]
+		} else {
+			dt[which(sel),]
+		}
+	}
+
+	if (o$as.layers) {
+		bys = do.call(expand.grid, lapply(o$fn, seq, from = 1))
+
+		bys_labs = lapply(o$fl, function(x) if (is.null(x)) "" else x)
+		labs = do.call(mapply, c(list(FUN = paste0, USE.NAMES = FALSE), mapply("[", bys_labs, bys, SIMPLIFY = FALSE, USE.NAMES = FALSE)))
+		# to do: take labels from o$fl
+		# assign to tml$group
+		# disable multiple basemaps
+
+		e = environment()
+		any_radio = FALSE
+		tmx = lapply(tmx, function(tmxi) {
+			lys = mapply(function(tml, tml_name) {
+				lys2 = lapply(1:nrow(bys), function(i) {
+					tml$mapping_dt = get_dt(tml$mapping_dt, bys$Var1[i], bys$Var2[i], bys$Var3[i], remove_by = TRUE)
+					tml$mapping_legend = lapply(tml$mapping_legend, function(ml) {
+						ml = get_dt(ml, bys$Var1[i], bys$Var2[i], bys$Var3[i], remove_by = TRUE)
+						fixed = (nrow(ml) == 1L && tml$group.control == "check")
+						for (j in 1:nrow(ml)) {
+							id_old = ml$legnr[j]
+							leg_old = .TMAP$legs[[ml$legnr[j]]]
+							leg_old$layerId = paste0("fixed", ml$legnr[j])
+							leg_old$group = labs[i]
+							ml$legnr[j] = legend_save(leg_old)
+						}
+						ml
+					})
+					tml$group = labs[i]
+					if (tml$group.control == "radio") assign("any_radio", value = TRUE, envir = e)
+					tml$lid = tml$lid + i
+					tml
+				})
+				names(lys2) = paste0(tml_name, "_", sprintf("%02d", 1:length(lys2)))
+				lys2
+			}, tmxi$layers, names(tmxi$layers), SIMPLIFY = FALSE, USE.NAMES = FALSE)
+			tmxi$layers = do.call(c, lys)
+			tmxi
+		})
+
+		if (length(aux) && any_radio) {
+			multi_tile = any(vapply(aux, function(ai) {
+				(ai$mapping.fun == "Tiles" && length(ai$args$server) > 1)
+			}, FUN.VALUE = logical(1L), USE.NAMES = FALSE))
+			if (multi_tile) cli::cli_inform("When {.code as.layers = TRUE} with radio buttons, it may be easier to have only one basemap, e.g. {.code + tm_basemap({.str OpenStreetMap})}")
+		}
+
+		o$n = 1
+		o$fl = list(NULL,NULL,NULL)
+		o$fn = rep(1L, 3)
+		o$ncols = 1
+		o$nrows = 1
+
+	}
+
+
 
 	# get name of graphics engine (for function names e.g. tmapGridInit)
 	gs = tmap_graphics_name()
@@ -333,20 +385,7 @@ step4_plot = function(tm, vp, return.asp, show, in.shiny, knit, args) {
 		shpDT$shpTM[which(sel)]
 	}
 
-	# function to subset data
-	get_dt = function(dt, by1, by2, by3) {
-		b = list(by1, by2, by3)
-		bynames = intersect(names(dt), paste0("by", 1:3, "__"))
-		byids = as.integer(substr(bynames, 3, 3))
 
-		sel = rep(TRUE, nrow(dt))
-		if (length(bynames)) {
-			for (i in 1:length(bynames)) {
-				sel = sel & dt[[bynames[i]]] %in% b[[byids[i]]]
-			}
-		}
-		dt[which(sel),]
-	}
 
 	# function to get bbox per facet, also take into account bbm (for groups without data-layers)
 	get_bbox = function(by1, by2, by3) {
@@ -358,7 +397,16 @@ step4_plot = function(tm, vp, return.asp, show, in.shiny, knit, args) {
 			bbx = stm_merge_bbox(bbxs2)
 			if (is.na(bbx)) bbx else tmaptools::bb(bbx, asp.limit = 10)
 		})
-		list(list(bb_ext(stm_merge_bbox(bbxs), o$inner.margins)))
+		bbm = stm_merge_bbox(bbxs)
+		bbc = bbm
+
+		bbe = bb_ext(bbc, o$inner.margins)
+
+		bbe = crop_lat(bbe, crs, o$limit_latitude_3857)
+
+
+
+		list(list(bbe))
 	}
 
 	# main group (that determines bounding box)
@@ -374,7 +422,7 @@ step4_plot = function(tm, vp, return.asp, show, in.shiny, knit, args) {
 
 		grp_ids = as.integer(substr(names(tmx), 6, nchar(names(tmx))))
 		mains_in_grp = intersect(o$main[!bbx_def], grp_ids)
-		if (length(mains_in_grp)) {
+		if (length(mains_in_grp) && !("inset" %in% names(o))) {
 			lookup = match(mains_in_grp, grp_ids)
 			tmain = unlist(unlist(tmx[lookup], recursive = FALSE, use.names = FALSE), recursive = FALSE, use.names = FALSE)
 			d[, bbox:=do.call(get_bbox, as.list(.SD)), by = grps, .SDcols = c("by1", "by2", "by3")]
@@ -382,10 +430,12 @@ step4_plot = function(tm, vp, return.asp, show, in.shiny, knit, args) {
 			if (is.null(bbm)) {
 				bbo = o$bbox
 				if (!is.null(bbo)) {
-					bbm = tmaptools::bb(bbo)
+					bbm = tmaptools::bb(bbo, projection = crs)
 				} else {
-					bbm = sf::st_bbox()
+					bbm = sf::st_transform(sf::st_bbox(), crs = crs)
 				}
+			} else {
+				bbm = sf::st_transform(bbm, crs = crs)
 			}
 			d[, bbox:=rep(list(bbm),nrow(d))]
 		}
@@ -393,11 +443,18 @@ step4_plot = function(tm, vp, return.asp, show, in.shiny, knit, args) {
 		if (is.null(bbm)) {
 			bbo = o$bbox
 			if (!is.null(bbo)) {
-				bbm = tmaptools::bb(bbo)
+				bbm = tmaptools::bb(bbo, projection = crs)
 			} else {
-				bbm = sf::st_bbox()
+				bbm = sf::st_transform(sf::st_bbox(), crs = crs)
 			}
+		} else {
+			bbm = sf::st_transform(bbm, crs = crs)
 		}
+
+		bbm = crop_lat(bbm, crs, o$limit_latitude_3857)
+
+
+
 		d = data.table::data.table(by1 = 1L, by2 = 1L, by3 = 1L, i = 1, bbox = list(bbm))
 	}
 
@@ -406,7 +463,7 @@ step4_plot = function(tm, vp, return.asp, show, in.shiny, knit, args) {
 		d = d[!is.na(asp)]
 
 
-		if (!(o$type %in% c("grid", "page")) && !is.na(o$nrows) && !is.na(o$ncols)) {
+		if (o$type != "grid" && !is.na(o$nrows) && !is.na(o$ncols)) {
 			# limit facets
 			n_lim = limit_nx(o$n)
 			if (n_lim != o$n) {
@@ -421,6 +478,7 @@ step4_plot = function(tm, vp, return.asp, show, in.shiny, knit, args) {
 			}
 		}
 
+		# not sure what this does:
 		d[, bbox:=lapply(bbox, FUN = function(bbx) {
 			if (!is.na(bbx) && !is.na(longlat) && longlat && !sf::st_is_longlat(bbx)) {
 				sf::st_bbox(sf::st_transform(tmaptools::bb_poly(bbx), crs = 4326))
@@ -528,36 +586,6 @@ step4_plot = function(tm, vp, return.asp, show, in.shiny, knit, args) {
 		}
 		d[, page := as.integer(i - 1) %/% (o$nrows * o$ncols) + 1]
 
-
-		### facet.flip and reverse
-		# if (o$facet.flip) {
-		# 	labcols= o$panel.labels[[1]]
-		# 	labrows = o$panel.labels[[2]]
-		# 	nr = o$nrows
-		# 	o$nrows = o$ncols
-		# 	o$ncols = nr
-		# } else {
-		# 	labrows = o$panel.labels[[1]]
-		# 	labcols = o$panel.labels[[2]]
-		# }
-		#
-
-
-		# # reverse if specified (with '-' in front of row/col/page variable name in tm_facets)
-		# if (o$rev1) {
-		# 	labs1 = o$panel.labels[[1]]
-		# 	d[, by1:=(1L+length(labs1)) - by1]
-		# 	o$panel.labels[[1]] = structure(rev(labs1), showNA = attr(labs1, "showNA"))
-		# }
-		# if (o$rev2) {
-		# 	labs2 = o$panel.labels[[2]]
-		# 	d[, by2:=(1L+length(labs2)) - by2]
-		# 	o$panel.labels[[2]] = rev(labs2)
-		# }
-		# if (o$rev3) {
-		# 	d[, by3:=(1L+max(by3)) - by3]
-		# }
-		#
 	}
 
 
@@ -590,8 +618,15 @@ step4_plot = function(tm, vp, return.asp, show, in.shiny, knit, args) {
 		if (nrow(cdt)) cdt = process_components2(cdt, o)
 
 		# init
-		asp = do.call(FUNinit, c(list(o = o, return.asp = return.asp, vp = vp, prx = prx), args))
-		if (return.asp) return(asp)
+		res = do.call(FUNinit, c(list(o = o, return.asp = return.asp, vp = vp, prx = prx), args))
+		if (return.asp) {
+			return(res)
+		} else {
+			.TMAP$geo_ref = get_geo_ref(bbx = db$bbox[[1]],
+										crs = crs,
+										inner_margins = o$inner.margins,
+										dev_size = res$dev[1:2], map_size = res$map[1:2], offset = res$margins)
+		}
 
 		## prepare aux layers
 		if (length(aux)) {
@@ -716,10 +751,9 @@ step4_plot = function(tm, vp, return.asp, show, in.shiny, knit, args) {
 
 		for (i in seq_len(nrow(d))) {
 			bbx = d$bbox[[i]]
-			if (o$panel.type == "wrap") do.call(FUNwrap, list(label = o$panel.labels[[1]][d$i[i]], facet_row = d$row[i], facet_col = d$col[i], facet_page = d$page[i], o = o))
+			if (o$panel.type == "wrap") do.call(FUNwrap, list(label = o$panel.labels[[o$panel.labels.dim]][d[[paste0("by", o$panel.labels.dim)]][i]], facet_row = d$row[i], facet_col = d$col[i], facet_page = d$page[i], o = o))
 			if (is.na(d$asp[i])) next
 			do.call(FUNshape, list(bbx = bbx, facet_row = d$row[i], facet_col = d$col[i], facet_page = d$page[i], o = o))
-
 
 			# plot grid labels
 			if (o$grid.show && !o$grid.labels.inside_frame) {
@@ -803,11 +837,24 @@ step4_plot = function(tm, vp, return.asp, show, in.shiny, knit, args) {
 			legs_in = NULL
 		}
 
+
 		legs_out = copy(cdt[!is_in])
 		legs_out[, page:=NA_integer_]
+		if (nrow(legs_out) >= 1L) {
+			legs_out[!is.na(by3__), page := by3__]
 
-		# legs_out[, bbox:=list()]
-		# legs_out[, units:=list()]
+			by1_clip =  (length(which(legs_out$by1__ > o$nrows)) > 0L) && all(legs_out$facet_row == legs_out$by1__)
+			by2_clip =  (length(which(legs_out$by2__ > o$ncols)) > 0L) && all(legs_out$facet_col == legs_out$by2__)
+			if (by1_clip && by2_clip) {
+				cli::cli_abort("multiple pages cannot be created over two facet dimensions")
+			}
+			if (by1_clip) {
+				legs_out[!is.na(by1__), ':='(page = ((by1__-1L) %/% o$nrows) + 1L, facet_row = ((by1__-1L) %% o$nrows) + 1L)]
+			} else if (by2_clip) {
+				legs_out[!is.na(by2__), ':='(page = ((by2__-1L) %/% o$ncols) + 1L, facet_col = ((by2__-1L) %% o$ncols) + 1L)]
+			}
+
+		}
 
 		# ad-hoc method: take first bbox and units
 		bbox_nb = d$bbox[1]
@@ -819,18 +866,66 @@ step4_plot = function(tm, vp, return.asp, show, in.shiny, knit, args) {
 		cdt = data.table::rbindlist(c(list(legs_out), legs_in))
 
 		cdt$comp = mapply(function(cmp, bbx, u) {
-			cmp$bbox = bbx
+			if (!("bbox" %in% names(cmp))) cmp$bbox = bbx
 			cmp$units = u
 			cmp
 		}, cdt$comp, cdt$bbox, cdt$units, SIMPLIFY = FALSE)
 
+		leg_dummy = tm_legend_hide()
+		leg_dummy$active = FALSE
+		leg_dummy$vneutral = NA
+
+		leg_nr_dummy = legend_save(leg_dummy)
+		crt_nr_dummy = chart_save(tm_chart_none())
+
+		# inset maps: prepare input for step4
+		inset_ids = if (nrow(cdt) == 0L) integer(0) else which(sapply(cdt$comp, inherits, "tm_inset_map"))
+		if (length(inset_ids)) {
+			cdt$comp[inset_ids] = lapply(cdt$comp[inset_ids], function(comp) {
+					tmo_i = tm$tmo
+					o_i = tm$o
+					aux_i = tm$aux
+					cmp_i = list()
+					prx_i = list()
+
+					if ("crs" %in% names(comp)) {
+						crs_i = comp$crs
+						o_i$crs_step4 = crs_i
+					} else {
+						crs_i = o_i$crs_step4
+					}
+					o_i$outer.bg = FALSE
+
+					# set legends to inactive
+					tmo_i = lapply(tmo_i, function(tmg) {
+						lapply(tmg, function(tml) {
+							lapply(tml, function(tmi) {
+								tmi$shpDT$shpTM = lapply(tmi$shpDT$shpTM, crs_reproject_shpTM, crs = crs_i, raster.warp = o$raster.warp)
+								tmi$mapping_legend = lapply(tmi$mapping_legend, function(l) {
+									l$legnr = leg_nr_dummy
+									l$crtnr = crt_nr_dummy
+									l
+								})
+								tmi$trans_legend = lapply(tmi$trans_legend, function(l) {
+									l$legnr = leg_nr_dummy
+									l$crtnr = crt_nr_dummy
+									l
+								})
+								tmi
+							})
+						})
+					})
+
+				#	(tm, vp, return.asp, show, in.shiny, knit, args)
+					comp$tm = list(tmo = tmo_i,
+								   o = o_i,
+								   aux = aux_i,
+								   cmp = cmp_i,
+								   prx = prx_i)
+					comp
+			})
+		}
 	}
-
-
-
-
-
-
 
 	legfun = paste0("tmap", gs, "Comp")
 
@@ -838,16 +933,16 @@ step4_plot = function(tm, vp, return.asp, show, in.shiny, knit, args) {
 		as.integer(strsplit(x, split = "_")[[1]])
 	}
 
-	if (o$type == "page") {
-		cdt$page = cdt$by1__
-	}
-
 	if (nrow(cdt) > 0L) for (k in seq_len(o$npages)) {
 		klegs = cdt[is.na(page) | (page == k), ] # was by3__ instead of page
-		klegs[, pos.h.id := pos.h][pos.h %in% c("left", "center", "right"), pos.h.id:="lower"][pos.h %in% c("LEFT", "CENTER", "RIGHT"), pos.h.id:="upper"]
-		klegs[, pos.v.id := pos.v][pos.v %in% c("top", "center", "bottom"), pos.v.id:="lower"][pos.v %in% c("TOP", "CENTER", "BOTTOM"), pos.v.id:="upper"]
-		klegs[, id:=paste(pos.h.id, pos.v.id, sep = "__")]
+		#klegs[, pos.h.id := pos.h][pos.h %in% c("left", "center", "right"), pos.h.id:="lower"][pos.h %in% c("LEFT", "CENTER", "RIGHT"), pos.h.id:="upper"]
+		#klegs[, pos.v.id := pos.v][pos.v %in% c("top", "center", "bottom"), pos.v.id:="lower"][pos.v %in% c("TOP", "CENTER", "BOTTOM"), pos.v.id:="upper"]
 
+		# find group ids
+		klegs$id = sapply(klegs$comp, function(comp) paste(comp$position$type, comp$position$cell.h, comp$position$cell.v, comp$position$pos.h, comp$position$pos.v, comp$position$just.h, comp$position$just.v, sep = "_"))
+		# just.id = NULL
+		# klegs$just.id = sapply(klegs$comp, function(l) paste(l$position$just.h, l$position$just.v, sep = "."))
+		# klegs[, id:=paste(pos.h.id, pos.v.id, just.id, class, sep = "__")]
 		klegs[, do.call(legfun, args = list(comp = .SD$comp, o = o, facet_row = toI(.SD$facet_row[1]), facet_col = toI(.SD$facet_col[1]), facet_page = k, class = .SD$class[1], stack = .SD$stack, stack_auto = .SD$stack_auto, pos.h = .SD$pos.h, pos.v = .SD$pos.v, .SD$bbox)), by = list(facet_row, facet_col, id), .SDcols = c("comp", "facet_row", "facet_col", "class", "stack", "stack_auto", "pos.h", "pos.v", "bbox")]
 	}
 
@@ -858,4 +953,30 @@ step4_plot = function(tm, vp, return.asp, show, in.shiny, knit, args) {
 	}
 
 	do.call(FUNrun, list(o = o, q = q, show = show, knit = knit, args))
+}
+
+# bb_ext reversing
+bb_ext_rev = function(bbx, ext = c(0, 0, 0, 0)) {
+	dx = (bbx[3] - bbx[1]) / (1 + ext[2] + ext[4])
+	dy = (bbx[4] - bbx[2]) / (1 + ext[1] + ext[3])
+
+	bbx[2] = bbx[2] + ext[1] * dy
+	bbx[1] = bbx[1] + ext[2] * dx
+	bbx[4] = bbx[4] - ext[3] * dy
+	bbx[3] = bbx[3] - ext[4] * dx
+	bbx
+}
+
+get_geo_ref = function(bbx, crs, inner_margins, dev_size, map_size, offset) {
+	bbx_crop = bb_ext_rev(bbx, inner_margins)
+
+	x1 = offset[2] / dev_size[1]
+	x2 = (dev_size[1] - offset[4]) / dev_size[1]
+
+	y1 = offset[1] / dev_size[2]
+	y2 = (dev_size[2] - offset[3]) / dev_size[2]
+
+	xy_crop = bb_ext_rev(c(x1, y1, x2, y2), inner_margins)
+	names(xy_crop) = c("xmin", "ymin", "xmax", "ymax")
+	list(crs = crs, bbx = bbx_crop, rel_coords = xy_crop)
 }

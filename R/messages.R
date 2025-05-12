@@ -46,12 +46,12 @@ message_c4a = function(old_palette_name, info, fullname = FALSE) {
 	if (!message_thrown(mess)) {
 		if (fullname) {
 			cli::cli_inform(
-				"{.field [cols4all]} color palettes: use palettes from the R package cols4all. Run {.code cols4all::c4a_gui()} to explore them. The old palette name {.str {old_palette_name}} is named {.str {new1}}",
+				"{.field [cols4all]} color palettes: use palettes from the R package cols4all. Run {.run cols4all::c4a_gui()} to explore them. The old palette name {.str {old_palette_name}} is named {.val {new1}}",
 				.frequency_id = "cols4all"
 			)
 		} else {
 			cli::cli_inform(
-				"{.field [cols4all]} color palettes: use palettes from the R package cols4all. Run {.code cols4all::c4a_gui()} to explore them. The old palette name {.str {old_palette_name}} is named {.str {new2}} (in long format {.str {new1}})",
+				"{.field [cols4all]} color palettes: use palettes from the R package cols4all. Run {.run cols4all::c4a_gui()} to explore them. The old palette name {.str {old_palette_name}} is named {.str {new2}} (in long format {.str {new1}})",
 				.frequency_id = "cols4all"
 			)
 
@@ -82,9 +82,9 @@ message_wrapstack = function(horizontal = TRUE) {
 
 message_pos_auto = function(type) {
 	if (!message_thrown("pos_auto")) {
-		fun = if (type == "autoout") "tm_pos_auto_out()" else "tm_pos_auto_in()"
-		fun2 = if (type == "autoout") "tm_pos_out()" else "tm_pos_in()"
-		cli::cli_inform("{.field [position]} use {.val {fun2}} instead of {.val {fun}}. The latter should be used with {.fn tmap_options}.")
+		fun = if (type == "autoout") "tm_pos_auto_out" else "tm_pos_auto_in"
+		fun2 = if (type == "autoout") "tm_pos_out" else "tm_pos_in"
+		cli::cli_inform("{.field [position]} use {.fn {fun2}} instead of {.fn {fun}}. The latter should be used with {.fn tmap_options}.")
 		message_reg("pos_auto")
 	}
 	NULL
@@ -102,23 +102,28 @@ message_webgl_vars = function(supported, vary) {
 	var_text = paste(names(vary)[vary], collapse = ", ")
 	var_sel = names(vary)[vary]
 
-	cli::cli_inform("{.field [view mode]} WegGL enabled, but the only supported visual variables are: {.val {supported}}. The visual variable(s) {.val {var_sel}} are not supported. Set {.code use_WebGL = FALSE} to support them.")
+	cli::cli_inform("{.field [view mode]} WebGL enabled, but the only supported visual variables are: {.val {supported}}. The visual variable(s) {.val {var_sel}} are not supported. Set {.code use_WebGL = FALSE} to support them.")
 
 }
 
 message_webgl_hover = function(type) {
-	cli::cli_inform("{.field [view mode]} WegGL enabled, but it does not support hover labels for layer type {.val {type}}. Set {.code use_WebGL = FALSE} to support them.")
+	cli::cli_inform("{.field [view mode]} WegGL enabled, but it does not support hover labels for layer type {.val {type}}. Set {.code use_WebGL = FALSE} to support them.",
+					.frequency_id = "webGL_hover",
+					.frequency = "once")
 }
 
 
 message_webgl_checks = function(checks, checkif) {
 	vals = paste(paste(names(checkif)[!checks], checkif[!checks], sep = " = "), collapse = ", ")
-	cli::cli_inform("{.field [view mode]} WegGL enabled, but the following visual variable only accept one value {.arg {vals}}. Set {.code use_WebGL = FALSE} to support them.")
-
+	cli::cli_inform("{.field [view mode]} WebGL enabled, but the following visual variable only accept one value {.arg {vals}}. Set {.code use_WebGL = FALSE} to support them.",
+					.frequency_id = "webGL_vv",
+					.frequency = "once")
 }
 
 message_webgl_crs_simple = function() {
-	cli::cli_inform("{.field [view mode]} WegGL does not work (yet) with projected map projections, so it has been disabled.")
+	cli::cli_inform("{.field [view mode]} WebGL does not work (yet) with projected map projections, so it has been disabled.",
+					.frequency_id = "webGL_crs",
+					.frequency = "once")
 
 }
 
@@ -137,13 +142,14 @@ message_layer_unused_args = function(layer_fun, args) {
 
 message_crs_property_unknown = function() {
 	cli::cli_inform(
-		"{.field [tm_crs]} {.arg property} should be one of {.str global}, {.str area}, {.str distance}, {.str shape}"
-	)
+		"{.field [shiny]} some css styling (used for background and markers) cannot be used yet in shiny apps",
+		.frequency_id = "shiny_css",
+		.frequency = "once")
 }
 
 message_crs_property_not_used = function() {
 	cli::cli_inform(
-		"{.field [tm_crs]} {.arg crs} specified, so {.arg property} is ignored"
+		"{.field [tm_crs()]} {.arg crs} specified, so {.arg property} is ignored"
 	)
 }
 
@@ -151,6 +157,58 @@ message_crs_ll = function() {
 	cli::cli_inform(
 		"{.field [tip]} Consider a suitable map projection, e.g. by adding {.code + tm_crs({.str auto})}.",
 		.frequency_id = "crs",
+		.frequency = "once"
+	)
+}
+
+message_scale_interval_value0 = function(aes, values, layer) {
+	suggestion = if (inherits(values, "tmapSeq")) {
+		to = values$to
+		power = values$power
+		if (is.character(power)) power = paste0("\"", power, "\"")
+		paste0("values = tm_seq(0.25, ", to, ", power = ", power, ")")
+	} else {
+		to = values[2]
+		paste0("values = c(0.25, ", to, ")")
+	}
+
+
+	cli::cli_inform(
+		"{.field [layer {layer}, tm_scale_intervals()]} By default the value of the visual variable {.code {aes}} for the first interval is 0. Consider {.code {suggestion}} (or another lower bound number than 0.25). Or alternatively, use {.fun tm_scale_continuous}.",
+		.frequency_id = "size0"
+	)
+}
+
+message_shiny_css = function() {
+	cli::cli_inform(
+		"{.field [layer {layer}, tm_scale_intervals()]} By default the value of the visual variable {.code {aes}} for the first interval is 0. Consider {.code {suggestion}} (or another lower bound number than 0.25). Or alternatively, use {.fun tm_scale_continuous}.",
+		.frequency_id = "size0"
+	)
+}
+
+message_basemaps_none = function(serv, z) {
+	cli::cli_inform(
+		"{.field [basemaps]} Tiles from {.str {serv}} at zoom level {z} couldn't be loaded",
+		.frequency_id = "basemap_none",
+		.frequency = "once"
+	)
+
+}
+
+message_basemaps_blurry = function(serv) {
+	cli::cli_inform(
+		"{.field [basemaps]} Tiles from {.str {serv}} will be projected so details (e.g. text) could appear blurry",
+		.frequency_id = "basemap_blurry",
+		.frequency = "once"
+	)
+}
+
+
+message_basemaps = function(is_stadia) {
+	provider = ifelse(is_stadia, "Stadia", "Thunderforest")
+	cli::cli_inform(
+		"{.field [basemaps]} An API key is requierd for tiles from {.str {provider}}",
+		.frequency_id = "basemap_API",
 		.frequency = "once"
 	)
 }

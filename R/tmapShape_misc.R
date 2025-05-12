@@ -17,9 +17,15 @@ make_by_vars = function(dt, tmf, smeta) {
 				byname = by123__[w]
 				var = tmf[[byvar]]
 
-				if (var %in% smeta$vars) {
+				if (var == "FRAME__") {
+					dt[, (byname):= NA_integer_] # dummy
+				} else if (var %in% smeta$vars) {
 					levs = smeta$vars_levs[[var]]
+					if (is.null(levs)) {
+						cli::cli_abort("Variable {.val {var}} is used as facetting variable. Therefore, it should be a factor.")
+					}
 					if (attr(levs, "showNA")) levs[length(levs)] = NA
+
 					dt[, (byname):= match(get(get(..byvar)), levs)]
 				} else if (tmf[[byvar]] %in% smeta$dims) {
 					dt[, (byname):= match(get(get(..byvar)), smeta$dims_vals[[var]])]

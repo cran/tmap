@@ -10,8 +10,8 @@ crs_ortho_visible = function(crs, projected = TRUE, max_cells = 1e5) {
 
 	b = s2::s2_buffer_cells(s2::as_s2_geography(paste0("POINT(", lon0, " ", lat0, ")")), 9800000, max_cells = max_cells) # visible half
 
-	pole_n = s2_intersects("POINT(0 90)", b)
-	pole_s = s2_intersects("POINT(0 -90)", b)
+	pole_n = s2::s2_intersects("POINT(0 90)", b)
+	pole_s = s2::s2_intersects("POINT(0 -90)", b)
 
 	sfc = sf::st_as_sfc(b)
 	co = sf::st_coordinates(sfc)[,1:2]
@@ -124,4 +124,18 @@ end_of_the_world = function(crs, earth_datum) {
 	}
 
 
+}
+
+crop_lat = function(bb, crs, limit_latitude_3857 = NULL) {
+	if ((crs == 3857 || crs == st_crs(3857)) && (!is.null(limit_latitude_3857) && (!identical(limit_latitude_3857, FALSE)))) {
+		crp = sf::st_bbox(c(xmin = -180, xmax = 180, ymin = limit_latitude_3857[1], ymax = limit_latitude_3857[2]), crs = 4326)
+		crp2 = sf::st_transform(crp, crs = crs)
+		bb['xmin'] = max(bb['xmin'], crp2['xmin'])
+		bb['xmax'] = min(bb['xmax'], crp2['xmax'])
+		bb['ymin'] = max(bb['ymin'], crp2['ymin'])
+		bb['ymax'] = min(bb['ymax'], crp2['ymax'])
+		bb
+	} else {
+		bb
+	}
 }

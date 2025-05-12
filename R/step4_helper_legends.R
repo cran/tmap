@@ -11,6 +11,7 @@ step4_plot_collect_charts = function(tmx) {
 				legs = c(tml$trans_legend, tml$mapping_legend)
 
 				legs = lapply(legs, function(l) {
+					#l$comp = list(crts_cached[l$crtnr])
 					l[, comp:=list(crts_cached[l$crtnr])]
 					l[, intersect(names(l), names(dt_template)), with = FALSE]
 				})
@@ -82,7 +83,7 @@ step4_plot_collect_legends = function(tmx) {
 							k = length(l$vvalues)
 							l$clones = lapply(clns, function(cl) {
 								vv = cl$vvalues
-								if (k != length(vv)) stop("legends could not be shared; the number of legend items is different", call. = FALSE)
+								if (k != length(vv)) cli::cli_abort("legends could not be shared; the number of legend items is different")
 								vv
 							})
 							names(l$clones) = names(clones[w])

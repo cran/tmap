@@ -38,6 +38,9 @@ tmap_icons <- function(file, names = NULL, width=48, height=48, keep.asp=TRUE, j
 
 }
 
+file_extension <- function(filenames) {
+	sub(pattern = "^(.*\\.|[^.]+)(?=[^.]*)", replacement = "", filenames, perl = TRUE)
+}
 
 tmap_one_icon <- function(file, width, height, keep.asp, just, as.local, ...) {
 	args <- list(...)
@@ -61,8 +64,20 @@ tmap_one_icon <- function(file, width, height, keep.asp, just, as.local, ...) {
 
 	# adjust to png dimensions
 	if (keep.asp) {
-		x <- png::readPNG(localfile)
-		xasp <- dim(x)[2]/dim(x)[1]
+		ext = file_extension(localfile)
+
+		if (ext %in% c("png", "jpg", "bmp", "jpeg", "tiff")) {
+			x = stars::read_stars(localfile)
+			dms = unname(dim(x))
+			dms[1:2] = dms[2:1]
+		} else {
+			rlang::check_installed("rsvg")
+			bitmap <- rsvg::rsvg(localfile, width = width)
+			dim(bitmap) # h*w*c
+			dms = dim(bitmap)
+		}
+
+		xasp <- dms[2]/dms[1]
 		iasp <- width/height
 		if (xasp > iasp) {
 			height <- floor(width/xasp)
@@ -110,7 +125,16 @@ pngGrob <- function(file, fix.borders=FALSE, n=NULL, height.inch=NULL, target.dp
 		file <- tmpfile
 	}
 
-	x <- png::readPNG(file)
+	ext = file_extension(file)
+	if (ext %in% c("png", "jpg", "bmp", "jpeg", "tiff")){
+		x <- aperm(stars::read_stars(file)[[1]], c(2, 1, 3))
+		if (max(x) > 1) {
+			x[] = x[] / max(x)
+		}
+	} else {
+		rlang::check_installed("rsvg")
+		x <- rsvg::rsvg(file, height = height.inch * target.dpi)
+	}
 
 	if (fix.borders) {
 		if (dim(x)[3]==3) {

@@ -7,17 +7,22 @@
 tm_scalebar(
   breaks,
   width,
+  allow_clipping,
   text.size,
   text.color,
   color.dark,
   color.light,
   lwd,
   position,
+  group_id,
+  bg,
   bg.color,
   bg.alpha,
   size = "deprecated",
   stack,
   frame,
+  frame.color,
+  frame.alpha,
   frame.lwd,
   frame.r,
   margins,
@@ -25,9 +30,11 @@ tm_scalebar(
 )
 }
 \arguments{
-\item{breaks}{breaks}
+\item{breaks}{breaks. E.g. \code{c(0, 10, 50)} places scale bar breaks at 0, 10, and 50 units. These units are specified in \code{\link[=tm_shape]{tm_shape()}}.}
 
-\item{width}{width of the scale bar. Units are number of text line heights, which is similar to the number of characters.}
+\item{width}{width of the scale bar. Units are number of text line heights, which is similar to the number of characters. In case \code{beaks} are specified, the \code{width} is only handy to finetune the approximated width, e.g. in case clipping of the labels occurs, or there is too much whitespace.}
+
+\item{allow_clipping}{should clipping of the last label by allowed? If \code{TRUE} (default), the last break label including unit is printed even when it doesn't fit the frame. If \code{FALSE} it will not be printed. Instead the unit suffix is added to the second last label.}
 
 \item{text.size}{text size}
 
@@ -39,7 +46,11 @@ tm_scalebar(
 
 \item{lwd}{linewidth}
 
-\item{position}{An object created with \code{tm_pos_in()} or \code{tm_pos_out()}. Or, as a shortcut, a vector of two values, specifying the x and y coordinates. The first is \code{"left"}, \code{"center"} or \code{"right"} (or upper case, meaning tighter to the map frame), the second \code{"top"}, \code{"center"} or \code{"bottom"}. Numeric values are also supported, where 0, 0 means left bottom and 1, 1 right top. See also \href{https://r-tmap.github.io/tmap/articles/adv_positions}{vignette about positioning}.}
+\item{position}{The position specification of the component: an object created with \code{tm_pos_in()} or \code{tm_pos_out()}. Or, as a shortcut, a vector of two values, specifying the x and y coordinates. The first is \code{"left"}, \code{"center"} or \code{"right"} (or upper case, meaning tighter to the map frame), the second \code{"top"}, \code{"center"} or \code{"bottom"}. Numeric values are also supported, where 0, 0 means left bottom and 1, 1 right top. See also \href{https://r-tmap.github.io/tmap/articles/adv_positions}{vignette about positioning}. In case multiple components should be combined (stacked), use \code{group_id} and specify \code{component} in \code{\link[=tm_comp_group]{tm_comp_group()}}.}
+
+\item{group_id}{Component group id name. All components (e.g. legends, titles, etc) with the same \code{group_id} will be grouped. The specifications of how they are placed (e.g. stacking, margins etc.) are determined in \code{\link[=tm_comp_group]{tm_comp_group()}} where its argument \code{id} should correspond to \code{group_id}.}
+
+\item{bg}{Show background?}
 
 \item{bg.color}{Background color}
 
@@ -49,7 +60,11 @@ tm_scalebar(
 
 \item{stack}{stack with other map components, either \code{"vertical"} or \code{"horizontal"}.}
 
-\item{frame}{frame}
+\item{frame}{frame should a frame be drawn?}
+
+\item{frame.color}{frame color}
+
+\item{frame.alpha}{frame alpha transparancy}
 
 \item{frame.lwd}{frame line width}
 
@@ -57,7 +72,7 @@ tm_scalebar(
 
 \item{margins}{margins}
 
-\item{z}{z}
+\item{z}{z index, e.g. the place of the component relative to the other componets}
 }
 \description{
 Map component that adds a scale bar.

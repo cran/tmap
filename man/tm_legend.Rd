@@ -15,12 +15,10 @@ tm_legend(
   reverse,
   na.show,
   position,
+  group_id,
   width,
   height,
-  stack,
   z,
-  group.frame,
-  resize_as_group,
   title.color,
   title.size,
   title.fontface,
@@ -37,6 +35,7 @@ tm_legend(
   frame,
   frame.lwd,
   frame.r,
+  bg,
   bg.color,
   bg.alpha,
   absolute_fontsize,
@@ -93,19 +92,15 @@ tm_legend_bivariate(
 
 \item{na.show}{Show \code{NA} values in legend?}
 
-\item{position}{An object created with \code{tm_pos_in()} or \code{tm_pos_out()}. Or, as a shortcut, a vector of two values, specifying the x and y coordinates. The first is \code{"left"}, \code{"center"} or \code{"right"} (or upper case, meaning tighter to the map frame), the second \code{"top"}, \code{"center"} or \code{"bottom"}. Numeric values are also supported, where 0, 0 means left bottom and 1, 1 right top. See also \href{https://r-tmap.github.io/tmap/articles/adv_positions}{vignette about positioning}.}
+\item{position}{The position specification of the component: an object created with \code{tm_pos_in()} or \code{tm_pos_out()}. Or, as a shortcut, a vector of two values, specifying the x and y coordinates. The first is \code{"left"}, \code{"center"} or \code{"right"} (or upper case, meaning tighter to the map frame), the second \code{"top"}, \code{"center"} or \code{"bottom"}. Numeric values are also supported, where 0, 0 means left bottom and 1, 1 right top. See also \href{https://r-tmap.github.io/tmap/articles/adv_positions}{vignette about positioning}. In case multiple components should be combined (stacked), use \code{group_id} and specify \code{component} in \code{\link[=tm_comp_group]{tm_comp_group()}}.}
+
+\item{group_id}{Component group id name. All components (e.g. legends, titles, etc) with the same \code{group_id} will be grouped. The specifications of how they are placed (e.g. stacking, margins etc.) are determined in \code{\link[=tm_comp_group]{tm_comp_group()}} where its argument \code{id} should correspond to \code{group_id}.}
 
 \item{width}{Width of the legend. Units are 'text line heights'. In case a negative number is specified, the units are (approximate) pixels. The relation between these two is configured via the option \code{absolute_fontsize}.}
 
 \item{height}{Height of the legend. Units are 'text line heights'. In case a negative number is specified, the units are (approximate) pixels. The relation between these two is configured via the option \code{absolute_fontsize}.}
 
-\item{stack}{stack with other map components, either \code{"vertical"} or \code{"horizontal"}.}
-
-\item{z}{z}
-
-\item{group.frame}{group.frame}
-
-\item{resize_as_group}{resize_as_group}
+\item{z}{z index, e.g. the place of the component relative to the other componets}
 
 \item{title.color}{The color of the title of the legend.}
 
@@ -133,11 +128,13 @@ tm_legend_bivariate(
 
 \item{format}{Not used anymore: use the format argument of the \verb{tm_scale_*()} functions instead.}
 
-\item{frame}{frame}
+\item{frame}{frame should a frame be drawn?}
 
 \item{frame.lwd}{frame line width}
 
 \item{frame.r}{Radius of the rounded frame corners. 0 means no rounding.}
+
+\item{bg}{Show background?}
 
 \item{bg.color}{The color of the bg of the legend.}
 

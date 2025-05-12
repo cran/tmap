@@ -6,9 +6,10 @@
 #' @param dimvalues dimension values
 #' @param n if specified the first `n` variables are taken (or the first `n` dimension values)
 #' @param multivariate in case multiple variables are specified, should they serve as facets (FALSE) or as a multivariate visual variable?
+#' @param animate should the variable(s) be animated? (experimental)
 #' @export
-tm_vars = function(x = NA, dimvalues = NULL, n = NA, multivariate = FALSE) {
-	structure(list(x = x, dimvalues = dimvalues, n = n, multivariate = multivariate), class = c("tmapVars", "list"))
+tm_vars = function(x = NA, dimvalues = NULL, n = NA, multivariate = FALSE, animate = FALSE) {
+	structure(list(x = x, dimvalues = dimvalues, n = n, multivariate = multivariate, animate = animate), class = c("tmapVars", "list"))
 }
 
 
@@ -29,7 +30,16 @@ tmapVV = function(x) {
 
 	cls = if (inherits(x, "AsIs")) "tmapAsIs" else if (inherits(x, "tmapUsrCls")) "tmapUsrCls" else "tbd"
 
+
 	isL = is.list(x)
+
+	if (cls == "tbd" && !isL) {
+		if (is.character(x) && all(substr(x, 1, 1) == "*")) {
+			x = substr(x, 2, nchar(x))
+			return(tm_vars(x, animate = TRUE))
+		}
+	}
+
 	isNestedL = isL && any(vapply(x, is.list, FUN.VALUE = logical(1)))
 	isSpecialL = isL && !setequal(class(x), "list")
 	isSpecialNestedL = isL && is.list(x[[1]]) &&  !setequal(class(x[[1]]), "list")

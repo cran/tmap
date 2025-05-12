@@ -1,10 +1,10 @@
 #' Specify facets
 #'
 #' @description
-#' * `tm_facets_wrap()` specify facets for one grouping variable (so one faceting dimension).
+#' * `tm_facets_wrap()` specify facets for one grouping variable (so one faceting dimension)
 #' * `tm_facets_(hv)stack()` stacks the facets either horizontally or vertically (one grouping variable).
-#' * `tm_facets_grid()` supports up to three faceting dimensions.
-#' * `tm_facets_pagewise()` can be used to replace the old `along` argument.
+#' * `tm_facets_grid()` specify facets for two grouping variables in a grid of rows and columns.
+#' * `tm_facets_pagewise()` same as wrap, but the facets are drawn on different plots (pages). Replaces the `along` argument from version 3.
 #' * `tm_facets_flip()` can be used to flip facets.
 #' * `tm_facets()` is the core function, but it is recommended to use the other functions.
 #'
@@ -44,9 +44,9 @@
 #'   especially text, are often too small to read, a higher value is recommended.
 #'   By default, `scale.factor = 2`.
 #' @param type `"grid"`, `"wrap"` or `"stack"`
-#' @param along deprecated Please use `tm_facets_pagewise()`
 #' @param free.scales deprecated. Please use the `.free` arguments in the layer functions, e.g. `fill.free` in `tm_polygons`.
 #' @param ... used to catch deprecated arguments
+#' @seealso [tm_animate()]
 #' @example ./examples/tm_facets.R
 #' @seealso \href{https://r-tmap.github.io/tmap/articles/basics_facets}{Vignette about facets}
 #' @export
@@ -66,8 +66,7 @@ tm_facets = function(by = NULL,
 					 sync = TRUE,
 					 na.text = NA,
 					 scale.factor=2,
-					 type = NA, # grid, wrap or stack
-					 along = NULL,
+					 type = NA,
 					 free.scales = NULL,
 					 ...) {
 
@@ -90,31 +89,31 @@ tm_facets = function(by = NULL,
 
 	}
 
+	if (!("animate" %in% args_called)) {
+		args$animate = FALSE
+		#dummy values:
+		args$nframes = 60L
+		args$fps = 30L
+		args$play = "loop"
+		args$dpr = 2
+	}
 
 
-	if (!is.null(along)) {
+	if ("along" %in% args_called) {
 		warning("The 'along' argument of 'tm_facets()' is deprecated as of tmap 4.0. Please use 'pages' instead.", call. = FALSE)
-		pages = along
+		pages = args$along
 	}
 
-	if (!is.null(by)) {
-		if (is.na(type)) type = "wrapstack"
-		rows = NULL
-		columns = NULL
-		pages = NULL
-	}
-	if (!is.null(rows) || !is.null(columns) || !is.null(pages)) {
+	if (!is.null(rows) || !is.null(columns)) {
 		type = "grid"
-		by = NULL
 	}
-
-
 
 	x = tm_element_list(tm_element(
 		type = type,
 		by = by,
 		rows = rows,
 		columns = columns,
+		pages = pages,
 		as.layers = as.layers,
 		pages = pages,
 		nrows = nrow,
@@ -127,6 +126,11 @@ tm_facets = function(by = NULL,
 		sync = sync,
 		na.text = na.text,
 		scale.factor = scale.factor,
+		animate = args$animate,
+		nframes = as.integer(args$nframes),
+		fps = as.integer(args$fps),
+		play = args$play,
+		dpr = args$dpr,
 		calls = args_called,
 		subclass = "tm_facets"))
 
@@ -170,14 +174,16 @@ tm_facets_wrap = function(by = "VARS__",
 #' @export
 #' @rdname tm_facets
 tm_facets_pagewise = function(by = "VARS__",
-						  nrow = 1,
-						  ncol = 1,
-						  byrow = TRUE,
-						  ...) {
+							  byrow = TRUE,
+							  ...) {
 	args = list(...)
-	args_called = unique(c(names(rlang::call_match()[-1]), "nrow", "ncol"))
+	args_called = names(rlang::call_match()[-1])
 
-	tm = do.call("tm_facets", c(list(by = by, nrow = nrow, ncol = ncol, byrow = byrow, type = "page"), args[setdiff(names(args), "type")]))
+	if (any(c("nrow", "ncol") %in% args_called) && (args$nrow != 1 || args$ncol != 1)) {
+		cli::cli_warn("tm_facets_pagewise does not support multiple facets per page. Please use tm_facets instead")
+	}
+
+	tm = do.call("tm_facets", c(list(pages = by, byrow = byrow, type = NA), args[setdiff(names(args), "type")]))
 	tm[[1]]$calls = args_called
 	tm
 }

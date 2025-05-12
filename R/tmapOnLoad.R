@@ -32,6 +32,11 @@
 			})
 	})) # needed for pretty ticks for continuous scale with trans enabled (like log scale)
 
+	.TMAP$mode_last = "view"
+
+	.TMAP_GRID$maptiles_urls = character(0) # needed for caching
+
+	fill_providers()
 }
 
 .tips <- c(
@@ -45,6 +50,11 @@
 )
 
 
+#' @rdname tmap_providers
+#' @export
+.tmap_providers <- new.env(FALSE, parent=globalenv())
+
+
 #' @export
 #' @rdname tmap_internal
 .TMAP = new.env(FALSE, parent = globalenv())
@@ -56,3 +66,11 @@
 #' @export
 #' @rdname tmap_internal
 .TMAP_GRID = new.env(FALSE, parent = globalenv())
+
+
+fill_providers = function() {
+	rm(list = ls(envir = .tmap_providers), envir = .tmap_providers)
+	y = tmap_providers(as.list = TRUE)
+	list2env(y, envir = .tmap_providers)
+}
+

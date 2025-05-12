@@ -1,59 +1,3 @@
-update_l = function(o, l, v, mfun, unm, active) {
-	# update legend options
-	oltype = o[c("legend.design", "legend.orientation")]
-	names(oltype) = c("design", "orientation")
-	if (all(v %in% c("AREA", "LENGTH", "MAP_COLORS")) && is.null(l$show)) {
-		l$show = FALSE
-	}
-
-	call = names(l)
-
-	l = complete_options(l, oltype)
-	oleg = o[names(o)[substr(names(o), 1, 6) == "legend" & substr(names(o), 1, 15) != "legend.settings"]]
-	names(oleg) = substr(names(oleg), 8, nchar(names(oleg)))
-	settings_name = paste0("legend.settings.", l$design, ".", l$orientation)
-	oleg = c(oleg, o[[settings_name]])
-
-
-	if ("position" %in% names(l)) l$position = process_position(l$position, o)
-
-	l = complete_options(l, oleg)
-	l$call = call
-	l$mfun = mfun
-	l$unm = unm
-	l$active = active
-
-	# update legend class
-	class(l) = c(paste0("tm_legend_", l$design, ifelse(!is.null(l$orientation), paste0("_", l$orientation), "")), class(l))
-	l
-}
-
-update_crt = function(o, crt, v, mfun, unm, active) {
-
-	#crt_options
-	cls = class(crt)
-
-	call = names(crt)
-
-	ocrt = o[substr(names(o), 1, 6) == "chart."]
-	names(ocrt) = substr(names(ocrt), 7, nchar(names(ocrt)))
-
-
-	if ("position" %in% names(crt)) crt$position = process_position(crt$position, o)
-
-	crt = complete_options(crt, ocrt)
-	crt$call = call
-	crt$mfun = mfun
-	crt$unm = unm
-	crt$active = active
-
-
-	# update legend class
-	#class(l) = c(paste0("tm_legend_", l$design, ifelse(!is.null(l$orientation), paste0("_", l$orientation), "")), class(l))
-	#l
-	class(crt) = cls
-	crt
-}
 
 getdts = function(aes, unm, p, q, o, dt, shpvars, layer, group, mfun, args, plot.order) {
 
@@ -116,7 +60,7 @@ getdts = function(aes, unm, p, q, o, dt, shpvars, layer, group, mfun, args, plot
 				crt = update_crt(o = o, crt = aes$chart, v = "value", mfun = mfun, unm = unm, active = TRUE)
 
 				s = aes$scale
-				f = s$FUN
+				._f = s$FUN
 				s$FUN = NULL
 				# update label.format
 				s$label.format = process_label_format(s$label.format, o$label.format)
@@ -130,7 +74,7 @@ getdts = function(aes, unm, p, q, o, dt, shpvars, layer, group, mfun, args, plot
 							   sortRev = NA,
 							   bypass_ord = TRUE,
 							   submit_legend = TRUE)
-				dtl[, c(varname, legname, crtname) := do.call(f, c(unname(.SD), arglist)), .SDcols = "value"]
+				dtl[, c(varname, legname, crtname) := do.call(._f, c(unname(.SD), arglist)), .SDcols = "value"]
 
 				list(val = paste(dtl[[varname]], collapse = "__"),
 					 legnr = dtl$legnr_1[1],
@@ -308,7 +252,7 @@ getdts = function(aes, unm, p, q, o, dt, shpvars, layer, group, mfun, args, plot
 				crt = update_crt(o = o, crt = crt, v = v, mfun = mfun, unm = unm, active = TRUE)
 
 				if (length(s) == 0) stop("mapping not implemented for aesthetic ", unm, call. = FALSE)
-				f = s$FUN
+				._f = s$FUN
 				s$FUN = NULL
 				# update label.format
 				format_called = (length(s$label.format) > 0L)
@@ -340,9 +284,9 @@ getdts = function(aes, unm, p, q, o, dt, shpvars, layer, group, mfun, args, plot
 					if (all(is.ena(l$title))) l$title = paste0(names(v), attr(cls, "units"), unit)
 				}
 
-				if (f != "tmapScaleAuto") {
+				if (._f != "tmapScaleAuto") {
 					# number of variables needed
-					fnames = names(formals(f))
+					fnames = names(formals(._f))
 					fnvar =  which(fnames == "scale") - 1L
 					if (fnames[1] != "...") {
 						if (fnvar > length(v)) {
@@ -378,15 +322,15 @@ getdts = function(aes, unm, p, q, o, dt, shpvars, layer, group, mfun, args, plot
 
 					if (is.na(value.null)) stop("value.null not specified for aesthetic ", unm, call. = FALSE)
 					if (bypass_ord) {
-						dtl[sel__ == TRUE, c(varname, legname, crtname) := do.call(f, c(unname(.SD), arglist)), grp_b_fr, .SDcols = v]
+						dtl[sel__ == TRUE, c(varname, legname, crtname) := do.call(._f, c(unname(.SD), arglist)), grp_b_fr, .SDcols = v]
 					} else {
-						dtl[sel__ == TRUE, c(varname, ordname, legname, crtname) := do.call(f, c(unname(.SD), arglist)), grp_b_fr, .SDcols = v]
+						dtl[sel__ == TRUE, c(varname, ordname, legname, crtname) := do.call(._f, c(unname(.SD), arglist)), grp_b_fr, .SDcols = v]
 					}
 				} else {
 					if (bypass_ord) {
-						dtl[, c(varname, legname, crtname) := do.call(f, c(unname(.SD), arglist)), grp_b_fr, .SDcols = v]
+						dtl[, c(varname, legname, crtname) := do.call(._f, c(unname(.SD), arglist)), grp_b_fr, .SDcols = v]
 					} else {
-						dtl[, c(varname, ordname, legname, crtname) := do.call(f, c(unname(.SD), arglist)), grp_b_fr, .SDcols = v]
+						dtl[, c(varname, ordname, legname, crtname) := do.call(._f, c(unname(.SD), arglist)), grp_b_fr, .SDcols = v]
 					}
 				}
 				if (!q$drop.units) {
@@ -419,7 +363,7 @@ getdts = function(aes, unm, p, q, o, dt, shpvars, layer, group, mfun, args, plot
 				} else if (islistof(aes$scale, "tm_scale")) {
 					scale = rep(aes$scale, length.out = nvars)
 				} else {
-					stop("incorrect scale specification")
+					cli::cli_abort("incorrect scale specification")
 				}
 
 				if (inherits(aes$legend, "tm_legend")) {
@@ -427,7 +371,7 @@ getdts = function(aes, unm, p, q, o, dt, shpvars, layer, group, mfun, args, plot
 				} else if (islistof(aes$legend, "tm_legend")) {
 					legend = rep(aes$legend, length.out = nvars)
 				} else {
-					stop("incorrect legend specification")
+					cli::cli_abort("incorrect legend specification")
 				}
 
 				if (inherits(aes$chart, "tm_chart")) {
@@ -435,7 +379,7 @@ getdts = function(aes, unm, p, q, o, dt, shpvars, layer, group, mfun, args, plot
 				} else if (islistof(aes$chart, "tm_chart")) {
 					crt = rep(aes$chart, length.out = nvars)
 				} else {
-					stop("incorrect chart specification")
+					cli::cli_abort("incorrect chart specification")
 				}
 
 
@@ -470,7 +414,7 @@ getdts = function(aes, unm, p, q, o, dt, shpvars, layer, group, mfun, args, plot
 				} else if (islistof(aes$scale, "tm_scale")) {
 					s = aes$scale[[1]]
 				} else {
-					stop("incorrect scale specification")
+					cli::cli_abort("incorrect scale specification")
 				}
 
 				if (length(s) == 0) stop("mapping not implemented for aesthetic ", unm, call. = FALSE)
@@ -478,19 +422,19 @@ getdts = function(aes, unm, p, q, o, dt, shpvars, layer, group, mfun, args, plot
 				if (inherits(aes$legend, "tm_legend")) {
 					l = aes$legend
 				} else if (islistof(aes$legend, "tm_legend")) {
-					warning("multiple legends are specified, while only one is required; the first will be used")
+					cli::cli_warn("multiple legends are specified, while only one is required; the first will be used")
 					l = aes$legend[[1]]
 				} else {
-					stop("incorrect legend specification")
+					cli::cli_abort("incorrect legend specification")
 				}
 
 				if (inherits(aes$chart, "tm_chart")) {
 					crt = aes$chart
 				} else if (islistof(aes$chart, "tm_chart")) {
-					warning("multiple charts are specified, while only one is required; the first will be used")
+					cli::cli_warn("multiple charts are specified, while only one is required; the first will be used")
 					crt = aes$chart[[1]]
 				} else {
-					stop("incorrect chart specification")
+					cli::cli_abort("incorrect chart specification")
 				}
 
 				dtl = apply_scale(s, l, crt, val, unm, nm__ord, "legnr", "crtnr", sortRev, bypass_ord)

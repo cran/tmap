@@ -97,9 +97,8 @@ step1_rearrange = function(tmel) {
 		}
 
 		if ("style" %in% names(o2) && !is.na(o2$style)) { #() {
-			o = tmap_options_mode(default.options = TRUE, mode.specific = FALSE)
-			styleOptions <- get("tmapStyles", envir = .TMAP)[[o2$style]]
-			if (!is.null(styleOptions)) o = complete_options(styleOptions, o)
+			check_style(o2$style)
+			o = tmap_options_mode(style = o2$style, mode.specific = FALSE)
 			o2$style = NULL
 		}
 		o = complete_options(o2, o)
@@ -149,7 +148,10 @@ step1_rearrange = function(tmel) {
 		tms = tmo[[ids[1]]]$tms
 
 
+		# determine whether to animate
+		tmf$show_gif_ani = is.null(o$animate_disable) && (tmf$animate || tmf$trans_animate) # animate is multiple variables/facets, trans_animate for transition animation only
 
+		#if (tmf$show_gif_ani) o$scale = o$scale * 2
 
 	} else {
 		tmo = NULL
@@ -159,6 +161,7 @@ step1_rearrange = function(tmel) {
 		tmf$n = 1
 		tmf$fl = list(NULL, NULL, NULL)
 		tmf$type = "wrap"
+		tmf$npp = 1
 		ids = 0
 
 	}
@@ -223,7 +226,7 @@ step1_rearrange = function(tmel) {
 	# if basemaps are used AND tm_options(crs = ...) is not used AND tm_shape(crs = ... / is.main = TRUE) is not used:
 	basemaps_defined = length(aux) && any(vapply(aux, inherits, c("tm_basemap", "tm_tiles"), FUN.VALUE = logical(1)))
 	if ((is.na(crs_step4[1]) || identical(crs_step4, "auto")) && basemaps_defined && !crs_opt_called) {
-		crs_step4 = list(dimensions = 3857, 4326)
+		crs_step4 = o$crs_basemap
 	}
 
 	crs_step3 = if (any_data_layer) get_crs(tms, is_auto = identical(crs_step4, "auto"), crs_extra = o$crs_extra, crs_global = o$crs_global, basemaps_defined = basemaps_defined) else NA
@@ -403,7 +406,6 @@ process_position = function(position, o) {
 		if (exists("just.v")) just.v = check_v(just.v, "just", h_is_num = is.numeric(just.h))
 	})
 
-	position
 }
 
 process_padding = function(padding) {
@@ -416,52 +418,33 @@ check_h = function(x, var) {
 		x
 	} else {
 		y = tolower(x)
-		if (y %in% c("center", "centre")) {
+		is_upper = (x != y)
+		y2 = if (y %in% c("center", "centre")) {
 			"center"
 		} else if (y %in% c("left", "right")) {
 			y
 		} else {
 			stop("position arguments: incorrect ", var, ".h; it should be 'left', 'center', 'right' or a numeric value", call. = FALSE)
 		}
+		if (is_upper) toupper(y2) else y
 	}
 }
 
 check_v = function(x, var, h_is_num) {
 	if (is.numeric(x)) {
-		if (!h_is_num) stop("position argument: for ", var, ".h and .v should both be numeric or character values", call. = FALSE)
+		if (!h_is_num) stop("position argument ", var, ".h and .v should both be numeric or character values", call. = FALSE)
 		x
 	} else {
 		y = tolower(x)
-		if (h_is_num) stop("position argument: for ", var, ".h and .v should both be numeric or character values", call. = FALSE)
-		if (y %in% c("center", "centre")) {
+		is_upper = (x != y)
+		if (h_is_num) stop("position argument ", var, ".h and .v should both be numeric or character values", call. = FALSE)
+		y2 = if (y %in% c("center", "centre")) {
 			"center"
 		} else if (y %in% c("top", "bottom")) {
 			y
 		} else {
 			stop("position argument: incorrect ", var, ".v; it should be 'top', 'center', 'bottom' or a numeric value", call. = FALSE)
 		}
+		if (is_upper) toupper(y2) else y
 	}
 }
-
-impute_comp = function(a, o) {
-	cls = class(a)[1]
-
-	ot = get_prefix_opt(class = cls, o = o)
-
-	ca = class(a)
-
-	call = names(a)
-
-	a$position = process_position(a$position, o)
-
-	a$padding = process_padding(a$padding)
-
-	a = complete_options(a, ot)
-
-	a$call = call
-
-	class(a) = ca
-	a
-}
-
-

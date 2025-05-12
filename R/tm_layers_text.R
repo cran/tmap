@@ -217,7 +217,7 @@ tm_text = function(text = tm_const(),
 		if (length(osel)) {
 			o3 = v3_opt_args[osel]
 			o4 = v4_opt_args[osel]
-			v3_layer_opt(o3, o4, "tm_text")
+			v3_layer_opt(o3, o4, layer_fun)
 		}
 
 
@@ -236,7 +236,7 @@ tm_text = function(text = tm_const(),
 		trans.fun = tmapTransCentroid,
 		trans.aes = list(),
 		trans.args = options$trans.args,
-		trans.isglobal = FALSE,
+		trans.apply_to = "this",
 		mapping.aes = list(
 						   text = tmapScale(aes = "text",
 						   				value = text,

@@ -35,25 +35,29 @@ prepreprocess_meta = function(o, vp) {
 	})
 }
 preprocess_meta = function(o, cdt) {
+	npp = NULL
 	within(o, {
 		nby = fn #get_nby(fl)
 		isdef = !sapply(fl, is.null)
-		n = prod(nby)
 
 		if (is.na(panel.type)) panel.type = if (identical(panel.show, FALSE)) {
 			"none"
 		} else if (identical(panel.show, TRUE)) {
 			# force panel labels
-			if (type %in% c("wrap", "stack", "page") || (n == 1)) {
+			if (type %in% c("wrap", "stack") || (npp == 1)) {
 				"wrap"
 			} else {
 				"xtab"
 			}
-		} else if ((n == 1) && is.na(panel.labels[[1]])) {
-			"none"
+		} else if ((npp == 1) && is.na(panel.labels[[1]])) {
+			if (n > 1) {
+				"wrap"
+			} else {
+				"none"
+			}
 		} else if (!(type %in% c("wrap", "stack")) && !isdef[1] && !isdef[2]) {
 			"none"
-		} else if ((type %in% c("wrap", "stack", "page")) || (n == 1)) {
+		} else if ((type %in% c("wrap", "stack")) || (npp == 1)) {
 			"wrap"
 		} else {
 			"xtab"
@@ -71,7 +75,7 @@ preprocess_meta = function(o, cdt) {
 			legend.present.auto = c(all = FALSE, per_row = FALSE, per_col = FALSE, per_facet = FALSE)
 			legend.present.fix = rep(FALSE, 4)
 		} else {
-			if (type %in% c("wrap", "stack", "page")) {
+			if (type %in% c("wrap", "stack")) {
 				#o$legend.present.auto = c(all = any(is.na(cdt$by1__) & cdt$class == "autoout"), per_row = any(!is.na(cdt$by1__) & cdt$class == "autoout"), per_col = FALSE)
 				legend.present.auto = c(all = any(cdt$class == "autoout" & is.na(cdt$by1__)),
 										per_row = FALSE, per_col = FALSE,
@@ -332,7 +336,7 @@ process_meta = function(o, d, cdt, aux) {
 
 
 		if (gs == "Grid") {
-			if (type %in% c("stack", "page")) {
+			if (type =="stack") {
 				if (is.na(orientation)) {
 					if (nrow(cdt)) {
 						legs_auto = cdt[class=="autoout"]
@@ -341,7 +345,9 @@ process_meta = function(o, d, cdt, aux) {
 					}
 
 
-					if (type == "page" || (nrow(legs_auto) && n == 1)) {
+
+					if (nrow(legs_auto) && npp == 1) {
+
 
 						legWmax = min(max(legs_auto$legW) / devsize[1], max(meta.auto_margins[c(2,4)]))
 						legHmax = min(max(legs_auto$legH) / devsize[2], max(meta.auto_margins[c(1,3)]))
@@ -355,16 +361,20 @@ process_meta = function(o, d, cdt, aux) {
 
 						orientation = if (shp_height_hor >= shp_height_ver) "vertical" else "horizontal"
 					} else {
-						orientation = if ((!is.na(nrows) && nrows == 1) || (!is.na(ncols) && ncols == n)) {
+						orientation = if ((!is.na(nrows) && nrows == 1) || (!is.na(ncols) && ncols == npp)) {
 							"horizontal"
-						} else if ((!is.na(nrows) && nrows == n) || (!is.na(ncols) && ncols == 1)) {
+						} else if ((!is.na(nrows) && nrows == npp) || (!is.na(ncols) && ncols == 1)) {
 							"vertical"
-						} else if ((n == 1 && (pasp > masp)) || (n > 1 && (pasp < masp))) "horizontal" else "vertical"
+						} else if ((npp == 1 && (pasp > masp)) || (npp > 1 && (pasp < masp))) "horizontal" else "vertical"
 					}
 				}
 			}
 		} else {
-			orientation = if ((n == 1 && (pasp > masp)) || (n > 1 && (pasp < masp))) "horizontal" else "vertical"
+			if (is.na(o$nrows) || is.na(o$ncols)) {
+				orientation = if ((npp == 1 && (pasp > masp)) || (npp > 1 && (pasp < masp))) "horizontal" else "vertical"
+			} else {
+				orientation = if (o$ncols >= o$nrows) "horizontal" else "vertical"
+			}
 		}
 
 		if (gs == "Grid") {
@@ -373,7 +383,7 @@ process_meta = function(o, d, cdt, aux) {
 				if (!legend.present.auto[2] & !legend.present.auto[3]) {
 					# only 'all facets' outside legends (either bottom or right)
 					# was: n > 1 && masp > pasp
-					if ((type != "stack" && n == 1 && pasp > masp) || (type != "stack" && n > 1 && masp < 1) || (type == "stack" && orientation == "horizontal")) {
+					if ((type != "stack" && npp == 1 && pasp > masp) || (type != "stack" && npp > 1 && masp < 1) || (type == "stack" && orientation == "horizontal")) {
 						legend.position.all = list(cell.h = "center", cell.v = legend.position$cell.v)
 					} else {
 						legend.position.all = list(cell.h = legend.position$cell.h, cell.v = "center")
@@ -407,7 +417,7 @@ process_meta = function(o, d, cdt, aux) {
 
 				# CODE COPIED FROM STEP4_plot L157
 				# TO DO: fix this
-				if (o$type != "grid" && o$n > 1) {
+				if (o$type != "grid" && o$npp > 1) {
 					#if (o$nrows == 1 && o$ncols == 1)
 					if (identical(orientation, "horizontal")) {
 						# -use by2 and not by1 when they form a row
@@ -417,7 +427,7 @@ process_meta = function(o, d, cdt, aux) {
 				}
 
 
-				stacks = o$legend.stack
+				stacks = o$component.stack
 
 				cdt2[is.na(by1__) & is.na(by2__) & class == "autoout", ':='(cell.h = legend.position.all$cell.h, cell.v = legend.position.all$cell.v)]
 				cdt2[!is.na(by1__) & is.na(by2__) & class == "autoout", ':='(cell.h = legend.position.sides$cell.h, cell.v = "by")]
@@ -435,7 +445,7 @@ process_meta = function(o, d, cdt, aux) {
 				if (nrow(cdt2) == 0) {
 					meta.auto_margins = c(0, 0, 0, 0)
 				} else {
-					if (type == "stack") {
+					if (type %in% c("stack", "anistack")) {
 						# workaround: stacking mode is determined later (step4 L156), because it requires ncols and nrows
 						# for stack, this is already known, so therefore we can better estimate the meta width and height
 
@@ -444,16 +454,16 @@ process_meta = function(o, d, cdt, aux) {
 						meta.auto_margins = pmin(meta.auto_margins, do.call(pmax, lapply(unique(cdt2$by1__), function(b1) {
 							cdt2b = cdt2[by1__==b1, ]
 
-							cdt2b[stack_auto == TRUE, stack:= ifelse(n==1, ifelse(cell.h %in% c("left", "right"), o$legend.stack["all_row"], o$legend.stack["all_col"]), ifelse(orientation == "vertical", o$legend.stack["per_row"], o$legend.stack["per_col"]))]
+							cdt2b[stack_auto == TRUE, stack:= ifelse(npp==1, ifelse(cell.h %in% c("left", "right"), o$legend.stack["all_row"], o$legend.stack["all_col"]), ifelse(orientation == "vertical", o$legend.stack["per_row"], o$legend.stack["per_col"]))]
 
-							c(sum(sum(c(0,cdt2b[cell.v == "bottom" & stack == "vertical", legH,by = c("cell.h", "cell.v")]$legH)),
-								  max(c(0,cdt2b[cell.v == "bottom" & stack == "horizontal", legH,by = c("cell.h", "cell.v")]$legH))) / o$devsize[2],
-							  sum(sum(c(0,cdt2b[cell.h == "left" & stack == "horizontal", legW,by = c("cell.h", "cell.v")]$legW)),
-							  	max(c(0,cdt2b[cell.h == "left" & stack == "vertical", legW,by = c("cell.h", "cell.v")]$legW))) / o$devsize[1],
-							  sum(sum(c(0,cdt2b[cell.v == "top" & stack == "vertical", legH,by = c("cell.h", "cell.v")]$legH)),
-							  	max(c(0,cdt2b[cell.v == "top" & stack == "horizontal", legH,by = c("cell.h", "cell.v")]$legH))) / o$devsize[2],
-							  sum(sum(c(0,cdt2b[cell.h == "right" & stack == "horizontal", legW,by = c("cell.h", "cell.v")]$legW)),
-							  	max(c(0,cdt2b[cell.h == "right" & stack == "vertical", legW,by = c("cell.h", "cell.v")]$legW))) / o$devsize[1])
+							c(max(max(c(0,cdt2b[cell.v == "bottom" & stack == "vertical", .(V=sum(legH)),by = c("cell.h", "by3__")]$V)),
+								  max(c(0,cdt2b[cell.v == "bottom" & stack == "horizontal", .(V=sum(legH)),by = c("cell.h", "by3__")]$V))) / o$devsize[2],
+							  max(max(c(0,cdt2b[cell.h == "left" & stack == "horizontal", .(V=sum(legW)),by = c("cell.v", "by3__")]$V)),
+							  	max(c(0,cdt2b[cell.h == "left" & stack == "vertical", .(V=sum(legW)),by = c("cell.v", "by3__")]$V))) / o$devsize[1],
+							  max(max(c(0,cdt2b[cell.v == "top" & stack == "vertical", .(V=sum(legH)),by = c("cell.h", "by3__")]$V)),
+							  	max(c(0,cdt2b[cell.v == "top" & stack == "horizontal", .(V=sum(legH)),by = c("cell.h", "by3__")]$V))) / o$devsize[2],
+							  max(max(c(0,cdt2b[cell.h == "right" & stack == "horizontal", .(V=sum(legW)),by = c("cell.v", "by3__")]$V)),
+							  	max(c(0,cdt2b[cell.h == "right" & stack == "vertical", .(V=sum(legW)),by = c("cell.v", "by3__")]$V))) / o$devsize[1])
 						})))
 					} else {
 						meta.auto_margins = pmin(meta.auto_margins,
@@ -489,18 +499,21 @@ process_meta = function(o, d, cdt, aux) {
 
 
 		# determine number of rows and cols
-		if (type == "grid") {
+		npp = prod(nby[1:2]) # number per page
+
+		if (!is.na(o$ncols) && !is.na(o$nrows)) {
+			npp = min(npp, o$ncols * o$nrows)
+		}
+
+		if (type %in% c("grid", "anigrid")) {
 			nrows = nby[1]
 			ncols = nby[2]
-		} else if (type == "page") {
-			if (is.na(nrows)) nrows = 1
-			if (is.na(ncols)) ncols = 1
-		} else if (type == "stack") {
+		} else if (type %in% c("stack", "anistack")) {
 			if (orientation == "horizontal") {
 				nrows = 1
-				ncols = n
+				ncols = npp
 			} else {
-				nrows = n
+				nrows = npp
 				ncols = 1
 			}
 		} else {
@@ -512,8 +525,8 @@ process_meta = function(o, d, cdt, aux) {
 
 				# loop through col row combinations to find best nrow/ncol
 				# b needed to compare landscape vs portrait. E.g if prefered asp is 2, 1 is equally good as 4
-				ncols = which.min(vapply(1L:n, function(nc) {
-					nr = ceiling(n / nc)
+				ncols = which.min(vapply(1L:npp, function(nc) {
+					nr = ceiling(npp / nc)
 
 					# calculate available width and height. They can be negative, at this stage this is avoided my taking at least a small number
 					width = max(1e-9, ((1 - sum(fixedMargins[c(2, 4)])) - (nc * sum(panel.wrap.size[c(2,4)])) - (nc - 1) * between_marginW) / nc)
@@ -525,7 +538,7 @@ process_meta = function(o, d, cdt, aux) {
 				}, FUN.VALUE = numeric(1)))
 
 
-				nrows = ceiling(n / ncols)
+				nrows = ceiling(npp / ncols)
 			}
 			if ((nrows == 1 || ncols == 1) && set_to_stack_message) message_wrapstack(nrows == 1)
 		}
@@ -547,22 +560,24 @@ process_meta = function(o, d, cdt, aux) {
 		# panel.label.size = panel.label.size * scale
 
 
-		# update panel labels
 		if (is.na(panel.labels[1])) {
-			panel.labels = fl[1:2]
+			# quick fix
+			# to do: checks
+			panel.labels = fl[1:3]
 		} else {
-			if (!is.list(panel.labels)) panel.labels = list(panel.labels, "")
-			panel.labels = mapply(FUN = function(p, f) {
-				if (is.null(f)) {
-					if (length(p) > 1) warning("the number of supplied panel labels is", length(p), "but only one is supported because no facets are defined", call. = FALSE)
-					p[1]
-				} else {
-					if (length(p[p!=""]) != length(f)) warning("the number of supplied panel labels does not correspond to the number of panels", call. = FALSE)
-					rep_len(p, length(f))
-				}
-			}, panel.labels, fl[1:2], SIMPLIFY = FALSE)
+			if (!is.list(panel.labels)) {
+				panel.labels = list(panel.labels, NULL)
+			}
 		}
-
+		if (type %in% c("stack", "wrap")) {
+			if (!is.null(panel.labels[[1]])) {
+				panel.labels.dim = 1
+			} else if (!is.null(panel.labels[[3]])) {
+				panel.labels.dim = 3
+			} else {
+				panel.type = "none"
+			}
+		}
 
 
 
@@ -570,31 +585,32 @@ process_meta = function(o, d, cdt, aux) {
 
 		legend.position = NA
 
-		if (!is.logical(set_bounds)) if (length(set_bounds) !=4 || !is.numeric(set_bounds)) stop("Incorrect set_bounds argument", call.=FALSE)
+		if (gs == "Leaflet") {
+			if (!is.logical(set_bounds)) if (length(set_bounds) !=4 || !is.numeric(set_bounds)) stop("Incorrect set_bounds argument", call.=FALSE)
 
 
-		if (!is.na(set_view[1])) {
-			if (!is.numeric(set_view)) stop("set_view is not numeric")
-			if (!length(set_view) %in% c(1, 3)) stop("set_view does not have length 1 or 3")
-		}
-		if (!is.na(set_zoom_limits[1])) {
-			if (!is.numeric(set_zoom_limits)) stop("set_zoom_limits is not numeric")
-			if (!length(set_zoom_limits)==2) stop("set_zoom_limits does not have length 2")
-			if (set_zoom_limits[1] >= set_zoom_limits[2]) stop("incorrect set_zoom_limits")
-		} else {
-			set_zoom_limits <- c(NA, NA)
-		}
-		if (!is.na(set_view[1]) && !is.na(set_zoom_limits[1])) {
-			if (set_view[length(set_view)] < set_zoom_limits[1]) {
-				if (show.warnings) warning("default zoom smaller than minimum zoom, now it is set to the minimum zoom")
-				set_view[length(set_view)] <- set_zoom_limits[1]
+			if (!is.na(set_view[1])) {
+				if (!is.numeric(set_view)) stop("set_view is not numeric")
+				if (!length(set_view) %in% c(1, 3)) stop("set_view does not have length 1 or 3")
 			}
-			if (set_view[length(set_view)] > set_zoom_limits[2]) {
-				if (show.warnings) warning("default zoom larger than maximum zoom, now it is set to the maximum zoom")
-				set_view[length(set_view)] <- set_zoom_limits[2]
+			if (!is.na(set_zoom_limits[1])) {
+				if (!is.numeric(set_zoom_limits)) stop("set_zoom_limits is not numeric")
+				if (!length(set_zoom_limits)==2) stop("set_zoom_limits does not have length 2")
+				if (set_zoom_limits[1] >= set_zoom_limits[2]) stop("incorrect set_zoom_limits")
+			} else {
+				set_zoom_limits <- c(NA, NA)
+			}
+			if (!is.na(set_view[1]) && !is.na(set_zoom_limits[1])) {
+				if (set_view[length(set_view)] < set_zoom_limits[1]) {
+					if (show.warnings) warning("default zoom smaller than minimum zoom, now it is set to the minimum zoom")
+					set_view[length(set_view)] <- set_zoom_limits[1]
+				}
+				if (set_view[length(set_view)] > set_zoom_limits[2]) {
+					if (show.warnings) warning("default zoom larger than maximum zoom, now it is set to the maximum zoom")
+					set_view[length(set_view)] <- set_zoom_limits[2]
+				}
 			}
 		}
-
 
 	})
 

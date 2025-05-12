@@ -206,3 +206,69 @@ tmapLeafletLegPlot.tm_minimap = function(comp, lf, o) {
 	lf2
 }
 
+#' @export
+tmapLeafletCompPrepare.tm_logo = function(comp, o) {
+	height = 20 * comp$height
+	comp$logo = lapply(comp$file, function(lf){
+		x = tmap_icons(lf)
+		scale = height / x$iconHeight
+		x$iconWidth = x$iconWidth * scale
+		x$iconHeight = x$iconHeight * scale
+		x$iconAnchorX = x$iconAnchorX * scale
+		x$iconAnchorY = x$iconAnchorY * scale
+		x
+	})
+
+	comp$asp = vapply(comp$logo, function(lg) {
+		lg$iconWidth / lg$iconHeight
+	}, FUN.VALUE = numeric(1))
+	comp$show = TRUE
+	comp
+}
+
+
+#' @export
+tmapLeafletCompHeight.tm_logo = function(comp, o) {
+	comp
+}
+
+#' @export
+tmapLeafletCompWidth.tm_logo = function(comp, o) {
+	comp
+}
+
+#' @export
+tmapLeafletLegPlot.tm_logo = function(comp, lf, o) {
+	ws = c(rev(cumsum(vapply(comp$logo, function(l)l$iconWidth,FUN.VALUE = numeric(1)) + 10))[-1], 0)
+
+	for (i in 1:length(comp$logo)) {
+		lf = lf %>% leafem::addLogo(comp$logo[[i]]$iconUrl, position = leaflet_pos(comp$position), width = comp$logo[[i]]$iconWidth, height = comp$logo[[i]]$iconHeight, offset.x = 10 + ws[i], offset.y = 20)
+	}
+	lf
+}
+
+
+
+#' @export
+tmapLeafletCompPrepare.tm_inset = function(comp, o) {
+	comp$show = FALSE
+	comp
+}
+
+
+#' @export
+tmapLeafletCompHeight.tm_inset = function(comp, o) {
+	comp
+}
+
+#' @export
+tmapLeafletCompWidth.tm_inset = function(comp, o) {
+	comp
+}
+
+#' @export
+tmapLeafletLegPlot.tm_inset = function(comp, lf, o) {
+	lf
+}
+
+

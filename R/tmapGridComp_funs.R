@@ -168,7 +168,7 @@ tmapGridLegPlot.tm_compass = function(comp, o, fH, fW) {
 		fill = c(dark, light)
 	} else if (comp$type=="radar") {
 		cr = c(.45, .42, .2, .17, .1)
-		LWD = round(convertWidth(unit(.01, "npc"), "points", valueOnly=TRUE)) * comp$lwd
+		LWD = (o$lineH * 24) * comp$lwd
 
 		cd = seq(1/8, 15/8, by=.25) * pi
 		cd2 = seq(1/4, 7/4, by=.5) * pi
@@ -297,12 +297,6 @@ tmapGridLegPlot.tm_compass = function(comp, o, fH, fW) {
 	# other grid cells are aligns (1 and 5) and margins (2 and 4)
 	compass = gridCell(3,3, {
 		gTree(children=gList(grobBG,
-						 if (!is.na(comp$bg.color)) {
-						 	bg.col = do.call("process_color", c(list(comp$bg.color, alpha=comp$bg.alpha), o$pc))
-						 	rectGrob(gp=gpar(col=NA, fill=bg.col))
-						 } else {
-						 	NULL
-						 },
 						 grobComp,
 						 grobLabels),
 		  name="compass")
@@ -405,29 +399,14 @@ tmapGridLegPlot.tm_scalebar = function(comp, o, fH, fW) {
 	wsu = comp$wsu
 	hsu = comp$hsu
 
-	wsu[1] = unit(0, "inch")
-	wsu[5] = unit(0, "inch")
 	vp = grid::viewport(layout = grid::grid.layout(ncol = length(wsu),
 												   nrow = length(hsu),
 												   widths = wsu,
 												   heights = hsu))
 
 
-	# g = grid::grobTree(grid::rectGrob(gp=gpar(fill = "pink")), vp = vp)
-	# g = gridCell(3,3, {
-	# 	gTree(children=gList(
-	# 		g
-	# 	), name="scalebar")
-	# })
-	#
-	# g = grid::grobTree(g, vp = vp)
-	#
-	#
-	# return(g)
-
 	unit = comp$units$unit
 	unit.size = 1/comp$units$to
-	#xrange = (comp$bbox[3] - comp$bbox[1]) * fW_fact
 
 	xrange = fW * comp$cpi
 
@@ -498,16 +477,19 @@ tmapGridLegPlot.tm_scalebar = function(comp, o, fH, fW) {
 	lineHeight = convertHeight(unit(1, "lines"), "inch", valueOnly=TRUE) * size
 
 	unitWidth = text_width_inch(unit) * size
-	#width = sum(widths[-n]) + .5*ticksWidths[1]*size + .5*ticksWidths[n]*size+ unitWidth   #widths * n
 
 	xtext = x[1] + c(ticks3, ticks3[n] + .5*ticksWidths[n]*size + .5*unitWidth)# + widths*.5 + unitWidth*.5) #+ position[1]
 
+
 	# if "unit" text is clipped, remove last label and move unit to previous label
-	xright = xtext + labelsW / 2
-	if (tail(xright, 1) > W) {
-		labels = c(head(labels, -2), unit)
-		xtext = x[1] + c(head(ticks3, -1), ticks3[n-1] + .5*ticksWidths[n-1]*size + .5*unitWidth)# + widths*.5 + unitWidth*.5) #+ position[1]
+	if (!comp$allow_clipping) {
+		xright = xtext + labelsW / 2
+		if (tail(xright, 1) > W) {
+			labels = c(head(labels, -2), unit)
+			xtext = x[1] + c(head(ticks3, -1), ticks3[n-1] + .5*ticksWidths[n-1]*size + .5*unitWidth)# + widths*.5 + unitWidth*.5) #+ position[1]
+		}
 	}
+
 
 	grobBG = if (getOption("tmap.design.mode")) rectGrob(gp=gpar(fill="orange")) else NULL
 
@@ -517,13 +499,6 @@ tmapGridLegPlot.tm_scalebar = function(comp, o, fH, fW) {
 		gTree(children=gList(
 
 			grobBG,
-			# if (!is.na(comp$bg.color)) {
-			# 	bg.col = do.call("process_color", c(list(comp$bg.color, alpha=comp$bg.alpha), o$pc))
-			# 	rectGrob(x=unit(x[1]-unitWidth, "inch"), width=unit(xtext[n]-xtext[1]+2.5*unitWidth, "inch"), just=c("left", "center"), gp=gpar(col=NA, fill=bg.col))
-			# } else {
-			# 	NULL
-			# },
-			#rectGrob(gp=gpar(col = "green", fill= NA))
 			rectGrob(x=unit(x, "inch"), y=unit(1.5*lineHeight, "inch"), width = unit(widths, "inch"), height=unit(lineHeight*.5, "inch"), just=c("left", "bottom"), gp=gpar(col=dark, fill=c(light, dark), lwd=comp$lwd)),
 			textGrob(label=labels, x = unit(xtext, "inch"), y = unit(lineHeight, "inch"), just=c("center", "center"), gp=gpar(col=comp$text.color, cex=size, fontface=comp$text.fontface, fontfamily=comp$text.fontfamily))
 			), name="scalebar")
@@ -800,7 +775,7 @@ tmapGridLegPlot.tm_logo = function(comp, o, fH, fW) {
 	gLogos = mapply(function(logo, col) {
 		grobLogo = pngGrob(logo$iconUrl, fix.borders = TRUE, n=2, height.inch=as.numeric(comp$hsu[3]), target.dpi=96)
 		rdim = dim(grobLogo$raster)
-		grobLogo$raster = matrix(do.call("process_color", c(list(as.vector(grobLogo$raster), alpha=1), o$pc)), nrow = rdim[1], ncol=rdim[2])
+		grobLogo$raster = matrix(do.call("process_color", c(list(as.vector(grobLogo$raster)), o$pc)), nrow = rdim[1], ncol=rdim[2])
 		gridCell(3L, col, grobLogo)
 	}, comp$logo, comp$col_ids, SIMPLIFY = FALSE)
 
@@ -808,6 +783,155 @@ tmapGridLegPlot.tm_logo = function(comp, o, fH, fW) {
 	gBG = gridCell(3L, 3L:(length(wsu) - 2L), grobBG)
 
 	do.call(grid::grobTree, c(list(gBG), gLogos, list(vp = vp)))
+
+}
+
+
+
+
+#' @export
+tmapGridCompPrepare.tm_inset_grob = function(comp, o) {
+	comp$show = TRUE
+	comp
+}
+
+#' @export
+tmapGridCompPrepare.tm_inset_gg = function(comp, o) {
+	rlang::check_installed("ggplot2", reason = "for plotting ggplot2 charts")
+	comp$x = ggplot2::ggplotGrob(comp$x)
+	class(comp)[1] = "tm_inset_grob"
+	comp$show = TRUE
+	comp
+}
+
+#' @export
+tmapGridCompHeight.tm_inset_grob = function(comp, o) {
+	marH = comp$margins[c(3,1)] * o$lin
+	hs = c(marH[1], comp$height * o$lin, marH[2])
+
+	sides = switch(comp$position$align.v, top = "second", bottom = "first", "both")
+	hsu = set_unit_with_stretch(hs, sides = sides)
+
+	Hin = sum(hs)
+	comp$flexRow = NA
+	comp$Hin = Hin #  sum(textP[1], textH, textP[2])
+	comp$hsu = hsu
+	comp
+}
+
+#' @export
+tmapGridCompWidth.tm_inset_grob = function(comp, o) {
+	marW = comp$margins[c(2,4)] * o$lin
+
+	ws = c(marW[1], comp$width * o$lin, marW[2])
+
+	sides = switch(comp$position$align.h, left = "second", right = "first", "both")
+	wsu = set_unit_with_stretch(ws, sides = sides)
+
+	comp$flexCol = NA
+	comp$Win = sum(ws)
+	comp$wsu = wsu
+	comp
+}
+
+#' @export
+tmapGridLegPlot.tm_inset_grob = function(comp, o, fH, fW) {
+
+	k = length(comp$logo)
+
+	wsu = comp$wsu
+	hsu = comp$hsu
+
+	vp = grid::viewport(layout = grid::grid.layout(ncol = length(wsu),
+												   nrow = length(hsu),
+												   widths = wsu,
+												   heights = hsu))
+
+	grobBG = if (getOption("tmap.design.mode")) rectGrob(gp=gpar(fill="orange")) else NULL
+	gBG = gridCell(3L, 3L:(length(wsu) - 2L), grobBG)
+
+	g = gridCell(3L, 3L, comp$x)
+
+	do.call(grid::grobTree, c(list(gBG, g), list(vp = vp)))
+
+}
+
+
+
+
+#' @export
+tmapGridCompPrepare.tm_inset_map = function(comp, o) {
+	limit_lat = if ("limit_latitude_3857" %in% names(o)) o$limit_latitude_3857 else c(-90, 90)
+
+	if (is.null(comp$x)) {
+		comp$x = sf::st_bbox(c(xmin = -180, xmax = 180, ymin = limit_lat[1], ymax = limit_lat[2]), crs = 4326)
+		comp$crs = tmap_options()$crs_global
+	}
+	comp$bbox = comp$x
+	comp$show = TRUE
+	comp
+}
+
+#' @export
+tmapGridCompHeight.tm_inset_map = function(comp, o) {
+	marH = comp$margins[c(3,1)] * o$lin
+	hs = c(marH[1], comp$height * o$lin, marH[2])
+
+	sides = switch(comp$position$align.v, top = "second", bottom = "first", "both")
+	hsu = set_unit_with_stretch(hs, sides = sides)
+
+	Hin = sum(hs)
+	comp$flexRow = NA
+	comp$Hin = Hin #  sum(textP[1], textH, textP[2])
+	comp$hsu = hsu
+	comp
+}
+
+#' @export
+tmapGridCompWidth.tm_inset_map = function(comp, o) {
+	marW = comp$margins[c(2,4)] * o$lin
+
+	ws = c(marW[1], comp$width * o$lin, marW[2])
+
+	sides = switch(comp$position$align.h, left = "second", right = "first", "both")
+	wsu = set_unit_with_stretch(ws, sides = sides)
+
+	comp$flexCol = NA
+	comp$Win = sum(ws)
+	comp$wsu = wsu
+	comp
+}
+
+#' @export
+tmapGridLegPlot.tm_inset_map = function(comp, o, fH, fW) {
+
+	k = length(comp$logo)
+
+	wsu = comp$wsu
+	hsu = comp$hsu
+
+	vp = grid::viewport(layout = grid::grid.layout(ncol = length(wsu),
+												   nrow = length(hsu),
+												   widths = wsu,
+												   heights = hsu))
+
+	grobBG = if (getOption("tmap.design.mode")) rectGrob(gp=gpar(fill="orange")) else NULL
+	gBG = gridCell(3L, 3L:(length(wsu) - 2L), grobBG)
+
+	vp = grid::viewport(layout.pos.row = 3L, layout.pos.col = 3L)
+
+	#comp$tm$o = prepreprocess_meta(comp$tm$o, vp)
+	comp$tm$o$asp = as.numeric(wsu[3]) / as.numeric(hsu[3])
+
+	#comp$tm$tmo$group1$layers$layer1$shpDT$shpTM[[1]]$bbox$x = comp$bbox
+	comp$tm$o$inset = TRUE
+	comp$tm$o$bbox = comp$bbox
+
+	g = step4_plot(comp$tm, vp, return.asp = FALSE, show = FALSE, in.shiny = FALSE, knit = FALSE, args = list())
+
+	#g = gridCell(3L, 3L, grid::rectGrob(gp=gpar(fill="red")))#comp$x)
+
+	do.call(grid::grobTree, c(list(gBG, g), list(vp = vp)))
 
 }
 

@@ -53,12 +53,10 @@ tm_legend = function(title,
 					 reverse,
 					 na.show,
 					 position,
+					 group_id,
 					 width,
 					 height,
-					 stack,
 					 z,
-					 group.frame,
-					 resize_as_group,
 					 title.color,
 					 title.size,
 					 title.fontface,
@@ -75,6 +73,7 @@ tm_legend = function(title,
 					 frame,
 					 frame.lwd,
 					 frame.r,
+					 bg,
 					 bg.color,
 					 bg.alpha,
 					 absolute_fontsize,
@@ -93,10 +92,13 @@ tm_legend = function(title,
 					 item_text.margin,
 					 ...) {
 	args = lapply(as.list(rlang::call_match()[-1]), eval, envir = parent.frame())
+	args$called = names(args)
+	args = warning_group_args(args)
 
 	args$title = args$title %||% NA
 	args$xlab = args$xlab %||% NA
 	args$ylab = args$ylab %||% NA
+	args$group_id = args$group_id %||% NA_character_
 	args$z = args$z %||% NA_integer_
 	structure(args, class = c("tm_legend", "tm_component", "list"))
 }
@@ -110,7 +112,7 @@ tm_legend_hide = function() {
 #' @rdname tm_legend
 #' @export
 tm_legend_combine = function(variable) {
-	structure(list(FUN = "tmapLegend", title = NA, reverse = FALSE, show = FALSE, aes = variable), class = c("tm_legend", "tm_component", "list"))
+	structure(list(FUN = "tmapLegend", title = NA, reverse = FALSE, show = FALSE, aes = variable, group_id = NA_character_), class = c("tm_legend", "tm_component", "list"))
 }
 
 #' @rdname tm_legend
