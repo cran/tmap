@@ -1,6 +1,6 @@
 Package: tmap
 Title: Thematic Maps
-Version: 4.1
+Version: 4.2
 Authors@R: c(
     person("Martijn", "Tennekes", , "mtennekes@gmail.com", role = c("aut", "cre")),
     person("Jakub", "Nowosad", , "nowosad.jakub@gmail.com", role = "ctb"),
@@ -30,23 +30,28 @@ License: GPL-3
 URL: https://github.com/r-tmap/tmap, https://r-tmap.github.io/tmap/
 BugReports: https://github.com/r-tmap/tmap/issues
 Depends: R (>= 4.1)
-Imports: classInt (>= 0.4-3), cli, cols4all (>= 0.8), data.table, grid,
-        htmltools, htmlwidgets, base64enc, leafem (>= 0.2.4), leafgl,
-        leaflegend, leaflet (>= 2.0.2), leafsync, maptiles, methods,
-        rlang, sf (>= 0.9-3), stars (>= 0.4-2), stats, s2, tmaptools
-        (>= 3.1), units (>= 0.6-1), servr
+Imports: classInt (>= 0.4-3), cli, cols4all (>= 0.8-1), data.table,
+        grid, htmltools, htmlwidgets, base64enc, leafem (>= 0.2.4),
+        leafgl, leaflegend, leaflet (>= 2.0.2), leafsync, maptiles,
+        methods, rlang, sf (>= 0.9-3), stars (>= 0.4-2), stats, s2,
+        tmaptools (>= 3.1), units (>= 0.6-1), servr
 Suggests: av, transformr, colorspace, ggplot2, gifski, knitr, shiny,
         terra, testthat (>= 3.2.0), widgetframe, lobstr, rsvg,
         rstudioapi
-Config/Needs/check: Nowosad/spDataLarge, lwgeom, r-tmap/tmap
-Config/Needs/coverage: Nowosad/spDataLarge, lwgeom, r-tmap/tmap
-Config/Needs/website: bookdown, rmarkdown, r-tmap/tmap, sfnetworks
+Config/Needs/check: Nowosad/spDataLarge, lwgeom, r-tmap/tmaptools,
+        r-tmap/tmap
+Config/Needs/coverage: Nowosad/spDataLarge, lwgeom, r-tmap/tmaptools,
+        r-tmap/tmap
+Config/Needs/website: bookdown, rmarkdown, sfnetworks,
+        r-tmap/tmaptools, r-tmap/tmap.glyphs, r-tmap/tmap.networks,
+        walkerke/mapgl, r-tmap/tmap.mapgl, geofacet, sits,
+        tmap.cartogram, mapsf, mapview
 Config/testthat/edition: 3
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 NeedsCompilation: no
-Packaged: 2025-05-12 08:27:15 UTC; mtes
+Packaged: 2025-09-10 15:25:29 UTC; mtes
 Author: Martijn Tennekes [aut, cre],
   Jakub Nowosad [ctb],
   Joel Gombin [ctb],
@@ -69,4 +74,4 @@ Author: Martijn Tennekes [aut, cre],
   Jerome Guelat [ctb]
 Maintainer: Martijn Tennekes <mtennekes@gmail.com>
 Repository: CRAN
-Date/Publication: 2025-05-12 17:40:02 UTC
+Date/Publication: 2025-09-10 16:10:02 UTC

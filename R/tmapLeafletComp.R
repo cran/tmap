@@ -91,7 +91,7 @@ gp_to_lpar = function(gp, mfun, shape = 20, pick_middle = TRUE, size_factor = 20
 				"circle", "circle", "rect", "diamond", "triangle", "polygon", "stadium") # shapes for pch 0:25 + 26 for stadium (NOTE: last one is a triangle upside-down. Since 21:25 are the defaults, and a polygon is chosen to differentiate from the other triangle)
 	lst$shape = get_pch_names(lst$shape)
 
-	if (mfun == "Lines") lst$shape = "line"
+	if ("tm_data_lines" %in% mfun) lst$shape = "line"
 
 	lst$width = lst$size * size_factor
 	lst$height = lst$size * size_factor
@@ -151,11 +151,15 @@ tmapLeaflet_legend = function(cmp, lf, o, orientation) {
 		#message("Text based legends not supported in view mode")
 		lf
 	} else if (cmp$type == "gradient") {
+		breaks_show =  ("is_discrete" %in% names(cmp)) && cmp$is_discrete
+
+
 		nbins = length(val)
 
 
 
 		incl.na = cmp$na.show
+
 		if (incl.na) {
 			sel = head(cmp$labels_select, -1)
 		} else {
@@ -165,16 +169,21 @@ tmapLeaflet_legend = function(cmp, lf, o, orientation) {
 		bins = val[sel]
 		val = val[sel]
 
-		if (!head(sel, 1)) {
-			val = c(cmp$limits[1], val)
-		} else {
-			val = c(val[1] - (val[2] - val[1]) * 0.5, val)
-		}
+		if (!breaks_show) {
+			cli::cli_warn("{.field tm_scale_intervals} {.code label.style = {.str continuous}} implementation in view mode work in progress")
+			if (!head(sel, 1)) {
+				val = c(cmp$limits[1], val)
+			} else {
+				val = c(val[1] - (val[2] - val[1]) * 0.5, val)
+			}
 
-		if (!tail(sel, 1)) {
-			val = c(val, cmp$limits[2])
+			if (!tail(sel, 1)) {
+				val = c(val, cmp$limits[2])
+			} else {
+				val = c(val, val[length(val)] + diff(tail(val, 2))/2)
+			}
 		} else {
-			val = c(val, val[length(val)] + diff(tail(val, 2))/2)
+			brks = val
 		}
 
 		vary = if ("fill" %in% cmp$varying) "fillColor" else "color"
@@ -194,10 +203,31 @@ tmapLeaflet_legend = function(cmp, lf, o, orientation) {
 			textNA = NA
 			labs = lab[sel]
 		}
-		pal = colorNumeric(palette = pal,
-						   domain = val,
-						   na.color=colNA,
-						   alpha = FALSE)
+
+		pfun = function(x) {
+			r = brks[c(1, length(brks))]
+			d = (x * (r[2] - r[1])) + r[1]
+			ids = cut(d, breaks = brks, include.lowest = TRUE, right = TRUE, labels = FALSE)
+			pal2[ids]
+		}
+		# pfun = function(x) {
+		# 	ifelse(x < 0.5, "blue", "red")
+		# }
+
+		if (breaks_show) {
+			# when labels_cutpoints is enabled in tm_scale_intervals
+			pal2 = unname(head(pal, -1)[-1][seq(2L, length(pal)-2L, by = 2L)])
+			pal = colorNumeric(palette = pfun,
+							   domain = val,
+							   na.color=colNA,
+							   alpha = FALSE)
+		} else {
+			pal = colorNumeric(palette = pal,
+							   domain = val,
+							   na.color=colNA,
+							   alpha = FALSE)
+		}
+
 
 		brks = pretty(cmp$limits, 7)
 
@@ -312,12 +342,12 @@ tmapLeaflet_legend = function(cmp, lf, o, orientation) {
 }
 
 #' @export
-tmapLeafletLegPlot.tm_legend_standard_portrait = function(comp, lf, o) {
+tmapLeafletCompPlot.tm_legend_portrait = function(comp, lf, o) {
 	tmapLeaflet_legend(comp, lf, o, orientation = "vertical")
 }
 
 #' @export
-tmapLeafletLegPlot.tm_legend_standard_landscape = function(comp, lf, o) {
+tmapLeafletCompPlot.tm_legend_landscape = function(comp, lf, o) {
 	tmapLeaflet_legend(comp, lf, o, orientation = "horizontal")
 }
 
@@ -327,9 +357,10 @@ tmapLeafletComp = function(comp, o, facet_row = NULL, facet_col = NULL, facet_pa
 
 	rc_text = frc(facet_row, facet_col)
 
+	# grp = tmapGetCompGroupArgs(comp) none of the tm_components args are used yet in view mode
 
 	for (cmp in comp) {
-		lf = tmapLeafletLegPlot(cmp, lf, o)
+		lf = tmapLeafletCompPlot(cmp, lf, o)
 	}
 
 

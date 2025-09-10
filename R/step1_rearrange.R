@@ -1,4 +1,4 @@
-step1_rearrange = function(tmel) {
+step1_rearrange = function(tmel, knit_opts) {
 	message_init()
 	dev = getOption("tmap.devel.mode")
 
@@ -103,7 +103,7 @@ step1_rearrange = function(tmel) {
 		}
 		o = complete_options(o2, o)
 	}
-	o = preprocess_meta_step1(o)
+	o = preprocess_meta_step1(o, knit_opts)
 
 
 	any_data_layer = length(tmel_spl) > 0L
@@ -122,8 +122,22 @@ step1_rearrange = function(tmel) {
 			} else {
 				# get last tm_facets element
 				k = sum(is_tmf)
-				if (k < 1) warning("Multiple tm_facets defined per layer group. Only the last one is processed", call. = FALSE)
-				tmf = tmg[[which(is_tmf)[k]]]
+
+				is_tmf_ani = vapply(tmg, inherits, "tm_animate", FUN.VALUE = logical(1))
+
+				ka = sum(is_tmf_ani)
+
+				if (k == ka || ka == 0) {
+					tmf = tmg[[which(is_tmf)[k]]]
+				} else {
+					# take last tm_facets and update with last tm_animate
+					tmf = tmg[[tail(which(is_tmf & !is_tmf_ani), 1L)]]
+					ani_mns = c("pages", "animate", "nframes", "fps", "play", "dpr")
+					tmf[ani_mns] = tmg[[which(is_tmf_ani)[ka]]][ani_mns]
+				}
+
+				if ((k-ka) > 1) warning("Multiple tm_facets defined per layer group. Only the last one is processed", call. = FALSE)
+				if (ka > 1) warning("Multiple tm_animate defined per layer group. Only the last one is processed", call. = FALSE)
 			}
 
 			# extract layers and add layer id number
@@ -151,6 +165,12 @@ step1_rearrange = function(tmel) {
 		# determine whether to animate
 		tmf$show_gif_ani = is.null(o$animate_disable) && (tmf$animate || tmf$trans_animate) # animate is multiple variables/facets, trans_animate for transition animation only
 
+		if (identical(tms$bbox$x, "FULL") || identical(o$bbox, "FULL") || o$earth_boundary) {
+			o$earth_bbox = TRUE
+		} else {
+			o$earth_bbox = FALSE
+		}
+
 		#if (tmf$show_gif_ani) o$scale = o$scale * 2
 
 	} else {
@@ -162,8 +182,14 @@ step1_rearrange = function(tmel) {
 		tmf$fl = list(NULL, NULL, NULL)
 		tmf$type = "wrap"
 		tmf$npp = 1
+		tmf$show_gif_ani = FALSE
 		ids = 0
 
+		if (identical(o$bbox, "FULL") || o$earth_boundary) {
+			o$earth_bbox = TRUE
+		} else {
+			o$earth_bbox = FALSE
+		}
 	}
 
 	# add basemaps
@@ -240,6 +266,13 @@ step1_rearrange = function(tmel) {
 		}
 	}
 
+	if (!.TMAP$proxy) {
+		.TMAP$shiny_crs = crs_step4
+	} else {
+		crs_step4 = .TMAP$shiny_crs
+	}
+
+
 	if (inherits(crs_step3, "leaflet_crs")) crs_step3 = leaflet2crs(crs_step3)
 
 	if (inherits(crs_step4, "leaflet_crs")) {
@@ -294,7 +327,7 @@ step1_rearrange = function(tmel) {
 
 
 	# disable s2 in case earth.boundaries are drawn
-	if (o$earth_boundary && sf::sf_use_s2()) {
+	if ((o$earth_boundary || o$earth_bbox) && sf::sf_use_s2()) {
 		suppressMessages(sf::sf_use_s2(FALSE))
 		.TMAP$set_s2 = TRUE
 	}

@@ -59,7 +59,7 @@ tm_symbols(
   group = NA,
   group.control = "check",
   popup.vars = NA,
-  popup.format = list(),
+  popup.format = tm_label_format(),
   hover = NA,
   id = "",
   options = opt_tm_symbols(),
@@ -327,8 +327,7 @@ to a character vector of variable names to those those variables in the popups.
 The default (\code{NA}) depends on whether visual variables (e.g.\code{fill}) are used.
 If so, only those are shown. If not all variables in the shape object are shown.}
 
-\item{popup.format}{list of formatting options for the popup values.
-See the argument \code{legend.format} for options. Only applicable for
+\item{popup.format}{list of formatting options for the popup values. Output of \code{\link[=tm_label_format]{tm_label_format()}}. Only applicable for
 numeric data variables. If one list of formatting options is provided,
 it is applied to all numeric variables of \code{popup.vars}. Also, a (named)
 list of lists can be provided. In that case, each list of formatting options
@@ -410,7 +409,7 @@ Map layer that draws symbols Supported visual variables are:
 A symbol shape specification is one of the following three options.
 \enumerate{
 \item{A numeric value that specifies the plotting character of the symbol. See parameter \code{pch} of \code{\link[graphics:points]{points}} and the last example to create a plot with all options. Note that this is not supported for the \code{"view" mode.}}
-\item{A \code{\link[grid:grid.grob]{grob}} object, which can be a ggplot2 plot object created with \code{\link[ggplot2:ggplotGrob]{ggplotGrob}}. To specify multiple shapes, a list of grob objects is required. See example of a proportional symbol map with ggplot2 plots}.
+\item{A \code{\link[grid:grid.grob]{grob}} object, which can be a ggplot2 plot object created with \code{\link[ggplot2:ggplotGrob]{ggplotGrob}}. To specify multiple shapes, a list of grob objects is required. Tip: for proportional symbols, such as donuts or pies, see the extension package \href{https://r-tmap.github.io/tmap/articles/ext_glyphs}{tmap.glyphs}}.
 \item{An icon specification, which can be created with \code{\link{tmap_icons}}.}
 }
 To specify multiple shapes (needed for the \code{shapes} argument), a vector or list of these shape specification is required. The shape specification options can also be mixed. For the \code{shapes} argument, it is possible to use a named vector or list, where the names correspond to the value of the variable specified by the \code{shape} argument.

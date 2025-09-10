@@ -22,7 +22,6 @@ prepreprocess_meta = function(o, vp) {
 			cw = 1
 		}
 
-
 		lin = graphics::par("cin")[2]# * scale
 
 		lineH = lin / devsize[2] * scale
@@ -94,9 +93,14 @@ preprocess_meta = function(o, cdt) {
 
 
 		# in case there are per-facet legends but no no marginal legends, and nrows or ncols equals 1, place them outside (to do this, set them to all-facet here, change legend.position.all below accordingly, and finally determine legend position in step4_plot)
+		legend_move_all = FALSE
+
+		# legend_move_all is needed to move the 'global' legend not in a stacked-per-facets cell, but in the other orientation (#1071)
+
 		if (legend.present.auto[4] && (!any(legend.present.auto[2:3]))) {
 
 			if (type == "stack") {
+				if (all(legend.present.auto[c(1, 4)])) legend_move_all = TRUE
 				legend.present.auto[1] = TRUE
 				legend.present.auto[4] = FALSE
 				set_to_stack_message = FALSE
@@ -234,15 +238,15 @@ process_meta = function(o, d, cdt, aux) {
 				xylab.margins[ifelse(xlab.side == "bottom", 1, 3)] = if (xlab.rotation %in% c(0, 180)) {
 					(number_text_lines(xlab.text) + xlab.space)  * lineH
 				} else {
-					(text_width_inch(xlab.text, space = FALSE) / lin) * lineH
+					(text_width_inch(xlab.text, space = FALSE) / lin + xlab.space) * lineH
 				}
 			}
 			if (ylab.show) {
 				#if (is.na(ylab.fontface)) ylab.fontface = text.fontface
 				xylab.margins[ifelse(ylab.side == "left", 2, 4)] = if (ylab.rotation %in% c(90, 270)) {
-					(number_text_lines(ylab.text) + ylab.space)  * lineW
+					(number_text_lines(ylab.text) + ylab.space)  * lineW * ylab.size
 				} else {
-					(text_width_inch(ylab.text, space = FALSE) / lin) * lineW
+					(text_width_inch(ylab.text, space = FALSE) / lin + ylab.space) * lineW * ylab.size
 				}
 			}
 
@@ -345,7 +349,6 @@ process_meta = function(o, d, cdt, aux) {
 					}
 
 
-
 					if (nrow(legs_auto) && npp == 1) {
 
 
@@ -383,11 +386,15 @@ process_meta = function(o, d, cdt, aux) {
 				if (!legend.present.auto[2] & !legend.present.auto[3]) {
 					# only 'all facets' outside legends (either bottom or right)
 					# was: n > 1 && masp > pasp
-					if ((type != "stack" && npp == 1 && pasp > masp) || (type != "stack" && npp > 1 && masp < 1) || (type == "stack" && orientation == "horizontal")) {
-						legend.position.all = list(cell.h = "center", cell.v = legend.position$cell.v)
-					} else {
-						legend.position.all = list(cell.h = legend.position$cell.h, cell.v = "center")
-					}
+					legend.position.all = local({
+						moving = function(x) if (legend_move_all) !x else x
+						if (moving((type != "stack" && npp == 1 && pasp > masp) || (type != "stack" && npp > 1 && masp < 1) || (type == "stack" && orientation == "horizontal"))) {
+							list(cell.h = "center", cell.v = legend.position$cell.v)
+						} else {
+							list(cell.h = legend.position$cell.h, cell.v = "center")
+						}
+					})
+
 				} else if (legend.present.auto[2] & !legend.present.auto[3]) {
 					# central goes center bottom
 					legend.position.all = list(cell.h = "center", cell.v = legend.position$cell.v)
@@ -397,10 +404,21 @@ process_meta = function(o, d, cdt, aux) {
 				}
 			}
 
-			margins.used.all = c(legend.position.all$cell.v == "bottom",
-								 legend.position.all$cell.h == "left",
-								 legend.position.all$cell.v == "top",
-								 legend.position.all$cell.h == "right") * legend.present.auto[1]
+			if (legend_move_all) {
+				# 'all' legend is set via legend.position.all
+				# the per stack-per-facet legend is 'the other' position
+				# so both (left or right) and (top or bottom) should be enabled
+				margins.used.all = c(legend.position$cell.v == "bottom",
+									 legend.position$cell.h == "left",
+									 legend.position$cell.v == "top",
+									 legend.position$cell.h == "right") * legend.present.auto[1]
+
+			} else {
+				margins.used.all = c(legend.position.all$cell.v == "bottom",
+									 legend.position.all$cell.h == "left",
+									 legend.position.all$cell.v == "top",
+									 legend.position.all$cell.h == "right") * legend.present.auto[1]
+			}
 
 			margins.used.sides = c(bottom = legend.position.sides$cell.v == "bottom",
 								   left = legend.position.sides$cell.h == "left",
@@ -457,13 +475,13 @@ process_meta = function(o, d, cdt, aux) {
 							cdt2b[stack_auto == TRUE, stack:= ifelse(npp==1, ifelse(cell.h %in% c("left", "right"), o$legend.stack["all_row"], o$legend.stack["all_col"]), ifelse(orientation == "vertical", o$legend.stack["per_row"], o$legend.stack["per_col"]))]
 
 							c(max(max(c(0,cdt2b[cell.v == "bottom" & stack == "vertical", .(V=sum(legH)),by = c("cell.h", "by3__")]$V)),
-								  max(c(0,cdt2b[cell.v == "bottom" & stack == "horizontal", .(V=sum(legH)),by = c("cell.h", "by3__")]$V))) / o$devsize[2],
+								  max(c(0,cdt2b[cell.v == "bottom" & stack == "horizontal", .(V=max(c(0, legH))),by = c("cell.h", "by3__")]$V))) / o$devsize[2],
 							  max(max(c(0,cdt2b[cell.h == "left" & stack == "horizontal", .(V=sum(legW)),by = c("cell.v", "by3__")]$V)),
-							  	max(c(0,cdt2b[cell.h == "left" & stack == "vertical", .(V=sum(legW)),by = c("cell.v", "by3__")]$V))) / o$devsize[1],
+							  	max(c(0,cdt2b[cell.h == "left" & stack == "vertical", .(V=max(c(0, legW))),by = c("cell.v", "by3__")]$V))) / o$devsize[1],
 							  max(max(c(0,cdt2b[cell.v == "top" & stack == "vertical", .(V=sum(legH)),by = c("cell.h", "by3__")]$V)),
-							  	max(c(0,cdt2b[cell.v == "top" & stack == "horizontal", .(V=sum(legH)),by = c("cell.h", "by3__")]$V))) / o$devsize[2],
+							  	max(c(0,cdt2b[cell.v == "top" & stack == "horizontal", .(V=max(c(0, legH))),by = c("cell.h", "by3__")]$V))) / o$devsize[2],
 							  max(max(c(0,cdt2b[cell.h == "right" & stack == "horizontal", .(V=sum(legW)),by = c("cell.v", "by3__")]$V)),
-							  	max(c(0,cdt2b[cell.h == "right" & stack == "vertical", .(V=sum(legW)),by = c("cell.v", "by3__")]$V))) / o$devsize[1])
+							  	max(c(0,cdt2b[cell.h == "right" & stack == "vertical", .(V=max(c(0, legW))),by = c("cell.v", "by3__")]$V))) / o$devsize[1])
 						})))
 					} else {
 						meta.auto_margins = pmin(meta.auto_margins,
@@ -577,13 +595,23 @@ process_meta = function(o, d, cdt, aux) {
 			} else {
 				panel.type = "none"
 			}
+			if (nby[3] != 1L) {
+				npages = nby[3]
+			} else {
+				npages = ceiling(n / (nrows * ncols))
+			}
+		} else {
+			npages = ceiling(n / (nrows * ncols))
 		}
 
 
 
-		npages = ceiling(n / (nrows * ncols))
 
 		legend.position = NA
+
+		if (is.na(space_overlay)) {
+			space_overlay = .TMAP$raster_wrap
+		}
 
 		if (gs == "Leaflet") {
 			if (!is.logical(set_bounds)) if (length(set_bounds) !=4 || !is.numeric(set_bounds)) stop("Incorrect set_bounds argument", call.=FALSE)

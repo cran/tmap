@@ -3,20 +3,29 @@ gridCell = function(rows, cols, e) {
 	grid::grobTree(e, vp = vp)
 }
 
-legapply = function(cdt, fun, ...) {
-	lapply(cdt, function(leg) {
-		d = leg$design
-		f = get(paste0("leg_", d))[[fun]]
-		do.call(f, c(list(leg = leg), list(...)))
-	})
-}
 
 
 
 process_comp_box = function(comp, sc, o) {
 	comp = within(comp, {
-		frame.lwd = if (!frame) 0 else frame.lwd * sc
-		frame.color = if (!frame) NA else if (is.null(frame.color)) o$attr.color else frame.color
+		if ("frame.color" %in% comp$called) {
+			frame = TRUE
+			frame.lwd = frame.lwd * sc
+		} else {
+			if (!is.logical(frame)) {
+				cls = class(comp)[1]
+				if (valid_colors(frame)) {
+					cli::cli_warn("{.field {.fun {cls}}} use {.code frame.color = {.str {frame}}} instead of {.code frame = {.str {frame}}}")
+					frame.color = frame
+					frame = TRUE
+				} else {
+					cli::cli_abort("{.field {.fun {cls}}} {.arg frame} should be a logical")
+				}
+
+			}
+			frame.color = if (!frame) NA else if (is.null(frame.color)) o$attr.color else frame.color
+			frame.lwd = if (!frame) 0 else frame.lwd * sc
+		}
 		frame.r = frame.r * sc
 	})
 	comp
@@ -178,13 +187,16 @@ tmapGridComp2 = function(grp, comp, o, stack, pos.h, pos.v, maxH, maxW, offsetIn
 	}, comp, 1/clipT, legW, legH, SIMPLIFY = FALSE, USE.NAMES = FALSE)
 
 
-	legGrobs = lapply(comp, tmapGridLegPlot, o = o, fH = fH, fW = fW)
+	legGrobs = lapply(comp, tmapGridCompPlot, o = o, fH = fH, fW = fW)
 
 
 	#sq = function(x) do.call(seq, as.list(unname(range(x))))
 	sc = min(1/clipT) * o$scale
 
 	comp = lapply(comp, process_comp_box, sc = sc, o = o)
+	grp = process_comp_box(grp, sc, o)
+
+	design = getOption("tmap.design.mode")
 
 	draw_rect = grp$frame || grp$bg
 	if (draw_rect && frame_combine) {
@@ -194,7 +206,7 @@ tmapGridComp2 = function(grp, comp, o, stack, pos.h, pos.v, maxH, maxW, offsetIn
 			groupframe = NULL
 		}
 
-		if (grp$bg) {
+		if (grp$bg && !design) {
 			groupbg = gridCell(range(Hid), range(Wid), rndrectGrob(gp=grid::gpar(fill = grp$bg.color, alpha = grp$bg.alpha, col = NA, lwd = 0), r = grp$frame.r))
 		} else {
 			groupbg = NULL
@@ -223,7 +235,7 @@ tmapGridComp2 = function(grp, comp, o, stack, pos.h, pos.v, maxH, maxW, offsetIn
 
 	grbs = do.call(grid::gList, mapply(function(leg, lG, lH, lW, fH, fW, iW, iH) {
 		frame = if (draw_rect && !frame_combine) {
-			bg.color = if (leg$bg) leg$bg.color else NA
+			bg.color = if (leg$bg && !design) leg$bg.color else NA
 			frame.color = if (leg$frame) leg$frame.color else NA
 			rndrectGrob(gp=grid::gpar(fill = bg.color, alpha = leg$bg.alpha, col = frame.color, lwd = leg$frame.lwd), r = leg$frame.r)
 		} else NULL
@@ -246,11 +258,11 @@ tmapGridComp2 = function(grp, comp, o, stack, pos.h, pos.v, maxH, maxW, offsetIn
 	}, comp, legGrobs, legH, legW, legFH, legFW, Wid, Hid, SIMPLIFY = FALSE))
 
 
-	if (getOption("tmap.design.mode")) {
+	if (design) {
 		df = expand.grid(col = 1:ncol(vp$layout),
 						 row = 1:nrow(vp$layout))
 
-		grDesign = lapply(1:nrow(df), function(i) gridCell(df$row[i], df$col[i], grid::rectGrob(gp=gpar(fill=NA,col="orange", lwd=2))))
+		grDesign = lapply(1:nrow(df), function(i) gridCell(df$row[i], df$col[i], grid::rectGrob(gp=gpar(fill=NA,col="#000000", lwd=2))))
 	} else {
 		grDesign = NULL
 	}
@@ -258,28 +270,26 @@ tmapGridComp2 = function(grp, comp, o, stack, pos.h, pos.v, maxH, maxW, offsetIn
 	do.call(grid::grobTree, c(list(groupbg), grbs, list(groupframe), grDesign, list(vp=vp)))
 }
 
-tmapGridComp = function(comp, o, facet_row = NULL, facet_col = NULL, facet_page, class, stack, stack_auto, pos.h, pos.v, bbox) {
+#' @export
+#' @rdname tmap_internal
+tmapGetCompGroupArgs = function(comp) {
 	# get component group settings
-	grp = comp[[1]][c("position",
-					  "stack",
-					  "frame_combine",
-					  "equalize",
-					  "resize_as_group",
-					  "stack_margin",
-					  "offset",
-					  "frame" ,
-					  "frame.color",
-					  "frame.lwd",
-					  "frame.r",
-					  "bg",
-					  "bg.color",
-					  "bg.alpha")]
+	nms = setdiff(names(formals(tm_components)), "group_id")
+	grp = comp[[1]][nms]
 
-	any_legend_chart_inset = any(vapply(comp, inherits, FUN.VALUE = logical(1), c("tm_legend", "tm_chart", "tm_inset")))
+	any_legend_chart_inset = any(vapply(comp, inherits, FUN.VALUE = logical(1), c("tm_legend", "tm_chart")))
 	grp_called = setdiff(unique(do.call(c, lapply(comp, FUN = "[[", "called_via_comp_group"))), "group_id")
 
 	if (!("frame" %in% grp_called)) grp$frame = any_legend_chart_inset
 	if (!("bg" %in%grp_called)) grp$bg = any_legend_chart_inset
+	grp$called = comp[[1]]$called
+	grp
+}
+
+
+tmapGridComp = function(comp, o, facet_row = NULL, facet_col = NULL, facet_page, class, stack, stack_auto, pos.h, pos.v, bbox) {
+
+	grp = tmapGetCompGroupArgs(comp)
 
 
 	gts = get("gts", envir = .TMAP_GRID)
@@ -331,11 +341,17 @@ tmapGridComp = function(comp, o, facet_row = NULL, facet_col = NULL, facet_page,
 	if (pos.h %in% c("LEFT", "RIGHT")) {
 		pos.h = tolower(pos.h)
 		CASE.h = toupper
-	} else CASE.h = function(x)x
+	} else {
+		if (pos.h %in% c("CENTER", "CENTRE")) pos.h = "center"
+		CASE.h = function(x)x
+	}
 	if (pos.v %in% c("TOP", "BOTTOM")) {
 		pos.v = tolower(pos.v)
 		CASE.v = toupper
-	} else CASE.v = function(x)x
+	} else {
+		if (pos.v %in% c("CENTER", "CENTRE")) pos.v = "center"
+		CASE.v = function(x)x
+	}
 
 	are_nums = !(any(is.na(suppressWarnings(as.numeric(c(pos.h, pos.v))))))
 
@@ -355,8 +371,8 @@ tmapGridComp = function(comp, o, facet_row = NULL, facet_col = NULL, facet_page,
 		}
 	}
 
-	offsetIn.h = component.offset.h * o$lin + (o$frame.lwd * o$scale / 144) # 1 line = 1/72 inch, frame lines are centered (so /2)
-	offsetIn.v = component.offset.v * o$lin + (o$frame.lwd * o$scale / 144)
+	offsetIn.h = component.offset.h * o$lin# + (o$frame.lwd * o$scale / 144) # 1 line = 1/72 inch, frame lines are centered (so /2)
+	offsetIn.v = component.offset.v * o$lin#+ (o$frame.lwd * o$scale / 144)
 
 	stack_margin = grp$stack_margin
 	if (!is.null(names(stack_margin)) && all(c("combined", "apart") %in% names(stack_margin))) {

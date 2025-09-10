@@ -5,8 +5,7 @@
 #' @param title Legend title
 #' @param show Show legend?
 #' @param orientation Orientation of the legend: `"portrait"` or `"landscape"`
-#' @param design Legend design `"standard"`. No other designs implemented yet.
-#' @param reverse Should the legend be reversed?
+#' @param reverse Should the legend items be reversed?
 #' @param na.show Show `NA` values in legend?
 #' @param width Width of the legend. Units are 'text line heights'. In case a negative number is specified, the units are (approximate) pixels. The relation between these two is configured via the option `absolute_fontsize`.
 #' @param height Height of the legend. Units are 'text line heights'. In case a negative number is specified, the units are (approximate) pixels. The relation between these two is configured via the option `absolute_fontsize`.
@@ -34,7 +33,7 @@
 #' @param item.na.width `r .doc_opt("legend.na item.width")`
 #' @param item.na.space `r .doc_opt("legend.na item.space")`
 #' @param item.shape `r .doc_opt("legend.item.shape")`
-#' @param ticks List of vectors of size 2 that determines the horizontal tick mark lines (for portrait legends). The values are the y-values of begin and endpoint of each tick mark.
+#' @param ticks List of vectors of size 2 that determines a tick mark line (for portrait legends). The values are the y-values of begin and endpoint of a tick mark. For a solid line, only one vector is required, for dashed lines one for each dash. See \href{https://r-tmap.github.io/tmap/articles/versus_ggplot2#mimicking-ggplot2-layout}{ggplot2 style example}.
 #' @param ticks.disable.na Remove ticks for `NA` values
 #' @param ticks.col `r .doc_opt("legend.ticks.col")`
 #' @param ticks.lwd `r .doc_opt("legend.ticks.lwd")`
@@ -49,7 +48,6 @@
 tm_legend = function(title,
 					 show,
 					 orientation,
-					 design,
 					 reverse,
 					 na.show,
 					 position,
@@ -99,6 +97,7 @@ tm_legend = function(title,
 	args$xlab = args$xlab %||% NA
 	args$ylab = args$ylab %||% NA
 	args$group_id = args$group_id %||% NA_character_
+	args$group_type = "tm_legend"
 	args$z = args$z %||% NA_integer_
 	structure(args, class = c("tm_legend", "tm_component", "list"))
 }
@@ -120,6 +119,7 @@ tm_legend_combine = function(variable) {
 #' @param ylab label for the y dimension (columns)
 #' @param xlab.color `r .doc_opt("legend.xlab.color")`
 #' @param xlab.size `r .doc_opt("legend.xlab.size")`
+#' @param xlab.rot `r .doc_opt("legend.xlab.rot")`
 #' @param xlab.fontface `r .doc_opt("legend.xlab.fontface")`
 #' @param xlab.fontfamily `r .doc_opt("legend.xlab.fontfamily")`
 #' @param xlab.alpha `r .doc_opt("legend.xlab.alpha")`
@@ -127,6 +127,7 @@ tm_legend_combine = function(variable) {
 #' @param xlab.align `r .doc_opt("legend.xlab.align")`
 #' @param ylab.color `r .doc_opt("legend.ylab.color")`
 #' @param ylab.size `r .doc_opt("legend.ylab.size")`
+#' @param ylab.rot `r .doc_opt("legend.ylab.rot")`
 #' @param ylab.fontface `r .doc_opt("legend.ylab.fontface")`
 #' @param ylab.fontfamily `r .doc_opt("legend.ylab.fontfamily")`
 #' @param ylab.alpha `r .doc_opt("legend.ylab.alpha")`
@@ -137,6 +138,7 @@ tm_legend_bivariate = function(xlab,
 							   ylab,
 							   xlab.color,
 							   xlab.size,
+							   xlab.rot,
 							   xlab.fontface,
 							   xlab.fontfamily,
 							   xlab.alpha,
@@ -144,6 +146,7 @@ tm_legend_bivariate = function(xlab,
 							   xlab.align,
 							   ylab.color,
 							   ylab.size,
+							   ylab.rot,
 							   ylab.fontface,
 							   ylab.fontfamily,
 							   ylab.alpha,
@@ -155,6 +158,8 @@ tm_legend_bivariate = function(xlab,
 	args$title = args$title %||% NA
 	args$xlab = args$xlab %||% NA
 	args$ylab = args$ylab %||% NA
+	args$group_id = args$group_id %||% NA_character_
+	args$group_type = "tm_legend_bivariate"
 	args$z = args$z %||% NA_integer_
 	args$orientation = "portrait"
 	structure(args, class = c("tm_legend", "tm_component", "list"))

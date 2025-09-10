@@ -11,7 +11,6 @@ tm_legend(
   title,
   show,
   orientation,
-  design,
   reverse,
   na.show,
   position,
@@ -64,6 +63,7 @@ tm_legend_bivariate(
   ylab,
   xlab.color,
   xlab.size,
+  xlab.rot,
   xlab.fontface,
   xlab.fontfamily,
   xlab.alpha,
@@ -71,6 +71,7 @@ tm_legend_bivariate(
   xlab.align,
   ylab.color,
   ylab.size,
+  ylab.rot,
   ylab.fontface,
   ylab.fontfamily,
   ylab.alpha,
@@ -86,15 +87,13 @@ tm_legend_bivariate(
 
 \item{orientation}{Orientation of the legend: \code{"portrait"} or \code{"landscape"}}
 
-\item{design}{Legend design \code{"standard"}. No other designs implemented yet.}
-
-\item{reverse}{Should the legend be reversed?}
+\item{reverse}{Should the legend items be reversed?}
 
 \item{na.show}{Show \code{NA} values in legend?}
 
-\item{position}{The position specification of the component: an object created with \code{tm_pos_in()} or \code{tm_pos_out()}. Or, as a shortcut, a vector of two values, specifying the x and y coordinates. The first is \code{"left"}, \code{"center"} or \code{"right"} (or upper case, meaning tighter to the map frame), the second \code{"top"}, \code{"center"} or \code{"bottom"}. Numeric values are also supported, where 0, 0 means left bottom and 1, 1 right top. See also \href{https://r-tmap.github.io/tmap/articles/adv_positions}{vignette about positioning}. In case multiple components should be combined (stacked), use \code{group_id} and specify \code{component} in \code{\link[=tm_comp_group]{tm_comp_group()}}.}
+\item{position}{The position specification of the component: an object created with \code{tm_pos_in()} or \code{tm_pos_out()}. Or, as a shortcut, a vector of two values, specifying the x and y coordinates. The first is \code{"left"}, \code{"center"} or \code{"right"} (or upper case, meaning tighter to the map frame), the second \code{"top"}, \code{"center"} or \code{"bottom"}. Numeric values are also supported, where 0, 0 means left bottom and 1, 1 right top. See also \href{https://r-tmap.github.io/tmap/articles/adv_positions}{vignette about positioning}. In case multiple components should be combined (stacked), use \code{group_id} and specify \code{component} in \code{\link[=tm_components]{tm_components()}}.}
 
-\item{group_id}{Component group id name. All components (e.g. legends, titles, etc) with the same \code{group_id} will be grouped. The specifications of how they are placed (e.g. stacking, margins etc.) are determined in \code{\link[=tm_comp_group]{tm_comp_group()}} where its argument \code{id} should correspond to \code{group_id}.}
+\item{group_id}{Component group id name. All components (e.g. legends, titles, etc) with the same \code{group_id} will be grouped. The specifications of how they are placed (e.g. stacking, margins etc.) are determined in \code{\link[=tm_components]{tm_components()}} where its argument \code{id} should correspond to \code{group_id}.}
 
 \item{width}{Width of the legend. Units are 'text line heights'. In case a negative number is specified, the units are (approximate) pixels. The relation between these two is configured via the option \code{absolute_fontsize}.}
 
@@ -156,7 +155,7 @@ tm_legend_bivariate(
 
 \item{item.shape}{The shape of the item of the legend.}
 
-\item{ticks}{List of vectors of size 2 that determines the horizontal tick mark lines (for portrait legends). The values are the y-values of begin and endpoint of each tick mark.}
+\item{ticks}{List of vectors of size 2 that determines a tick mark line (for portrait legends). The values are the y-values of begin and endpoint of a tick mark. For a solid line, only one vector is required, for dashed lines one for each dash. See \href{https://r-tmap.github.io/tmap/articles/versus_ggplot2#mimicking-ggplot2-layout}{ggplot2 style example}.}
 
 \item{ticks.disable.na}{Remove ticks for \code{NA} values}
 
@@ -180,6 +179,8 @@ tm_legend_bivariate(
 
 \item{xlab.size}{The size of the xlab of the legend.}
 
+\item{xlab.rot}{The rot of the xlab of the legend.}
+
 \item{xlab.fontface}{The font face of the xlab of the legend. See \code{graphics::par}, option 'font'.}
 
 \item{xlab.fontfamily}{The font family of the xlab of the legend. See \code{graphics::par}, option 'family'.}
@@ -193,6 +194,8 @@ tm_legend_bivariate(
 \item{ylab.color}{The color of the ylab of the legend.}
 
 \item{ylab.size}{The size of the ylab of the legend.}
+
+\item{ylab.rot}{The rot of the ylab of the legend.}
 
 \item{ylab.fontface}{The font face of the ylab of the legend. See \code{graphics::par}, option 'font'.}
 
@@ -218,7 +221,6 @@ tm_shape(World) +
     fill = "HPI",
     fill.legend = tm_legend(
       title = "Home Price Index",
-      design = "standard",
       title.color = "orange",
       bg.color = "purple",
       show = TRUE

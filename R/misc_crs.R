@@ -2,6 +2,50 @@ crs_is_ortho = function(crs) {
 	grepl("Orthographic", crs$wkt, fixed = TRUE)
 }
 
+
+# could be improved #1152
+full_bbox = function(crs) {
+	if (sf::st_is_longlat(crs)) {
+		sf::st_bbox(sf::st_transform(sf::st_bbox(), crs = crs))
+	} else {
+		# to make sure the projected full bounding box is returned
+		ply = tmaptools::bb_poly(sf::st_bbox())
+		spl = suppressMessages(ply |> sf::st_sample(1e4, type = "regular") |> sf::st_sfc(crs = 4326))
+		spl2 = sf::st_cast(ply, "POINT")
+		spl12 = c(spl, spl2)
+		sf::st_bbox(sf::st_transform(spl12, crs = crs))
+	}
+}
+
+
+ortho_lonlat = function(lon, lat) {
+	paste0("+proj=ortho +lat_0=", lat, " +lon_0=", lon)
+}
+
+transform_ortho = function(shp, crs, tmapID = NULL) {
+	is_sfc = !is.null(tmapID) # also: inherits(shp, "sfc")
+	if (is_sfc) shp = st_sf(shp, tmapID = tmapID)
+	if (crs_is_ortho(crs)) {
+		tryCatch({
+			suppressWarnings({
+				shp4326 = sf::st_transform(shp, 4326)
+				visible = crs_ortho_visible(crs, projected = FALSE)
+				if (!sf::st_is_valid(visible)) visible = sf::st_make_valid(visible)
+				shp = suppressMessages(sf::st_intersection(shp4326, visible))
+			})
+		}, error = function(e) {
+			shp
+		})
+	}
+	shp2 = sf::st_transform(shp, crs = crs)
+
+	if (is_sfc) {
+		list(shp = st_geometry(shp2), tmapID = shp2$tmapID)
+	} else {
+		shp2
+	}
+}
+
 crs_ortho_visible = function(crs, projected = TRUE, max_cells = 1e5) {
 	wkt = sf::st_crs(crs)$wkt
 	lst = strsplit(wkt, ",")[[1]]
@@ -137,5 +181,18 @@ crop_lat = function(bb, crs, limit_latitude_3857 = NULL) {
 		bb
 	} else {
 		bb
+	}
+}
+
+
+to_longest_linestring = function(shp) {
+	crs = sf::st_crs(shp)
+	if (sf::st_geometry_type(shp, by_geometry = FALSE) == "LINESTRING") {
+		shp
+	} else {
+		shp_splitted = sf_expand(shp)
+		do.call(sf::st_sfc, c(lapply(split(shp_splitted, shp_splitted$split__id), function(s) {
+			s$geometry[[which.max(sf::st_length(s))]]
+		}), list(crs = crs)))
 	}
 }

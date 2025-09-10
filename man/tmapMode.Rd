@@ -2,9 +2,9 @@
 % Please edit documentation in R/tmap_options.R
 \name{tmapMode}
 \alias{tmapMode}
-\title{Internal method for submitting a new mode}
+\title{Internal method for submitting a new mode (deprecated)}
 \usage{
-tmapMode(id, name, ...)
+tmapMode(id, name, ..., styleOptions = NULL)
 }
 \arguments{
 \item{id}{id of the mode: please use lowercase and one-word. This will be used with \code{\link[=tmap_mode]{tmap_mode()}}.}
@@ -14,6 +14,6 @@ tmapMode(id, name, ...)
 \item{...}{mode specific options}
 }
 \description{
-Internal method for submitting a new mode
+Internal method for submitting a new mode. Deprecated. Use \code{\link[=tmapSubmitOptions]{tmapSubmitOptions()}} instead.
 }
 \keyword{internal}

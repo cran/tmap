@@ -1,4 +1,4 @@
-tmapGridInit = function(o, return.asp = FALSE, vp, prx, ...) {
+tmapGridInit = function(o, show = TRUE, newpage = TRUE, return.asp = FALSE, vp, prx, ...) {
 	rlang::check_installed("grid")
 
 	rows = with(o, {
@@ -176,7 +176,10 @@ tmapGridInit = function(o, return.asp = FALSE, vp, prx, ...) {
 		fasp = fasp,
 
 		colsIn = colsIn,
-		rowsIn = rowsIn
+		rowsIn = rowsIn,
+
+		nc = nc,
+		nr = nr
 	)
 
 
@@ -204,24 +207,27 @@ tmapGridInit = function(o, return.asp = FALSE, vp, prx, ...) {
 		l <- max(max(nchar(pretext)) + max(nchar(posttext)) + 1, 25)
 		medtext <- vapply(l-lns, function(i)paste(rep(" ", i), collapse=""), character(1))
 
-		texts <- c("----------------W (in)--H (in)--asp---",
+		texts <- c("---------------W (in)-H (in)-asp---",
 				   paste("|", pretext, medtext, posttext, "|"),
 				   paste(rep("-", l+6), collapse=""))
 
-		for (tx in texts) message(tx)
-	}
+		texts_colors = c("Color codings:",
+						 "- light blue  outer margins",
+						 "- dark blue   buffers around outside cells",
+						 "- light green outside cells",
+						 "- dark green  x and ylab cells",
+						 "- pink        panels",
+						 "- red         margins for outside grid labels",
+						 "- orange      margins around maps for grid labels",
+						 "- yellow      map area",
+						 "- lavender    component areas",
+						 "Guide lines:",
+						 "- thick       component position (legend, scalebar, etc.)",
+						 "- thin        component-element position (e.g. legend items)"
+						 )
 
-	# margins around first map (needed for georeferencing)
-	rid = g$rows_facet_ids[1]
-	cid = g$cols_facet_ids[1]
-	map_all_margins = c(
-		sum(g$rowsIn[(rid+1L):nr]),
-		sum(g$colsIn[1:(cid-1L)]),
-		sum(g$rowsIn[1:(rid-1L)]),
-		sum(g$colsIn[(cid+1L):nc]))
+		for (tx in c(texts, texts_colors)) message(tx)
 
-
-	if (getOption("tmap.design.mode")) {
 		gts = lapply(gts, function(gt) {
 
 			p = rep(cols4all::c4a("brewer.paired"), 3)
@@ -254,12 +260,21 @@ tmapGridInit = function(o, return.asp = FALSE, vp, prx, ...) {
 
 			gt
 		})
-
-
 	}
 
+	# margins around first map (needed for georeferencing)
+	rid = g$rows_facet_ids[1]
+	cid = g$cols_facet_ids[1]
+	map_all_margins = c(
+		sum(g$rowsIn[(rid+1L):nr]),
+		sum(g$colsIn[1:(cid-1L)]),
+		sum(g$rowsIn[1:(rid-1L)]),
+		sum(g$colsIn[(cid+1L):nc]))
 
-	if (is.null(vp)) {
+
+
+
+	if (is.null(vp) && show && newpage) {
 		grid.newpage()
 	}# else {
 	#	if (is.character(vp)) seekViewport(vp) else pushViewport(vp)

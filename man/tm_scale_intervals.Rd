@@ -10,6 +10,8 @@ tm_scale_intervals(
   style.args = list(),
   breaks = NULL,
   interval.closure = "left",
+  label.style = "discrete",
+  label.select = TRUE,
   midpoint = NULL,
   as.count = FALSE,
   values = NA,
@@ -22,7 +24,7 @@ tm_scale_intervals(
   labels = NULL,
   label.na = NA,
   label.null = NA,
-  label.format = list()
+  label.format = tm_label_format()
 )
 }
 \arguments{
@@ -35,6 +37,10 @@ tm_scale_intervals(
 \item{breaks}{Interval breaks (only used and required when \code{style = "fixed"})}
 
 \item{interval.closure}{value that determines whether where the intervals are closed: \code{"left"} or \code{"right"}. If \code{as.count = TRUE}, \code{inverval.closure} is always set to \code{"left"}.}
+
+\item{label.style}{Either \code{"discrete"} or \code{"continuous"}. If \code{discrete} (default) intervals will be labeled. If \code{continuous}, the legend will be similar to a continuous scale legend (but with discrete colors), where the breaks are labeled.}
+
+\item{label.select}{Which labels are shown? A logical vector is expected, which is repeated along the number of labels. By default \code{TRUE}, which means all.}
 
 \item{midpoint}{The data value that is interpreted as the midpoint. By default it is set to 0 if negative and positive values are present. Useful when values are diverging colors. In that case, the two sides of the color palette are assigned to negative respectively positive values. If all values are positive or all values are negative, then the midpoint is set to \code{NA}, which means that the value that corresponds to the middle color class (see \code{style}) is mapped to the middle color. If it is specified for sequential color palettes (e.g. \code{"Blues"}), then this color palette will be treated as a diverging color palette.}
 
@@ -60,7 +66,7 @@ tm_scale_intervals(
 
 \item{label.null}{(generic scale argument) Label for null (out-of-scope) values}
 
-\item{label.format}{(generic scale argument) Label formatting (similar to legend.format in tmap3)}
+\item{label.format}{(generic scale argument) Label formatting. Output of \code{\link[=tm_label_format]{tm_label_format()}}}
 }
 \description{
 Scales in tmap are configured by the family of functions with prefix \code{tm_scale}.

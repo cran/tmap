@@ -20,6 +20,19 @@ tm_inset(
   bg,
   bg.color,
   bg.alpha,
+  box_frame,
+  box_frame.color,
+  box_frame.alpha,
+  box_frame.lwd,
+  box_frame.lty,
+  box_bg,
+  box_bg.color,
+  box_bg.alpha,
+  main_frame,
+  main_frame.r,
+  main_frame.color,
+  main_frame.alpha,
+  main_frame.lwd,
   z
 )
 }
@@ -34,9 +47,9 @@ tm_inset(
 
 \item{between_margin}{Margin between}
 
-\item{position}{The position specification of the component: an object created with \code{tm_pos_in()} or \code{tm_pos_out()}. Or, as a shortcut, a vector of two values, specifying the x and y coordinates. The first is \code{"left"}, \code{"center"} or \code{"right"} (or upper case, meaning tighter to the map frame), the second \code{"top"}, \code{"center"} or \code{"bottom"}. Numeric values are also supported, where 0, 0 means left bottom and 1, 1 right top. See also \href{https://r-tmap.github.io/tmap/articles/adv_positions}{vignette about positioning}. In case multiple components should be combined (stacked), use \code{group_id} and specify \code{component} in \code{\link[=tm_comp_group]{tm_comp_group()}}.}
+\item{position}{The position specification of the component: an object created with \code{tm_pos_in()} or \code{tm_pos_out()}. Or, as a shortcut, a vector of two values, specifying the x and y coordinates. The first is \code{"left"}, \code{"center"} or \code{"right"} (or upper case, meaning tighter to the map frame), the second \code{"top"}, \code{"center"} or \code{"bottom"}. Numeric values are also supported, where 0, 0 means left bottom and 1, 1 right top. See also \href{https://r-tmap.github.io/tmap/articles/adv_positions}{vignette about positioning}. In case multiple components should be combined (stacked), use \code{group_id} and specify \code{component} in \code{\link[=tm_components]{tm_components()}}.}
 
-\item{group_id}{Component group id name. All components (e.g. legends, titles, etc) with the same \code{group_id} will be grouped. The specifications of how they are placed (e.g. stacking, margins etc.) are determined in \code{\link[=tm_comp_group]{tm_comp_group()}} where its argument \code{id} should correspond to \code{group_id}.}
+\item{group_id}{Component group id name. All components (e.g. legends, titles, etc) with the same \code{group_id} will be grouped. The specifications of how they are placed (e.g. stacking, margins etc.) are determined in \code{\link[=tm_components]{tm_components()}} where its argument \code{id} should correspond to \code{group_id}.}
 
 \item{frame}{frame should a frame be drawn?}
 
@@ -53,6 +66,18 @@ tm_inset(
 \item{bg.color}{Background color}
 
 \item{bg.alpha}{Background transparency}
+
+\item{box_frame}{Should a box frame be drawn in the main map that shows where the inset is? \code{TRUE} by default}
+
+\item{box_frame.color, box_frame.alpha, box_frame.lwd, box_frame.lty}{Properties of the box frame}
+
+\item{box_bg}{Should the frame box have a background? \code{FALSE} by default}
+
+\item{box_bg.color, box_bg.alpha}{Properties of the box background}
+
+\item{main_frame}{Should a frame be drawn around the inset map? Note that this is different from the general map component frame (the argument \code{frame})}
+
+\item{main_frame.r, main_frame.color, main_frame.alpha, main_frame.lwd}{Properties of the main frame}
 
 \item{z}{z index, e.g. the place of the component relative to the other componets}
 }

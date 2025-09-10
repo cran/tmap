@@ -1,30 +1,44 @@
 complete_with_comp_group = function(comp, o) {
-	# complete all non-called options from tm_legend and tm_<component> with the tm_comp_group specs
-	if (is.na(comp$group_id)) comp$group_id = paste(comp$position$type, comp$position$cell.h, comp$position$cell.v, comp$position$pos.h, comp$position$pos.v, comp$position$just.h, comp$position$just.v, sep = "_")
+	# complete all non-called options from tm_legend and tm_<component> with the tm_components specs
 
-	grp_name = paste("component", comp$group_id, sep = "_")
+	comp_grps = names(o)[grepl("component_", names(o))]
+	grps = gsub(".*component_", "", comp_grps)
+	grps_lst = strsplit(grps, "^", fixed = TRUE)
+	grps_lst = lapply(grps_lst, function(l) {
+		if (length(l) == 0) "" else l
+	})
+	if (is.na(comp$group_id)) {
+		comp$group_id = paste(comp$position$type, comp$position$cell.h, comp$position$cell.v, comp$position$pos.h, comp$position$pos.v, comp$position$just.h, comp$position$just.v, sep = "_")
+	}
 
+	ids = c("", comp$group_id, comp$group_type)
+	comp_ids = paste("component", ids, sep = "_")
+
+
+	# take called from component itself (component function call)
 	if ("called" %in% names(comp)) {
 		comp$called_via_comp_group = comp$called
 	} else {
 		comp$called_via_comp_group = character()
 	}
 
-	if (grp_name %in% names(o)) {
-		oc = o[[grp_name]]
-		if (!is.null(comp$call)) {
-			callo = intersect(names(oc), comp$call)
-			if (length(callo)) oc[callo] = NULL
-		}
-		if ("position" %in% names(oc)) {
-			# happens when component position is taken. Other positions already have been processed in impute_comp and update_l/crt
-			oc$position = process_position(oc$position, o)
-		}
-		if (length(oc)) {
-			comp[names(oc)] = oc
-			comp$called_via_comp_group = unique(c(comp$called_via_comp_group, names(oc)))
+	for (i in seq_along(grps)) {
+		if (length(intersect(grps_lst[[i]], ids))) {
+			oc = o[[comp_grps[i]]]
+			if ("position" %in% names(oc)) {
+				oc$position = process_position(oc$position, o)
+			}
+			if (length(oc)) {
+				comp[names(oc)] = oc
+				comp$called_via_comp_group = unique(c(comp$called_via_comp_group, names(oc)))
+			}
 		}
 	}
+
+	# TO DO:
+	# - loop through grp_ids(2)
+	# - if any ids is equal to grp, do old script
+
 	comp
 }
 
@@ -67,8 +81,8 @@ impute_comp = function(a, o) {
 
 update_l = function(o, l, v, mfun, unm, active) {
 	# update legend options
-	oltype = o[c("legend.design", "legend.orientation")]
-	names(oltype) = c("design", "orientation")
+	oltype = o["legend.orientation"]
+	names(oltype) = "orientation"
 	if (all(v %in% c("AREA", "LENGTH", "MAP_COLORS")) && is.null(l$show)) {
 		l$show = FALSE
 	}
@@ -78,7 +92,7 @@ update_l = function(o, l, v, mfun, unm, active) {
 	l = complete_options(l, oltype)
 	oleg = o[names(o)[substr(names(o), 1, 6) == "legend" & substr(names(o), 1, 15) != "legend.settings"]]
 	names(oleg) = substr(names(oleg), 8, nchar(names(oleg)))
-	settings_name = paste0("legend.settings.", l$design, ".", l$orientation)
+	settings_name = paste0("legend.settings.", l$orientation)
 	oleg = c(oleg, o[[settings_name]])
 
 
@@ -105,7 +119,7 @@ update_l = function(o, l, v, mfun, unm, active) {
 	l = complete_with_comp_group(l, o)
 
 	# update legend class
-	class(l) = c(paste0("tm_legend_", l$design, ifelse(!is.null(l$orientation), paste0("_", l$orientation), "")), "tm_legend", "tm_component", class(l))
+	class(l) = c(paste0("tm_legend", ifelse(!is.null(l$orientation), paste0("_", l$orientation), "")), "tm_legend", "tm_component", class(l))
 	l
 }
 
@@ -157,7 +171,7 @@ warning_group_args = function(args) {
 			cli::format_inline(paste0("{n} = {.val {v}}"))
 		}, old[match(x, old)], new[match(x, old)], args[x], SIMPLIFY = FALSE), list(sep = ", ")))
 
-		cli::cli_warn(paste0("Component group arguments, such as {.var {x}}, are deprecated as of 4.1. Please use {.code group_id = {.val ID}} in combination with {.code tm_comp_group(", s, ")} instead."))
+		cli::cli_warn(paste0("Component group arguments, such as {.var {x}}, are deprecated as of 4.1. Please use {.code group_id = {.val ID}} in combination with {.code tm_components(", s, ")} instead."))
 
 		if ("group.frame" %in% names(args)) {
 			args$frame_combine = args$group.frame

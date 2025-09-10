@@ -24,7 +24,7 @@
 #' for eqdc: \url{https://proj.org/en/9.4/operations/projections/eqdc.html}
 #'
 #' @param shp Spatial object
-#' @param bbox Bounding box of the map (only used if `shp` is the main shape (see `is.main`)
+#' @param bbox Bounding box of the map (only used if `shp` is the main shape (see `is.main`). Three options: a [sf::st_bbox()] object, an Open Street Map query (passed on to [tmaptools::geocode_OSM()]), or `"FULL"`, which means the whole earth (this also guarantees that transformations to another CRS keep the whole earth, unlike [sf::st_bbox()]).
 #' @param crs Map projection (CRS). Can be set to an `crs` object (see [sf::st_crs()]), a proj4string, an EPSG number, the value `"auto"` (automatic crs recommendation), or one the the following generic projections: `c("laea", "aeqd", "utm", "pconic", "eqdc", "stere")`. See details.
 #' @param is.main Is `shp` the main shape, which determines the crs and
 #'   bounding box of the map? By default, `TRUE` if it is the first `tm_shape` call
@@ -47,7 +47,7 @@
 #' @import leaflegend
 #' @import stats
 #' @importFrom methods as
-#' @importFrom utils head tail download.file txtProgressBar str data capture.output setTxtProgressBar
+#' @importFrom utils head tail download.file txtProgressBar str data capture.output setTxtProgressBar methods getS3method
 #' @importFrom rlang missing_arg expr
 #' @importFrom s2 s2_buffer_cells as_s2_geography s2_intersects
 #' @importFrom grDevices col2rgb colorRampPalette colors dev.off dev.size png rgb
@@ -86,7 +86,6 @@ tm_shape = function(shp = NULL,
 	# rivers -> World_rivers
 	if (shp_called %in% c("rivers", "c(735, 320, 325, 392, 524, 450, 1459, 135, 465, 600, 330, 336, ") && # last one to catch qtm calls
 		is.numeric(shp) && length(shp) == 141) {
-		World_rivers = NULL
 		data(World_rivers, envir = environment())
 		shp = World_rivers
 		shp_called = "World_rivers"

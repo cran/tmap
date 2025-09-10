@@ -8,7 +8,7 @@
 #' A symbol shape specification is one of the following three options.
 #' \enumerate{
 #'  \item{A numeric value that specifies the plotting character of the symbol. See parameter \code{pch} of \code{\link[graphics:points]{points}} and the last example to create a plot with all options. Note that this is not supported for the \code{"view" mode.}}
-#'  \item{A \code{\link[grid:grid.grob]{grob}} object, which can be a ggplot2 plot object created with \code{\link[ggplot2:ggplotGrob]{ggplotGrob}}. To specify multiple shapes, a list of grob objects is required. See example of a proportional symbol map with ggplot2 plots}.
+#'  \item{A \code{\link[grid:grid.grob]{grob}} object, which can be a ggplot2 plot object created with \code{\link[ggplot2:ggplotGrob]{ggplotGrob}}. To specify multiple shapes, a list of grob objects is required. Tip: for proportional symbols, such as donuts or pies, see the extension package \href{https://r-tmap.github.io/tmap/articles/ext_glyphs}{tmap.glyphs}}.
 #'  \item{An icon specification, which can be created with \code{\link{tmap_icons}}.}
 #'  }
 #'  To specify multiple shapes (needed for the \code{shapes} argument), a vector or list of these shape specification is required. The shape specification options can also be mixed. For the \code{shapes} argument, it is possible to use a named vector or list, where the names correspond to the value of the variable specified by the \code{shape} argument.
@@ -77,7 +77,7 @@ tm_symbols = function(size = tm_const(),
 					  group = NA,
 					  group.control = "check",
 					  popup.vars = NA,
-					  popup.format = list(),
+					  popup.format = tm_label_format(),
 					  hover = NA,
 					  id = "",
 					  options = opt_tm_symbols(),
@@ -188,7 +188,6 @@ tm_symbols = function(size = tm_const(),
 						lineend = NA),
 		tpar = tmapTpar(),
 		plot.order = plot.order,
-		mapping.fun = "Symbols",
 		mapping.args = options$mapping.args,
 		zindex = zindex,
 		group = group,
@@ -488,8 +487,6 @@ tm_dots = function(fill = tm_const(),
 		tm = do.call(tm_symbols, args)
 		tm[[1]]$layer = c("dots", "symbols")
 		tm
-
-
 }
 
 
@@ -657,6 +654,7 @@ tm_markers = function(text = tm_const(),
 
 	tm_t = do.call(tm_text, args_text)
 	tm_t[[1]]$layer = c("labels", "text")
+
 	tm_d = do.call(tm_dots, args_dots)
 	tm_d[[1]]$layer = c("markers", "symbols")
 

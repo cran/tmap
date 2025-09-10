@@ -1,3 +1,6 @@
+#' @export
+#' @keywords internal
+#' @rdname tmapGridLeaflet
 tmapLeafletCompPrepare = function(comp, o) {
 	UseMethod("tmapLeafletCompPrepare")
 }
@@ -10,13 +13,34 @@ tmapLeafletCompWidth = function(comp, o) {
 	UseMethod("tmapLeafletCompWidth")
 }
 
-tmapLeafletLegPlot = function(comp, lf, o) {
-	UseMethod("tmapLeafletLegPlot")
+tmapLeafletCompPlot = function(comp, lf, o) {
+	UseMethod("tmapLeafletCompPlot")
+}
+
+#' @export
+#' @keywords internal
+#' @rdname tmapGridLeaflet
+tmapLeafletCompPrepare.tm_chart_none = function(comp, o) {
+	comp$show = FALSE
+	comp
 }
 
 
 #' @export
-tmapLeafletCompPrepare.tm_legend_standard_portrait = function(comp, o) {
+#' @keywords internal
+#' @rdname tmapGridLeaflet
+tmapLeafletCompPrepare.default = function(comp, o) {
+	cls = class(comp)[1]
+	id = paste("view_mode", cls, sep = "_")
+	cli::cli_inform("{.field [view mode]} Map component {.fun {cls}} not supported in {.str view} mode.",
+					.frequency_id = id,
+					.frequency = "once")
+	comp$show = FALSE
+	comp
+}
+
+#' @export
+tmapLeafletCompPrepare.tm_legend_portrait = function(comp, o) {
 	tmapLeaflet_legend_comp(comp, o)
 }
 
@@ -52,6 +76,8 @@ tmapLeaflet_legend_comp = function(comp, o) {
 
 		} else if (any(c("bgcol", "bgcol_alpha") %in% varying)) {
 			"none"
+		} else if ("tm_data_lines" %in% mfun) {
+			"lines"
 		} else {
 			"symbols"
 		}
@@ -60,14 +86,13 @@ tmapLeaflet_legend_comp = function(comp, o) {
 		title.color = do.call("process_color", c(list(col=title.color), o$pc))
 		text.color = do.call("process_color", c(list(col=text.color), o$pc))
 
-
 		gp2 = gp_to_lpar(gp, mfun = comp$mfun, shape = comp$item.shape, size_factor = 14)
 	})
 }
 
 
 #' @export
-tmapLeafletCompHeight.tm_legend_standard_portrait = function(comp, o) {
+tmapLeafletCompHeight.tm_legend_portrait = function(comp, o) {
 	within(comp, {
 		if (type == "gradient") {
 			height = if (is.na(height)) {
@@ -86,7 +111,7 @@ tmapLeafletCompHeight.tm_legend_standard_portrait = function(comp, o) {
 
 
 #' @export
-tmapLeafletCompWidth.tm_legend_standard_portrait = function(comp, o) {
+tmapLeafletCompWidth.tm_legend_portrait = function(comp, o) {
 	within(comp, {
 		if (type == "gradient") {
 			width = if (is.na(width)) {
@@ -107,12 +132,12 @@ tmapLeafletCompWidth.tm_legend_standard_portrait = function(comp, o) {
 
 
 #' @export
-tmapLeafletCompPrepare.tm_legend_standard_landscape = function(comp, o) {
+tmapLeafletCompPrepare.tm_legend_landscape = function(comp, o) {
 	tmapLeaflet_legend_comp(comp, o)
 }
 
 #' @export
-tmapLeafletCompHeight.tm_legend_standard_landscape = function(comp, o) {
+tmapLeafletCompHeight.tm_legend_landscape = function(comp, o) {
 	within(comp, {
 		if (type == "gradient") {
 			height = if (is.na(height)) {
@@ -131,7 +156,7 @@ tmapLeafletCompHeight.tm_legend_standard_landscape = function(comp, o) {
 
 
 #' @export
-tmapLeafletCompWidth.tm_legend_standard_landscape = function(comp, o) {
+tmapLeafletCompWidth.tm_legend_landscape = function(comp, o) {
 	within(comp, {
 		if (type == "gradient") {
 			width = if (is.na(width)) {

@@ -2,12 +2,19 @@
 tmapReproject.sfc = function(shp, tmapID, bbox = NULL, ..., crs) {
 	if (is.na(sf::st_crs(shp))) {
 		shp2 = shp
-		#sf::st_crs(shp2) = crs
-		#warning("Setting missing CRS to ", as.character(crs))
 	} else {
-		shp2 = sf::st_transform(shp, crs)
+		res = transform_ortho(shp, crs, tmapID)
+		shp2 = res$shp
+		tmapID = res$tmapID
 	}
-	if (!is.null(bbox$x)) bbox = list(x = do.call(tmaptools::bb, c(bbox, list(projection = crs))))
+
+	if (!is.null(bbox$x)) {
+		if (identical(bbox$x, "FULL")) {
+			bbox = list(x = full_bbox(crs))
+		} else {
+			bbox = list(x = do.call(tmaptools::bb, c(bbox, list(projection = crs))))
+		}
+	}
 	shapeTM(shp2, tmapID, bbox, ...)
 }
 
@@ -17,19 +24,7 @@ tmapShape.sf = function(shp, is.main, crs, bbox, unit, filter, shp_name, smeta, 
 	reproj = (!is.null(crs) && !is.na(crs) && sf::st_crs(shp) != crs)
 
 	if (reproj) {
-		if (crs_is_ortho(crs)) {
-			tryCatch({
-				suppressWarnings({
-					shp4326 = sf::st_transform(shp, 4326)
-					visible = crs_ortho_visible(crs, projected = FALSE)
-					if (!sf::st_is_valid(visible)) visible = sf::st_make_valid(visible)
-					shp = suppressMessages(sf::st_intersection(shp4326, visible))
-				})
-			}, error = function(e) {
-				shp
-			})
-		}
-		shp = sf::st_transform(shp, crs = crs)
+		shp = transform_ortho(shp, crs)
 	}
 
 	sfc = sf::st_geometry(shp)
@@ -51,7 +46,7 @@ tmapShape.sf = function(shp, is.main, crs, bbox, unit, filter, shp_name, smeta, 
 
 
 	if (is.null(filter)) filter = rep_len(TRUE, nrow(dt))
-	dt[, ':='(tmapID__ = 1L:nrow(dt), sel__ = filter)]
+	dt[, ':='(tmapID__ = 1L:.N, sel__ = filter)]
 
 	make_by_vars(dt, tmf, smeta)
 
@@ -70,7 +65,7 @@ tmapSubsetShp.sf = function(shp, vars) {
 		shp$LENGTH = sf::st_length(shp)
 	}
 	if ("MAP_COLORS" %in% vars) {
-		shp$MAP_COLORS = as.factor(tmaptools::map_coloring(shp))
+		shp$MAP_COLORS = as.factor(tmaptools::map_coloring(shp, ncols = 7))
 	}
 
 	if (!length(vars)) {
@@ -91,7 +86,7 @@ tmapSubsetShp.sfc = function(shp, vars) {
 		s$LENGTH = sf::st_length(shp)
 	}
 	if ("MAP_COLORS" %in% vars) {
-		s$MAP_COLORS = tmaptools::map_coloring(s)
+		s$MAP_COLORS = as.factor(tmaptools::map_coloring(shp, ncols = 7))
 	}
 	s
 }

@@ -132,14 +132,16 @@ transwarp = function(x, crs, raster.warp) {
 			if (is_curvilinear(x)) {
 				sf::st_transform(x, crs = crs)
 			} else {
-				stars::st_warp(x, crs = crs)
+				z = stars::st_warp(x, crs = crs)
+				.TMAP$raster_wrap = TRUE
+				z
 			}
 		}, error = function(e) {
 			cli::cli_warn(c("!" = "Unable to warp stars. Stars will be transformed now (which will take some time)."))
 			tryCatch({
 				sf::st_transform(x, crs = crs)
 			}, error = function(e) {
-				cli::cli_abort("Also unable to transform stars", call = NULL)
+				cli::cli_abort("Unable to warp or transform stars", call = NULL)
 			})
 		})
 	} else {

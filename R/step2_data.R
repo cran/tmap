@@ -27,32 +27,6 @@ step2_data = function(tm) {
 		if ("by2__" %in% names(dt) && o$rev2) dt[, by2__ := (o$fn[2]+1L)-by2__]
 		if ("by3__" %in% names(dt) && o$rev3) dt[, by3__ := (o$fn[3]+1L)-by3__]
 
-
-		if (o$facet.flip && !o$type %in% c("wrapstack", "wrap", "stack")) {
-			if ("by2__" %in% names(dt)) {
-				dt[, by2b__:= by2__]
-				dt[, by2__ := NULL]
-			}
-			if ("by1__" %in% names(dt)) {
-				dt[, by2__:= by1__]
-			}
-			if ("by2b__" %in% names(dt)) {
-				dt[, by1__ := by2b__]
-				dt[, by2b__ := NULL]
-			}
-
-			tmf = within(tmf, {
-				b = ifelse(b == 1L, 2L, ifelse(b == 2L, 1L, b))
-				v = ifelse(v == 1L, 2L, ifelse(v == 2L, 1L, v))
-				by__ = ifelse(by__ == "by1__", "by2__", ifelse(by__ == "by2__", "by1__", by__))
-				var__ = ifelse(var__ == "by1__", "by2__", ifelse(var__ == "by2__", "by1__", var__))
-				gn = gn[c(2,1,3)]
-				gl = gl[c(2,1,3)]
-				#fl = fl[c(2,1,3)]
-				#fn = fn[c(2,1,3)]
-			})
-		}
-
 		shpvars = tmg$tms$smeta$vars
 
 		# step2_data_grp_prepare
@@ -72,11 +46,13 @@ step2_data = function(tm) {
 
 			.TMAP$popup.format = tml$popup.format
 
+			mfun = tml$mapping.fun
+
 			# args will be passed on to the scale functions (in case needed)
 			# they also will be used in step 3 (trans) and step 4 (mapping)
-			trans = mapply(getdts, tml$trans.aes, names(tml$trans.aes), SIMPLIFY = FALSE, MoreArgs = list(p = tp, q = tmf, o = o, dt = dt, shpvars = shpvars, layer = tml$layer, group = group, mfun = tml$mapping.fun, args = tml$trans.args, plot.order = plot.order))
+			trans = mapply(getdts, tml$trans.aes, names(tml$trans.aes), SIMPLIFY = FALSE, MoreArgs = list(p = tp, q = tmf, o = o, dt = dt, shpvars = shpvars, layer = tml$layer, group = group, mfun = mfun, args = tml$trans.args, plot.order = plot.order))
 
-			mapping = mapply(getdts, tml$mapping.aes, names(tml$mapping.aes), SIMPLIFY = FALSE, MoreArgs = list(p = gp, q = tmf, o = o, dt = dt, shpvars = shpvars, layer = tml$layer, group = group, mfun = tml$mapping.fun, args = tml$mapping.args, plot.order = plot.order))
+			mapping = mapply(getdts, tml$mapping.aes, names(tml$mapping.aes), SIMPLIFY = FALSE, MoreArgs = list(p = gp, q = tmf, o = o, dt = dt, shpvars = shpvars, layer = tml$layer, group = group, mfun = mfun, args = tml$mapping.args, plot.order = plot.order))
 
 			dts_trans = cbind_dts(lapply(trans, function(x) x$dt), plot.order)
 			trans_legend = lapply(trans, function(x) x$leg)
@@ -177,10 +153,6 @@ step2_data = function(tm) {
 		if (rev1) fl[[1]][] = rev(fl[[1]][])
 		if (rev2) fl[[2]][] = rev(fl[[2]][])
 		if (rev3) fl[[3]][] = rev(fl[[3]][])
-		if (facet.flip  && !type %in% c("wrapstack", "wrap", "stack")) {
-			fl[] = fl[c(2,1,3)]
-			fn = fn[c(2,1,3)]
-		}
 	})
 
 	list(tmo = grps, aux = aux, cmp = cmp, prx = prx, o = o)

@@ -1,10 +1,51 @@
-tmapLeafletTilesPrep = function(a, bs, id, o) {
-	tiles = lapply(1L:length(bs), function(i) a)
-	.TMAP_LEAFLET$tiles[[id]] = tiles
-	paste0(a$server, collapse = "__")
+#' @export
+#' @keywords internal
+#' @rdname tmapGridLeaflet
+tmapLeafletAuxPrepare = function(a, bs, id, o) {
+	UseMethod("tmapLeafletAuxPrepare")
 }
 
-tmapLeafletTiles = function(bi, bbx, facet_row, facet_col, facet_page, id, pane, group, o) {
+
+#' @export
+#' @keywords internal
+#' @rdname tmapGridLeaflet
+tmapLeafletAuxPlot = function(a, bi, bbx, facet_row, facet_col, facet_page, id, pane, group, o) {
+	UseMethod("tmapLeafletAuxPlot")
+}
+
+#' @export
+#' @keywords internal
+#' @rdname tmapGridLeaflet
+tmapLeafletAuxPrepare.tm_aux_basemap = function(a, bs, id, o) {
+	tmapLeafletAuxPrepare.tm_aux_tiles(a, bs, id, o)
+}
+
+#' @export
+#' @keywords internal
+#' @rdname tmapGridLeaflet
+tmapLeafletAuxPrepare.tm_aux_tiles = function(a, bs, id, o) {
+	nms = names(a$server)
+	a$server = unname(a$server)
+	tiles = lapply(1L:length(bs), function(i) a)
+	.TMAP_LEAFLET$tiles[[id]] = tiles
+	if (!is.null(nms)) {
+		paste0(nms, collapse = "__")
+	} else {
+		paste0(a$server, collapse = "__")
+	}
+}
+
+#' @export
+#' @keywords internal
+#' @rdname tmapGridLeaflet
+tmapLeafletAuxPlot.tm_aux_basemap = function(a, bi, bbx, facet_row, facet_col, facet_page, id, pane, group, o) {
+	tmapLeafletAuxPlot.tm_aux_tiles(a, bi, bbx, facet_row, facet_col, facet_page, id, pane, group, o)
+}
+
+#' @export
+#' @keywords internal
+#' @rdname tmapGridLeaflet
+tmapLeafletAuxPlot.tm_aux_tiles = function(a, bi, bbx, facet_row, facet_col, facet_page, id, pane, group, o) {
 
 	lf = get_lf(facet_row, facet_col, facet_page)
 
@@ -20,12 +61,16 @@ tmapLeafletTiles = function(bi, bbx, facet_row, facet_col, facet_page, id, pane,
 	}
 	if (!is.na(o$set_zoom_limits[2])) opt$maxZoom = o$set_zoom_limits[2]
 
-	for (s in tiles$server) {
-		if (s != "") {
-			if ((substr(s, 1, 4) == "http")) {
-				lf = leaflet::addTiles(lf, urlTemplate = s, group = s, options = opt)
+	k = length(tiles$server)
+
+	groups = rep(strsplit(group, "__", fixed = TRUE)[[1]], length.out = k)
+
+	for (i in 1L:k) {
+		if (tiles$server[i] != "") {
+			if ((substr(tiles$server[i], 1, 4) == "http")) {
+				lf = leaflet::addTiles(lf, urlTemplate = tiles$server[i], group = groups[i], options = opt)
 			} else {
-				lf = leaflet::addProviderTiles(lf, provider = s, group = s, options = opt)
+				lf = leaflet::addProviderTiles(lf, provider = tiles$server[i], group = groups[i], options = opt)
 			}
 		}
 	}
@@ -34,7 +79,17 @@ tmapLeafletTiles = function(bi, bbx, facet_row, facet_col, facet_page, id, pane,
 	NULL
 }
 
-tmapLeafletGridPrep = function(a, bs, id, o) {
+#' @export
+#' @keywords internal
+#' @rdname tmapGridLeaflet
+tmapLeafletAuxPrepare.tm_aux_graticules = function(a, bs, id, o) {
+	tmapLeafletAuxPrepare.tm_aux_grid(a, bs, id, o)
+}
+
+#' @export
+#' @keywords internal
+#' @rdname tmapGridLeaflet
+tmapLeafletAuxPrepare.tm_aux_grid = function(a, bs, id, o) {
 
 	grid_intervals = vapply(bs, function(b) {
 		# implementation similarish as plot mode but needs polishing
@@ -54,7 +109,17 @@ tmapLeafletGridPrep = function(a, bs, id, o) {
 	return("grid")
 }
 
-tmapLeafletGrid = function(bi, bbx, facet_row, facet_col, facet_page, id, pane, group, o) {
+#' @export
+#' @keywords internal
+#' @rdname tmapGridLeaflet
+tmapLeafletAuxPlot.tm_aux_graticules = function(a, bi, bbx, facet_row, facet_col, facet_page, id, pane, group, o) {
+	tmapLeafletAuxPlot.tm_aux_grid(a, bi, bbx, facet_row, facet_col, facet_page, id, pane, group, o)
+}
+
+#' @export
+#' @keywords internal
+#' @rdname tmapGridLeaflet
+tmapLeafletAuxPlot.tm_aux_grid = function(a, bi, bbx, facet_row, facet_col, facet_page, id, pane, group, o) {
 	lf = get_lf(facet_row, facet_col, facet_page)
 	rc_text = frc(facet_row, facet_col)
 

@@ -21,7 +21,6 @@
 #' @param ... List of tmap options to be set, or option names (characters) to be returned (see details)
 #' @param crs Map crs (see [tm_shape()]). `NA` means the crs is specified in [tm_shape()]. The crs that is used by the transformation functions is defined in [tm_shape()].
 #' @param facet.max Maximum number of facets
-#' @param facet.flip Should facets be flipped (in case of facet wrap)? This can also be set via [tm_facets_flip()]
 #' @param free.scales For backward compatibility: if this value is set, it will be used to impute the free arguments in the layer functions
 #' @param raster.max_cells Maximum number of raster grid cells. Can be mode specific `c(plot = 3000, view = 1000, 1000)` (the last value is the fall back default)
 #' @param raster.warp Should rasters be warped or transformed in case a different projection (crs) is used? Warping creates a new regular raster in the target crs, whereas transforming creates a (usually non-regular) raster in the target crs. The former is lossy, but much faster and is therefore the default.
@@ -44,7 +43,7 @@
 #' @param scale.misc.args Default values of scale function-specific arguments. A list is required with per scale function and optional per visual variable.
 #' @param continuous.nclass_per_legend_break The number of continuous legend breaks within one 'unit' (label).  The default value is 50.
 #' @param continuous.nclasses the number of classes of a continuous scale. Should be odd.  The default value is 101.
-#' @param label.format Format for the labels (was `legend.format` in tmap v3).
+#' @param label.format Format for the labels. These are the default values for [tm_label_format()]
 #' @param label.na Default label for missing values.
 #' @param scale Overall scale of the map
 #' @param asp Aspect ratio of each map. When `asp` is set to `NA` (default) the aspect ratio will be adjusted to the used shapes. When set to 0 the aspect ratio is
@@ -68,9 +67,6 @@
 #' @param panel.margin `r .doc_opt("panel.margin")`
 #' @param component.offset `r .doc_opt("component.offset")`
 #' @param component.stack_margin `r .doc_opt("component.stack_margin")`
-#' @param grid.mark.height `r .doc_opt("grid.mark.height")`
-#' @param xylab.height `r .doc_opt("xylab.height")`
-#' @param coords.height `r .doc_opt("coords.height")`
 #' @param xlab.show `r .doc_opt("xlab.show")`
 #' @param xlab.text `r .doc_opt("xlab.text")`
 #' @param xlab.size `r .doc_opt("xlab.size")`
@@ -97,14 +93,13 @@
 #' @param unit Unit of the coordinate
 #' @param color.sepia_intensity `r .doc_opt("color.sepia_intensity")`
 #' @param color.saturation `r .doc_opt("color.saturation")`
-#' @param color_vision_deficiency_sim `Color vision deficiency simulation
+#' @param color_vision_deficiency_sim Color vision deficiency simulation. Either `"protan"`, `"deutan"`, or `"tritan"`.
 #' @param text.fontface `r .doc_opt("text.fontface")`
 #' @param text.fontfamily `r .doc_opt("text.fontfamily")`
-#' @param text.alpha `r .doc_opt("text.alpha")`
+#' @param r `r .doc_opt("r")`
 #' @param component.position `r .doc_opt("component.position")`
 #' @param component.autoscale `r .doc_opt("component.autoscale")`
 #' @param legend.show `r .doc_opt("legend.show")`
-#' @param legend.design `r .doc_opt("legend.design")`
 #' @param legend.orientation `r .doc_opt("legend.orientation")`
 #' @param legend.position `r .doc_opt("legend.position")`
 #' @param legend.width `r .doc_opt("legend.width")`
@@ -121,11 +116,13 @@
 #' @param legend.xlab.size `r .doc_opt("legend.xlab.size")`
 #' @param legend.xlab.fontface `r .doc_opt("legend.xlab.fontface")`
 #' @param legend.xlab.fontfamily `r .doc_opt("legend.xlab.fontfamily")`
+#' @param legend.xlab.rot `r .doc_opt("legend.xlab.rot")`
 #' @param legend.xlab.alpha `r .doc_opt("legend.xlab.alpha")`
 #' @param legend.ylab.color `r .doc_opt("legend.ylab.color")`
 #' @param legend.ylab.size `r .doc_opt("legend.ylab.size")`
 #' @param legend.ylab.fontface `r .doc_opt("legend.ylab.fontface")`
 #' @param legend.ylab.fontfamily `r .doc_opt("legend.ylab.fontfamily")`
+#' @param legend.ylab.rot `r .doc_opt("legend.ylab.rot")`
 #' @param legend.ylab.alpha `r .doc_opt("legend.ylab.alpha")`
 #' @param legend.text.color `r .doc_opt("legend.text.color")`
 #' @param legend.text.size `r .doc_opt("legend.text.size")`
@@ -137,10 +134,10 @@
 #' @param legend.frame.r `r .doc_opt("legend.frame.r")`
 #' @param legend.bg.color `r .doc_opt("legend.bg.color")`
 #' @param legend.bg.alpha `r .doc_opt("legend.bg.alpha")`
-#' @param legend.only `r .doc_opt("legend.only")`
+#' @param legend.only Should only legends be printed (so without map)?
 #' @param legend.absolute_fontsize `r .doc_opt("legend.absolute_fontsize")`
-#' @param legend.settings.standard.portrait `r .doc_opt("legend.settings.standard.portrait")`
-#' @param legend.settings.standard.landscape `r .doc_opt("legend.settings.standard.landscape")`
+#' @param legend.settings.portrait `r .doc_opt("legend.settings.portrait")`
+#' @param legend.settings.landscape `r .doc_opt("legend.settings.landscape")`
 #' @param chart.show `r .doc_opt("chart.show")`
 #' @param chart.plot.axis.x `r .doc_opt("chart.plot.axis.x")`
 #' @param chart.plot.axis.y `r .doc_opt("chart.plot.axis.y")`
@@ -272,7 +269,9 @@
 #' @param earth_boundary.color `r .doc_opt("earth_boundary.color")`
 #' @param earth_boundary.lwd `r .doc_opt("earth_boundary.lwd")`
 #' @param earth_datum  Earth datum
+#' @param space Should the space be drawn? Only applicable is earth_boundary is enabled.
 #' @param space.color `r .doc_opt("space.color")`
+#' @param space_overlay Should the space be drawn as overlay (to make sure spatial features or rasters do not exceed the earth boundary), or as background? By default `TRUE` when a raster is warped.
 #' @param check_and_fix Should attempt to fix an invalid shapefile
 #' @param basemap.show `r .doc_opt("basemap.show")`
 #' @param basemap.server `r .doc_opt("basemap.server")`
@@ -344,7 +343,7 @@
 #' @export
 #' @example ./examples/tmap_options.R
 #' @name tmap_options
-tmap_options = function(..., crs, facet.max, facet.flip, free.scales, raster.max_cells, raster.warp, show.messages, show.warnings, output.format, output.size, output.dpi, animation.dpi, value.const, value.na, value.null, value.blank, values.var, values.range, value.neutral, values.scale, scales.var, scale.misc.args, continuous.nclass_per_legend_break, continuous.nclasses, label.format, label.na, scale, asp, bg, bg.color, outer.bg, outer.bg.color, frame, frame.color, frame.alpha, frame.lwd, frame.r, frame.double_line, outer.margins, inner.margins, inner.margins.extra, meta.margins, meta.auto_margins, between_margin, panel.margin, grid.mark.height, xylab.height, coords.height, xlab.show, xlab.text, xlab.size, xlab.color, xlab.rotation, xlab.space, xlab.fontface, xlab.fontfamily, xlab.alpha, xlab.side, ylab.show, ylab.text, ylab.size, ylab.color, ylab.rotation, ylab.space, ylab.fontface, ylab.fontfamily, ylab.alpha, ylab.side, panel.type, panel.wrap.pos, panel.xtab.pos, unit, color.sepia_intensity, color.saturation, color_vision_deficiency_sim, text.fontface, text.fontfamily, text.alpha, component.position, component.offset, component.stack_margin, component.autoscale, component.resize_as_group, component.frame_combine, component.stack, legend.stack, chart.stack, component.equalize, component.frame, component.frame.color, component.frame.alpha, component.frame.lwd, component.frame.r, component.bg, component.bg.color, component.bg.alpha, legend.show, legend.design, legend.orientation, legend.position, legend.width, legend.height, legend.reverse, legend.na.show, legend.title.color, legend.title.size, legend.title.fontface, legend.title.fontfamily, legend.title.alpha, legend.xlab.color, legend.xlab.size, legend.xlab.fontface, legend.xlab.fontfamily, legend.xlab.alpha, legend.ylab.color, legend.ylab.size, legend.ylab.fontface, legend.ylab.fontfamily, legend.ylab.alpha, legend.text.color, legend.text.size, legend.text.fontface, legend.text.fontfamily, legend.text.alpha, legend.frame, legend.frame.color, legend.frame.alpha, legend.frame.lwd, legend.frame.r, legend.bg, legend.bg.color, legend.bg.alpha, legend.only, legend.absolute_fontsize, legend.settings.standard.portrait, legend.settings.standard.landscape, add_legend.position, chart.show, chart.plot.axis.x, chart.plot.axis.y, chart.position, chart.width, chart.height, chart.reverse, chart.na.show, chart.title.color, chart.title.size, chart.title.fontface, chart.title.fontfamily, chart.title.alpha, chart.xlab.color, chart.xlab.size, chart.xlab.fontface, chart.xlab.fontfamily, chart.xlab.alpha, chart.ylab.color, chart.ylab.size, chart.ylab.fontface, chart.ylab.fontfamily, chart.ylab.alpha, chart.text.color, chart.text.size, chart.text.fontface, chart.text.fontfamily, chart.text.alpha, chart.frame, chart.frame.color, chart.frame.alpha, chart.frame.lwd, chart.frame.r, chart.bg, chart.bg.color, chart.bg.alpha, chart.object.color, title.size, title.color, title.fontface, title.fontfamily, title.alpha, title.padding, title.frame, title.frame.color, title.frame.alpha, title.frame.lwd, title.frame.r, title.position, title.width, credits.size, credits.color, credits.fontface, credits.fontfamily, credits.alpha, credits.padding, credits.position, credits.width, credits.height, compass.north, compass.type, compass.text.size, compass.size, compass.show.labels, compass.cardinal.directions, compass.text.color, compass.color.dark, compass.color.light, compass.lwd, compass.margins, compass.position, inset.position, logo.height, logo.margins, logo.between_margin, logo.position, inset_map.height, inset_map.width, inset_map.margins, inset_map.between_margin, inset_map.position, inset_map.frame, inset.height, inset.width, inset.margins, inset.between_margin, inset.frame, inset.bg, inset.bg.color, inset.bg.alpha, inset_grob.height, inset_grob.width, inset_gg.height, inset_gg.width, scalebar.breaks, scalebar.width, scalebar.allow_clipping, scalebar.text.size, scalebar.text.color, scalebar.text.fontface, scalebar.text.fontfamily, scalebar.color.dark, scalebar.color.light, scalebar.lwd, scalebar.size, scalebar.margins, scalebar.position, grid.show, grid.labels.pos, grid.x, grid.y, grid.n.x, grid.n.y, grid.crs, grid.col, grid.lwd, grid.alpha, grid.labels.show, grid.labels.size, grid.labels.col, grid.labels.fontface, grid.labels.fontfamily, grid.labels.rot, grid.labels.format, grid.labels.cardinal, grid.labels.margin.x, grid.labels.margin.y, grid.labels.space.x, grid.labels.space.y, grid.labels.inside_frame, grid.ticks, grid.lines, grid.ndiscr, mouse_coordinates.position, minimap.server, minimap.toggle, minimap.position, panel.show, panel.labels, panel.label.size, panel.label.color, panel.label.fontface, panel.label.fontfamily, panel.label.alpha, panel.label.bg, panel.label.bg.color, panel.label.bg.alpha, panel.label.frame, panel.label.frame.color, panel.label.frame.alpha, panel.label.frame.lwd, panel.label.frame.r, panel.label.height, panel.label.rot, qtm.scalebar, qtm.minimap, qtm.mouse_coordinates, earth_boundary, earth_boundary.color, earth_boundary.lwd, earth_datum, space.color, check_and_fix, basemap.show, basemap.server, basemap.alpha, basemap.zoom, tiles.show, tiles.server, tiles.alpha, tiles.zoom, attr.color, crs_extra, crs_global, crs_basemap,
+tmap_options = function(..., crs, facet.max, free.scales, raster.max_cells, raster.warp, show.messages, show.warnings, output.format, output.size, output.dpi, animation.dpi, value.const, value.na, value.null, value.blank, values.var, values.range, value.neutral, values.scale, scales.var, scale.misc.args, continuous.nclass_per_legend_break, continuous.nclasses, label.format, label.na, scale, asp, bg, bg.color, outer.bg, outer.bg.color, frame, frame.color, frame.alpha, frame.lwd, frame.r, frame.double_line, outer.margins, inner.margins, inner.margins.extra, meta.margins, meta.auto_margins, between_margin, panel.margin, xlab.show, xlab.text, xlab.size, xlab.color, xlab.rotation, xlab.space, xlab.fontface, xlab.fontfamily, xlab.alpha, xlab.side, ylab.show, ylab.text, ylab.size, ylab.color, ylab.rotation, ylab.space, ylab.fontface, ylab.fontfamily, ylab.alpha, ylab.side, panel.type, panel.wrap.pos, panel.xtab.pos, unit, color.sepia_intensity, color.saturation, color_vision_deficiency_sim, text.fontface, text.fontfamily, r, component.position, component.offset, component.stack_margin, component.autoscale, component.resize_as_group, component.frame_combine, component.stack, legend.stack, chart.stack, component.equalize, component.frame, component.frame.color, component.frame.alpha, component.frame.lwd, component.frame.r, component.bg, component.bg.color, component.bg.alpha, legend.show, legend.orientation, legend.position, legend.width, legend.height, legend.reverse, legend.na.show, legend.title.color, legend.title.size, legend.title.fontface, legend.title.fontfamily, legend.title.alpha, legend.xlab.color, legend.xlab.size, legend.xlab.rot, legend.xlab.fontface, legend.xlab.fontfamily, legend.xlab.alpha, legend.ylab.color, legend.ylab.size, legend.ylab.rot, legend.ylab.fontface, legend.ylab.fontfamily, legend.ylab.alpha, legend.text.color, legend.text.size, legend.text.fontface, legend.text.fontfamily, legend.text.alpha, legend.frame, legend.frame.color, legend.frame.alpha, legend.frame.lwd, legend.frame.r, legend.bg, legend.bg.color, legend.bg.alpha, legend.only, legend.absolute_fontsize, legend.settings.portrait, legend.settings.landscape, add_legend.position, chart.show, chart.plot.axis.x, chart.plot.axis.y, chart.position, chart.width, chart.height, chart.reverse, chart.na.show, chart.title.color, chart.title.size, chart.title.fontface, chart.title.fontfamily, chart.title.alpha, chart.xlab.color, chart.xlab.size, chart.xlab.fontface, chart.xlab.fontfamily, chart.xlab.alpha, chart.ylab.color, chart.ylab.size, chart.ylab.fontface, chart.ylab.fontfamily, chart.ylab.alpha, chart.text.color, chart.text.size, chart.text.fontface, chart.text.fontfamily, chart.text.alpha, chart.frame, chart.frame.color, chart.frame.alpha, chart.frame.lwd, chart.frame.r, chart.bg, chart.bg.color, chart.bg.alpha, chart.object.color, title.size, title.color, title.fontface, title.fontfamily, title.alpha, title.padding, title.frame, title.frame.color, title.frame.alpha, title.frame.lwd, title.frame.r, title.position, title.width, credits.size, credits.color, credits.fontface, credits.fontfamily, credits.alpha, credits.padding, credits.position, credits.width, credits.height, compass.north, compass.type, compass.text.size, compass.size, compass.show.labels, compass.cardinal.directions, compass.text.color, compass.color.dark, compass.color.light, compass.lwd, compass.margins, compass.position, inset.position, logo.height, logo.margins, logo.between_margin, logo.position, inset_map.height, inset_map.width, inset_map.margins, inset_map.between_margin, inset_map.position, inset_map.frame, inset.height, inset.width, inset.margins, inset.between_margin, inset.frame, inset.bg, inset.bg.color, inset.bg.alpha, inset_grob.height, inset_grob.width, inset_gg.height, inset_gg.width, scalebar.breaks, scalebar.width, scalebar.allow_clipping, scalebar.text.size, scalebar.text.color, scalebar.text.fontface, scalebar.text.fontfamily, scalebar.color.dark, scalebar.color.light, scalebar.lwd, scalebar.size, scalebar.margins, scalebar.position, grid.show, grid.labels.pos, grid.x, grid.y, grid.n.x, grid.n.y, grid.crs, grid.col, grid.lwd, grid.alpha, grid.labels.show, grid.labels.size, grid.labels.col, grid.labels.fontface, grid.labels.fontfamily, grid.labels.rot, grid.labels.format, grid.labels.cardinal, grid.labels.margin.x, grid.labels.margin.y, grid.labels.space.x, grid.labels.space.y, grid.labels.inside_frame, grid.ticks, grid.lines, grid.ndiscr, mouse_coordinates.position, minimap.server, minimap.toggle, minimap.position, panel.show, panel.labels, panel.label.size, panel.label.color, panel.label.fontface, panel.label.fontfamily, panel.label.alpha, panel.label.bg, panel.label.bg.color, panel.label.bg.alpha, panel.label.frame, panel.label.frame.color, panel.label.frame.alpha, panel.label.frame.lwd, panel.label.frame.r, panel.label.height, panel.label.rot, qtm.scalebar, qtm.minimap, qtm.mouse_coordinates, earth_boundary, earth_boundary.color, earth_boundary.lwd, earth_datum, space, space.color, space_overlay, check_and_fix, basemap.show, basemap.server, basemap.alpha, basemap.zoom, tiles.show, tiles.server, tiles.alpha, tiles.zoom, attr.color, crs_extra, crs_global, crs_basemap,
 						use_gradient, # plot mode
 						use_browser, use_WebGL, control.position, control.bases, control.overlays, control.collapse, set_bounds, # view mode
 						set_view, set_zoom_limits, use_circle_markers, leaflet.options, # view mode
@@ -400,7 +399,7 @@ tmap_options = function(..., crs, facet.max, facet.flip, free.scales, raster.max
 
 	mode_opts = setdiff(unique(unlist(lapply(o$modes, names))), "name")
 
-	all_opts = union(mode_opts, names(.defaultTmapOptions))
+	all_opts = union(mode_opts, names(.TMAP$defaultTmapOptions))
 
 	unknown_args = setdiff(names(args), all_opts)
 
@@ -494,7 +493,7 @@ tmap_options = function(..., crs, facet.max, facet.flip, free.scales, raster.max
 #' @export
 tmap_options_mode = function(mode = NA, style = NULL, mode.specific = TRUE, default.options = FALSE) {
 	if (default.options) {
-		o = .defaultTmapOptions
+		o = .TMAP$defaultTmapOptions
 	} else {
 		o = get("tmapOptions", envir = .TMAP)
 
@@ -549,9 +548,9 @@ tmapOption = function(...) {
 
 
 
-#' Internal tmap function to add a default value for the layer functions
+#' Internal tmap function to add a default value for the layer functions. Deprecated
 #'
-#' Internal tmap function to add a default value for the layer functions
+#' Internal tmap function to add a default value for the layer functions. Deprecated. Use [tmapSubmitOptions()] instead.
 #'
 #' @param option, one of: `"value.const"`, `"value.na"`, `"value.blank"`, `"values.var"`, `'values.range'`, `"value.neutral"`, `"scales.var"`
 #' @param id name of the visual variable with layer, in the format `"x.y"`,
@@ -564,17 +563,22 @@ tmapAddLayerOptions = function(option, id, value) {
 	if (!(option %in% c("value.const", "value.na", "value.blank", "values.var", "values.range", "value.neutral", "scales.var"))) {
 		stop("Unknown option")
 	}
-	o = tmap_option(option)
-	o[[id]] = value
-	o2 = structure(list(o), names = option)
-	tmap_options(o2)
+
+	d = .TMAP$defaultTmapOptions
+	d[[option]][[id]] = value
+
+	o = .TMAP$tmapOptions
+	o[[option]][[id]] = value
+
+	.TMAP$defaultTmapOptions = d
+	.TMAP$tmapOptions = o
 }
 
 #' @rdname tmap_options
 #' @export
 tmap_options_diff <- function() {
 	.tmapOptions <- get("tmapOptions", envir = .TMAP)
-	iden <- mapply(identical, .tmapOptions, .defaultTmapOptions)
+	iden <- mapply(identical, .tmapOptions, .TMAP$defaultTmapOptions)
 
 	if (all(iden)) {
 		message("current tmap options are similar to the default tmap options (style \"white\")")
@@ -587,7 +591,7 @@ tmap_options_diff <- function() {
 #' @rdname tmap_options
 #' @export
 tmap_options_reset <- function() {
-	assign("tmapOptions", .defaultTmapOptions, envir = .TMAP)
+	assign("tmapOptions", .TMAP$defaultTmapOptions, envir = .TMAP)
 	options(tmap.style="white")
 	message("tmap options successfully reset")
 	invisible(NULL)
@@ -620,22 +624,64 @@ tmap_options_save <- function(style) {
 	invisible(.tmapOptions)
 }
 
-
-
-#' Internal method for submitting a new mode
+#' Internal method for submitting options
 #'
-#' Internal method for submitting a new mode
+#' Internal method for submitting options
+#'
+#' @param options list of options
+#' @param styleOptions list of lists of options, each with a style name
+#' @export
+#' @keywords internal
+tmapSubmitOptions = function(options = NULL, styleOptions = NULL) {
+	o = .TMAP$defaultTmapOptions
+	s = .TMAP$tmapStyles
+
+	if (!is.null(options)) {
+		backup = o[names(options)]
+		o[names(options)] = complete_options(options, backup, erase_style = FALSE)
+	}
+
+	if (!is.null(styleOptions)) {
+		for (st in names(styleOptions)) {
+			backup = s[[st]]
+			s[[st]] = complete_options(styleOptions[[st]], backup, erase_style = FALSE)
+		}
+	}
+	.TMAP$defaultTmapOptions = o
+	.TMAP$tmapStyles = s
+	suppressMessages(tmap_options_reset())
+}
+
+#' Internal method for submitting a new mode (deprecated)
+#'
+#' Internal method for submitting a new mode. Deprecated. Use [tmapSubmitOptions()] instead.
 #'
 #' @param id id of the mode: please use lowercase and one-word. This will be used with [tmap_mode()].
 #' @param name name of the mode: please use title case. This will be used to recognize internal functions, e.g. `tmapLeafletInit`
 #' @param ... mode specific options
 #' @export
 #' @keywords internal
-tmapMode = function(id, name, ...) {
-	modes = tmap_options("modes")$modes
+tmapMode = function(id, name, ..., styleOptions = NULL) {
+	d = .TMAP$defaultTmapOptions
+	o = .TMAP$tmapOptions
 
-	modes[[id]] = c(list(name = name), list(...))
-	tmap_options(modes = modes)
+	mlist = c(list(name = name), list(...))
+
+	o$modes[[id]] = mlist
+	d$modes[[id]] = mlist
+
+	if (!is.null(styleOptions)) {
+		os = get("tmapStyles", envir = .TMAP)
+		for (s in names(styleOptions)) {
+			os[[s]]$modes[[id]] = styleOptions[[s]]
+			#lst = structure(list(modes = structure(styleOptions[s], names = id)), style = s)
+			#suppressMessages(tmap_options(lst))
+		}
+		assign("tmapStyles", os, envir = .TMAP)
+	}
+	.TMAP$defaultTmapOptions = d
+	.TMAP$tmapOptions = o
+	suppressMessages(tmap_style(getOption("tmap.style")))
 }
 
 

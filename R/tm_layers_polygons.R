@@ -62,8 +62,7 @@
 #'   to a character vector of variable names to those those variables in the popups.
 #'   The default (`NA`) depends on whether visual variables (e.g.`fill`) are used.
 #'   If so, only those are shown. If not all variables in the shape object are shown.
-#' @param popup.format list of formatting options for the popup values.
-#'   See the argument `legend.format` for options. Only applicable for
+#' @param popup.format list of formatting options for the popup values. Output of [tm_label_format()]. Only applicable for
 #'   numeric data variables. If one list of formatting options is provided,
 #'   it is applied to all numeric variables of `popup.vars`. Also, a (named)
 #'   list of lists can be provided. In that case, each list of formatting options
@@ -112,7 +111,7 @@ tm_polygons = function(fill = tm_const(),
 					   group = NA,
 					   group.control = "check",
 					   popup.vars = NA,
-					   popup.format = list(),
+					   popup.format = tm_label_format(),
 					   hover = NA,
 					   id = "",
 					   options = opt_tm_polygons(),
@@ -330,7 +329,6 @@ tm_polygons = function(fill = tm_const(),
 						lineend = lineend),
 		tpar = tmapTpar(area = "AREA"),
 		plot.order = plot.order,
-		mapping.fun = "Polygons",
 		mapping.args = options$mapping.args,
 		zindex = zindex,
 		group = group,
@@ -351,7 +349,9 @@ tm_fill = function(...) {
 		args["col"] = list(NULL)
 	}
 	args$called_from = if (names(args)[1] == "") "tm_fill" else  "tm_polygons"
-	do.call(tm_polygons, args)
+	tm = do.call(tm_polygons, args)
+	tm[[1]]$layer = c("fill", "polygons")
+	tm
 }
 
 #' @rdname tm_polygons
@@ -364,7 +364,9 @@ tm_borders = function(col = tm_const(), ...) {
 	args$called_from = "tm_borders"
 	args$popup.vars = FALSE
 	args$hover = FALSE
-	do.call(tm_polygons, c(list(col = col), args))
+	tm = do.call(tm_polygons, c(list(col = col), args))
+	tm[[1]]$layer = c("borders", "polygons")
+	tm
 }
 
 

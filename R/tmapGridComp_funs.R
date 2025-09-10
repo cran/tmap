@@ -40,8 +40,8 @@ tmapGridCompWidth.tm_title = function(comp, o) {
 }
 
 #' @export
-tmapGridLegPlot.tm_title = function(comp, o, fH, fW) {
-	tmapGridLegPlot_text(comp, o)
+tmapGridCompPlot.tm_title = function(comp, o, fH, fW) {
+	tmapGridCompPlot_text(comp, o)
 }
 
 #' @export
@@ -60,23 +60,17 @@ tmapGridCompWidth.tm_credits = function(comp, o) {
 }
 
 #' @export
-tmapGridLegPlot.tm_credits = function(comp, o, fH, fW) {
-	tmapGridLegPlot_text(comp, o, fH, fW)
+tmapGridCompPlot.tm_credits = function(comp, o, fH, fW) {
+	tmapGridCompPlot_text(comp, o, fH, fW)
 }
 
 #' @export
 tmapGridCompPrepare.tm_compass = function(comp, o) {
-	o$attr.color.light = is_light(o$attr.color)
+	typs = c("arrow", "4star", "8star", "radar", "rose")
 	within(comp, {
+
+		if (!(type %in% typs)) cli::cli_abort("{.field [tm_compass]} wrong compass type, should be one of: {.str {typs}}")
 		text.size = text.size * o$scale
-
-		if (is.na(text.color)) text.color = o$attr.color
-		text.color = do.call("process_color", c(list(col=text.color), o$pc))
-
-		if (is.na(color.dark)) color.dark = ifelse(o$attr.color.light, o$attr.color, o$attr.color)
-		if (is.na(color.light)) color.light = ifelse(o$attr.color.light, "black", "white")
-		color.dark = do.call("process_color", c(list(col=color.dark), o$pc))
-		color.light = do.call("process_color", c(list(col=color.light), o$pc))
 
 		asp = if (type == "arrow") 0.5 else 1
 
@@ -130,13 +124,13 @@ tmapGridCompWidth.tm_compass = function(comp, o) {
 }
 
 #' @export
-tmapGridLegPlot.tm_compass = function(comp, o, fH, fW) {
+tmapGridCompPlot.tm_compass = function(comp, o, fH, fW) {
 
 	u = 1/(comp$nlines)
 	#vpComp = viewport(x=u, y=u, height=1-2*u, width=1-2*u, just=c("left", "bottom"))
 
-	light = do.call("process_color", c(list(comp$color.light, alpha=1), o$pc))
-	dark = do.call("process_color", c(list(comp$color.dark, alpha=1), o$pc))
+	light = comp$color.light
+	dark = comp$color.dark
 
 
 	wsu = comp$wsu
@@ -245,7 +239,7 @@ tmapGridLegPlot.tm_compass = function(comp, o, fH, fW) {
 
 
 
-	grobBG = if (getOption("tmap.design.mode")) rectGrob(gp=gpar(fill="orange")) else NULL
+	grobBG = if (getOption("tmap.design.mode")) rectGrob(gp=gpar(fill="#CAB2D6")) else NULL
 
 	grobLabels = if (comp$show.labels==0) {
 		NULL
@@ -284,7 +278,7 @@ tmapGridLegPlot.tm_compass = function(comp, o, fH, fW) {
 	} else if (comp$type=="rose") {
 		gTree(children = gList(
 			circleGrob(x=x[[1]], y=y[[1]], r = cr[1], gp=gpar(lwd=2*LWD, col=dark, fill=light)),
-			polygonGrob(x=x[[4]], y=y[[4]], id=id, gp=gpar(lwd=1*LWD, fill=fill)),
+			polygonGrob(x=x[[4]], y=y[[4]], id=id, gp=gpar(lwd=1*LWD, col=dark, fill=fill)),
 			polylineGrob(x=x[[2]], y=y[[2]], id=rep(1:8, each=2), gp=gpar(lwd=1*LWD, col=dark)),
 			circleGrob(x=x[[1]], y=y[[1]], r = cr[2], gp=gpar(lwd=1*LWD, col=dark, fill=NA)),
 			circleGrob(x=x[[1]], y=y[[1]], r = cr[3], gp=gpar(lwd=2*LWD, col=dark, fill=light)),
@@ -391,9 +385,9 @@ tmapGridCompWidth.tm_scalebar = function(comp, o) {
 }
 
 #' @export
-tmapGridLegPlot.tm_scalebar = function(comp, o, fH, fW) {
-	light = do.call("process_color", c(list(comp$color.light, alpha=1), o$pc))
-	dark = do.call("process_color", c(list(comp$color.dark, alpha=1), o$pc))
+tmapGridCompPlot.tm_scalebar = function(comp, o, fH, fW) {
+	light = comp$color.light
+	dark = comp$color.dark
 
 
 	wsu = comp$wsu
@@ -491,7 +485,7 @@ tmapGridLegPlot.tm_scalebar = function(comp, o, fH, fW) {
 	}
 
 
-	grobBG = if (getOption("tmap.design.mode")) rectGrob(gp=gpar(fill="orange")) else NULL
+	grobBG = if (getOption("tmap.design.mode")) rectGrob(gp=gpar(fill="#CAB2D6")) else NULL
 
 
 	# other grid cells are aligns (1 and 5) and margins (2 and 4)
@@ -517,7 +511,7 @@ tmapGridLegPlot.tm_scalebar = function(comp, o, fH, fW) {
 
 
 
-tmapGridLegPlot_text = function(comp, o, fH, fW) {
+tmapGridCompPlot_text = function(comp, o, fH, fW) {
 
 	textS = if (comp$text == "") 0 else comp$size * comp$scale #* o$scale
 
@@ -555,7 +549,7 @@ tmapGridLegPlot_text = function(comp, o, fH, fW) {
 							 gp = grid::gpar(col = comp$color, cex = textS, fontface = comp$fontface, fontfamily = comp$fontfamily, alpha = comp$alpha))
 
 	if (getOption("tmap.design.mode")) {
-		grDesign = grid::rectGrob(gp=gpar(fill=NA,col="red", lwd=2))
+		grDesign = grid::rectGrob(gp=gpar(fill=NA,col="#000000", lwd=1))
 	} else {
 		grDesign = NULL
 	}
@@ -663,52 +657,6 @@ tmapGridCompWidth_text = function(comp, o) {
 }
 
 
-#' @export
-tmapGridCompPrepare.tm_mouse_coordinates = function(comp, o) {
-	message("tm_mouse_coordinates ignored for 'plot' mode")
-	comp$show = FALSE
-	comp
-}
-
-
-#' @export
-tmapGridCompHeight.tm_mouse_coordinates = function(comp, o) {
-	comp
-}
-
-#' @export
-tmapGridCompWidth.tm_mouse_coordinates = function(comp, o) {
-	comp
-}
-
-#' @export
-tmapGridLegPlot.tm_mouse_coordinates = function(comp, o, fH, fW) {
-	NULL
-}
-
-
-#' @export
-tmapGridCompPrepare.tm_minimap = function(comp, o) {
-	message("tm_minimap ignored for 'plot' mode")
-	comp$show = FALSE
-	comp
-}
-
-
-#' @export
-tmapGridCompHeight.tm_minimap = function(comp, o) {
-	comp
-}
-
-#' @export
-tmapGridCompWidth.tm_minimap = function(comp, o) {
-	comp
-}
-
-#' @export
-tmapGridLegPlot.tm_minimap = function(comp, o, fH, fW) {
-	NULL
-}
 
 
 
@@ -761,7 +709,7 @@ tmapGridCompWidth.tm_logo = function(comp, o) {
 }
 
 #' @export
-tmapGridLegPlot.tm_logo = function(comp, o, fH, fW) {
+tmapGridCompPlot.tm_logo = function(comp, o, fH, fW) {
 
 	k = length(comp$logo)
 
@@ -779,7 +727,7 @@ tmapGridLegPlot.tm_logo = function(comp, o, fH, fW) {
 		gridCell(3L, col, grobLogo)
 	}, comp$logo, comp$col_ids, SIMPLIFY = FALSE)
 
-	grobBG = if (getOption("tmap.design.mode")) rectGrob(gp=gpar(fill="orange")) else NULL
+	grobBG = if (getOption("tmap.design.mode")) rectGrob(gp=gpar(fill="#CAB2D6")) else NULL
 	gBG = gridCell(3L, 3L:(length(wsu) - 2L), grobBG)
 
 	do.call(grid::grobTree, c(list(gBG), gLogos, list(vp = vp)))
@@ -787,6 +735,20 @@ tmapGridLegPlot.tm_logo = function(comp, o, fH, fW) {
 }
 
 
+#' @export
+tmapGridCompPrepare.tm_inset_tmap = function(comp, o) {
+	asp = comp$width / comp$height
+
+	comp$x = tmap_grob(comp$x, asp = asp)
+	.TMAP$is_first_inset = FALSE
+	class(comp)[1] = "tm_inset_grob"
+
+	b = .TMAP$geo_ref$bbx
+
+	comp$bbox = .TMAP$geo_ref$bbx_frame
+	comp$show = TRUE
+	comp
+}
 
 
 #' @export
@@ -803,6 +765,8 @@ tmapGridCompPrepare.tm_inset_gg = function(comp, o) {
 	comp$show = TRUE
 	comp
 }
+
+
 
 #' @export
 tmapGridCompHeight.tm_inset_grob = function(comp, o) {
@@ -835,9 +799,18 @@ tmapGridCompWidth.tm_inset_grob = function(comp, o) {
 }
 
 #' @export
-tmapGridLegPlot.tm_inset_grob = function(comp, o, fH, fW) {
+tmapGridCompPrepare.tm_inset_image = function(comp, o) {
+	comp$file = comp$x
+	comp = tmapGridCompPrepare.tm_logo(comp, o)
+	class(comp) = c("tm_logo", class(comp))
+	comp
+}
 
-	k = length(comp$logo)
+
+
+#' @export
+tmapGridCompPlot.tm_inset_grob = function(comp, o, fH, fW) {
+
 
 	wsu = comp$wsu
 	hsu = comp$hsu
@@ -847,7 +820,7 @@ tmapGridLegPlot.tm_inset_grob = function(comp, o, fH, fW) {
 												   widths = wsu,
 												   heights = hsu))
 
-	grobBG = if (getOption("tmap.design.mode")) rectGrob(gp=gpar(fill="orange")) else NULL
+	grobBG = if (getOption("tmap.design.mode")) rectGrob(gp=gpar(fill="#CAB2D6")) else NULL
 	gBG = gridCell(3L, 3L:(length(wsu) - 2L), grobBG)
 
 	g = gridCell(3L, 3L, comp$x)
@@ -855,7 +828,6 @@ tmapGridLegPlot.tm_inset_grob = function(comp, o, fH, fW) {
 	do.call(grid::grobTree, c(list(gBG, g), list(vp = vp)))
 
 }
-
 
 
 
@@ -867,7 +839,12 @@ tmapGridCompPrepare.tm_inset_map = function(comp, o) {
 		comp$x = sf::st_bbox(c(xmin = -180, xmax = 180, ymin = limit_lat[1], ymax = limit_lat[2]), crs = 4326)
 		comp$crs = tmap_options()$crs_global
 	}
-	comp$bbox = comp$x
+
+	bbpoly = sf::st_transform(tmaptools::bb_poly(comp$x), o$crs_step4)
+
+	b = tmaptools::bb(bbpoly, asp.target = comp$width / comp$height)
+
+	comp$bbox = b
 	comp$show = TRUE
 	comp
 }
@@ -903,9 +880,8 @@ tmapGridCompWidth.tm_inset_map = function(comp, o) {
 }
 
 #' @export
-tmapGridLegPlot.tm_inset_map = function(comp, o, fH, fW) {
+tmapGridCompPlot.tm_inset_map = function(comp, o, fH, fW) {
 
-	k = length(comp$logo)
 
 	wsu = comp$wsu
 	hsu = comp$hsu
@@ -915,7 +891,7 @@ tmapGridLegPlot.tm_inset_map = function(comp, o, fH, fW) {
 												   widths = wsu,
 												   heights = hsu))
 
-	grobBG = if (getOption("tmap.design.mode")) rectGrob(gp=gpar(fill="orange")) else NULL
+	grobBG = if (getOption("tmap.design.mode")) rectGrob(gp=gpar(fill="#CAB2D6")) else NULL
 	gBG = gridCell(3L, 3L:(length(wsu) - 2L), grobBG)
 
 	vp = grid::viewport(layout.pos.row = 3L, layout.pos.col = 3L)
@@ -927,12 +903,80 @@ tmapGridLegPlot.tm_inset_map = function(comp, o, fH, fW) {
 	comp$tm$o$inset = TRUE
 	comp$tm$o$bbox = comp$bbox
 
-	g = step4_plot(comp$tm, vp, return.asp = FALSE, show = FALSE, in.shiny = FALSE, knit = FALSE, args = list())
+	g = step4_plot(comp$tm, vp, return.asp = FALSE, show = FALSE, in.shiny = FALSE, knit = FALSE, knit_opts = list(), args = list())
 
 	#g = gridCell(3L, 3L, grid::rectGrob(gp=gpar(fill="red")))#comp$x)
 
 	do.call(grid::grobTree, c(list(gBG, g), list(vp = vp)))
 
+}
+
+
+
+#' @export
+tmapGridCompPrepare.tm_minimap = function(comp, o) {
+	comp$show = TRUE
+
+	comp
+}
+
+#' @export
+tmapGridCompHeight.tm_minimap = function(comp, o) {
+	tmapGridCompHeight.tm_inset_grob(comp, o)
+}
+
+#' @export
+tmapGridCompWidth.tm_minimap = function(comp, o) {
+	tmapGridCompWidth.tm_inset_grob(comp, o)
+}
+
+#' @export
+tmapGridCompPlot.tm_minimap = function(comp, o, fH, fW) {
+	poly = tmaptools::bb_poly(comp$bbox)
+
+	if (sf::st_is_longlat(comp$bbox)) {
+		center = c(mean(comp$bbox[c("xmin", "xmax")]),
+				   mean(comp$bbox[c("ymin", "ymax")]))
+	} else {
+		center = suppressWarnings(round(sf::st_transform(sf::st_centroid(poly), crs = 4326)[[1]][], 3))
+	}
+
+	# bound lat to -30,-10 or 10,30
+	center[2] = if (center[2] >= 0) {
+		max(min(center[2], 30), 10)
+	} else {
+		max(min(center[2], -10), -30)
+	}
+
+
+
+	#"+proj=ortho +lat_0=10 +lon_0=0"
+
+	lastcalln = x = get("last_map_new", envir = .TMAP)
+
+	tm = tm_shape(World) +
+		tm_crs(ortho_lonlat(center[1], center[2]), bbox = "FULL")+
+		tm_polygons(col = NULL, fill = "#2CA02C") +
+	tm_shape(poly) +
+		tm_polygons(fill = NULL, col = "#EE8866", lwd = 3) +
+		#tm_polygons(fill = NULL, col = "#EE8866", lwd = 3, lty = "dotted") +
+		tm_graticules(labels.show = FALSE, col = "#000000", lwd = 0.5) +
+		tm_layout(bg.color = "#88CCEE",
+				  earth_boundary = TRUE,
+				  frame = FALSE,
+				  space = FALSE) +
+		tm_options(space_overlay = o$space_overlay)
+
+	asp = comp$width / comp$height
+
+
+	comp$x = tmap_grob(tm, asp = asp)
+
+	assign("last_map_new", lastcalln, envir = .TMAP)
+
+
+	class(comp)[1] = "tm_inset_grob"
+	tmapGridCompPlot.tm_inset_grob(comp, o, fH, fW)
 }
 
 

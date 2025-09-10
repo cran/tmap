@@ -150,7 +150,7 @@ tm_raster = function(col = tm_vars(),
 
 
 	# needed for color maps without categories (then tm_scale_categorical is used without legend, unless called)
-	col.legend$called = "col.legend" %in% args_called
+	col.legend$legend_called = "col.legend" %in% args_called
 
 
 	tm_element_list(tm_element(
@@ -185,7 +185,6 @@ tm_raster = function(col = tm_vars(),
 						lineend = NA),
 		tpar = tmapTpar(),
 		plot.order = tm_plot_order("DATA"),
-		mapping.fun = "Raster",
 		mapping.args = options$mapping.args,
 		zindex = zindex,
 		group = group,

@@ -1,5 +1,5 @@
 #' @export
-tmapGridCompPrepare.tm_legend_standard_portrait = function(comp, o) {
+tmapGridCompPrepare.tm_legend_portrait = function(comp, o) {
 	within(comp, {
 		bg.color = do.call("process_color", c(list(col=bg.color), o$pc))
 		title.color = do.call("process_color", c(list(col=title.color), o$pc))
@@ -12,9 +12,9 @@ tmapGridCompPrepare.tm_legend_standard_portrait = function(comp, o) {
 			"gradient"
 		} else if (!is.na(gp$shape[1])) {
 			"symbols"
-		} else if (mfun == "Lines") {
+		} else if ("tm_data_lines" %in% mfun) {
 			"lines"
-		} else if (mfun == "Text") {
+		} else if ("tm_data_text" %in% mfun) {
 			"text"
 		} else {
 			"rect"
@@ -36,6 +36,25 @@ tmapGridCompPrepare.tm_legend_standard_portrait = function(comp, o) {
 			width = -width / absolute_fontsize
 		}
 
+		# determine empty areas
+		if (type == "gradient") {
+			var = if (!is.na(gp$fill[1]) && any(nchar(gp$fill) > 20)) {
+				"fill"
+			} else if (!is.na(gp$fill_alpha[1]) && any(nchar(gp$fill_alpha) > 20)) {
+				"fill_alpha"
+			} else if (!is.na(gp$col[1]) && any(nchar(gp$col) > 20)) {
+				"col"
+			} else {
+				"col_alpha"
+			}
+			gradient_ht_fracs = local({
+				values  = cont_split(gp[[var]])
+				k = comp$nitems - comp$na.show
+				c(sum(values[[1]] == "NA") / length(values[[1]]),
+				  sum(values[[k]] == "NA") / length(values[[k]]))
+			})
+		}
+
 
 		gpar = gp_to_gpar(gp, o = o, type = comp$type)
 	})
@@ -43,7 +62,7 @@ tmapGridCompPrepare.tm_legend_standard_portrait = function(comp, o) {
 
 
 #' @export
-tmapGridCompHeight.tm_legend_standard_portrait = function(comp, o) {
+tmapGridCompHeight.tm_legend_portrait = function(comp, o) {
 
 	nlev = if (comp$type == "bivariate") attr(comp$gp$fill, "m") + 1L else comp$nitems
 
@@ -57,6 +76,8 @@ tmapGridCompHeight.tm_legend_standard_portrait = function(comp, o) {
 	spaceNA = get_legend_option(comp$item.na.space, comp$type)
 	height = get_legend_option(comp$item.height, comp$type)
 	heightNA = get_legend_option(comp$item.na.height, comp$type)
+
+
 	if (is.na(heightNA)) heightNA = height
 
 	# legend height can be 3: NA (components determine height), finite number (number of text lines), or Inf (whole height)
@@ -72,6 +93,9 @@ tmapGridCompHeight.tm_legend_standard_portrait = function(comp, o) {
 		comp$stretch = if (!is.na(comp$height)) "items" else "none"
 	} else if (comp$type == "gradient") {
 		item_heights = rep(height, nlev)
+
+
+
 		if (comp$na.show) item_heights[nlev] = heightNA
 		comp$stretch = if (!is.na(comp$height)) "itemsNNA" else "none"
 	} else if (comp$type == "text") {
@@ -105,7 +129,32 @@ tmapGridCompHeight.tm_legend_standard_portrait = function(comp, o) {
 		items_all = c(rbind(item_heights[-nlev], item_space), item_heights[nlev])
 	}
 
+	if (comp$type == "gradient") {
+		# Cut empty space
+		if (comp$gradient_ht_fracs[1] != 0) {
+			# use top margin
+			if (comp$labels_select[1]) {
+				ih1 = min((item_heights[1] - 1)/2, item_heights[1] * comp$gradient_ht_fracs[1])
+			} else {
+				ih1 = item_heights[1] * comp$gradient_ht_fracs[1]
+			}
 
+			marH[1] = marH[1] - (ih1 * textS * o$lin)
+		}
+		if (comp$gradient_ht_fracs[2] != 0) {
+			k = nlev - comp$na.show
+			if (comp$labels_select[k]) {
+				ihk = min((item_heights[k] - 1)/2, item_heights[k] * comp$gradient_ht_fracs[2])
+			} else {
+				ihk = item_heights[k] * comp$gradient_ht_fracs[2]
+			}
+			if (comp$na.show) {
+				items_all[k * 2] = items_all[k * 2] - ihk
+			} else {
+				marH[2] = marH[2] - (ihk * textS * o$lin)
+			}
+		}
+	}
 
 	hs = c(titleP[1], titleH, titleP[2], marH[1], items_all * textS * o$lin, xlabP[1], xlabH, xlabP[2], marH[2])
 
@@ -152,7 +201,7 @@ fontface2nr = function(face) {
 
 
 #' @export
-tmapGridCompWidth.tm_legend_standard_portrait = function(comp, o) {
+tmapGridCompWidth.tm_legend_portrait = function(comp, o) {
 
 	ni = if (comp$type == "bivariate") attr(comp$gp$fill, "n") else 1L
 	mi = if (comp$type == "bivariate") attr(comp$gp$fill, "m") else 1L
@@ -164,6 +213,8 @@ tmapGridCompWidth.tm_legend_standard_portrait = function(comp, o) {
 	marW = comp$margins[c(2,4)] * textS * o$lin
 
 	width = get_legend_option(comp$item.width, comp$type)
+	item_text.margin = get_vector_id(comp$item_text.margin, comp$type)
+
 
 	item_widths = if (comp$type == "symbols") {
 		shps = rep(comp$gpar$shape, length.out = comp$nitems)
@@ -185,21 +236,21 @@ tmapGridCompWidth.tm_legend_standard_portrait = function(comp, o) {
 	if (comp$type == "bivariate") {
 		txtRowW = ifelse(comp$ylab == "", 0, graphics::strwidth(comp$ylab, units = "inch", cex = comp$ylab.size, family = comp$ylab.fontfamily, font = fontface2nr(comp$ylab.fontface)))
 
-		margRowW = ifelse(txtRowW == 0, 0, comp$item_text.margin * comp$ylab.size * o$lin)
+		margRowW = ifelse(txtRowW == 0, 0, item_text.margin * comp$ylab.size * o$lin)
 	}
 
 	if (comp$type == "bivariate") {
-		iW = graphics::strwidth(comp$labels[1:mi], units = "inch", cex = textS, family = comp$text.fontfamily, font = fontface2nr(comp$text.fontface)) + (item_widths_max * ni + comp$item_text.margin) * textS * o$lin
+		iW = graphics::strwidth(comp$labels[1:mi], units = "inch", cex = textS, family = comp$text.fontfamily, font = fontface2nr(comp$text.fontface)) + (item_widths_max * ni + item_text.margin) * textS * o$lin
 	} else {
-		iW = graphics::strwidth(comp$labels, units = "inch", cex = textS, family = comp$text.fontfamily, font = fontface2nr(comp$text.fontface)) + (item_widths_max + comp$item_text.margin) * textS * o$lin
+		iW = graphics::strwidth(comp$labels, units = "inch", cex = textS, family = comp$text.fontfamily, font = fontface2nr(comp$text.fontface)) + (item_widths_max + item_text.margin) * textS * o$lin
 	}
 
 	colW = max(tW, iW)
 
 	if (comp$type == "bivariate") {
-		txtW = colW - (item_widths_max * ni + comp$item_text.margin) * textS * o$lin
+		txtW = colW - (item_widths_max * ni + item_text.margin) * textS * o$lin
 	} else {
-		txtW = colW - (item_widths_max * ni + comp$item_text.margin) * textS * o$lin
+		txtW = colW - (item_widths_max * ni + item_text.margin) * textS * o$lin
 	}
 
 	n = switch(comp$position$align.h, left = c(0, 1), right = c(1, 0), c(0.5, 0.5))
@@ -210,7 +261,7 @@ tmapGridCompWidth.tm_legend_standard_portrait = function(comp, o) {
 						   txtRowW,
 						   margRowW,
 						   txtW,
-						   comp$item_text.margin * textS * o$lin,
+						   item_text.margin * textS * o$lin,
 						   rep(item_widths_max * textS * o$lin, ni),
 						   n[2],
 						   marW[2]), units = c("inch", "null", rep("inch", 4+ni), "null", "inch"))
@@ -221,7 +272,7 @@ tmapGridCompWidth.tm_legend_standard_portrait = function(comp, o) {
 		wsu = grid::unit(c(marW[1],
 						   n[1],
 						   item_widths_max * textS * o$lin,
-						   comp$item_text.margin * textS * o$lin,
+						   item_text.margin * textS * o$lin,
 						   txtW,
 						   n[2],
 						   marW[2]), units = c("inch", "null", rep("inch", 2+ni), "null", "inch"))
@@ -253,7 +304,7 @@ add_user_specified_values = function(gp, usr) {
 
 
 #' @export
-tmapGridLegPlot.tm_legend_standard_portrait = function(comp, o, fH, fW) {
+tmapGridCompPlot.tm_legend_portrait = function(comp, o, fH, fW) {
 
 	if (comp$type != "gradient") comp$labels_select = TRUE # labels_select only needed for continuous legends (#1039)
 
@@ -279,10 +330,13 @@ tmapGridLegPlot.tm_legend_standard_portrait = function(comp, o, fH, fW) {
 	wsu = comp$wsu
 	hsu = comp$hsu
 
+
 	vp = grid::viewport(layout = grid::grid.layout(ncol = length(wsu),
 												   nrow = length(hsu),
 												   widths = wsu,
 												   heights = hsu))
+
+	grobBG = if (getOption("tmap.design.mode")) rectGrob(gp=gpar(fill="#CAB2D6")) else NULL
 
 	if (is.na(comp$title.align)) comp$title.align = comp$position$align.h
 
@@ -305,6 +359,7 @@ tmapGridLegPlot.tm_legend_standard_portrait = function(comp, o, fH, fW) {
 			ylabS = comp$ylab.size * comp$scale
 			grYlab = gridCell(comp$item_ids[1:m], 3,
 							  grid::textGrob(comp$ylab,
+							  			   rot = comp$ylab.rot,
 							  			   x = grid::unit(comp$ylab.padding[2] * ylabS * o$lin, units = "inch"),
 							  			   just = "left",
 							  			   gp = grid::gpar(col = comp$ylab.color, cex = ylabS)))
@@ -317,6 +372,7 @@ tmapGridLegPlot.tm_legend_standard_portrait = function(comp, o, fH, fW) {
 			xlabS = comp$xlab.size * comp$scale
 			grXlab = gridCell(comp$item_ids[m] + 4, 7:(6+n),
 							  grid::textGrob(comp$xlab,
+							  			   rot = comp$xlab.rot,
 							  			   x = grid::unit(comp$xlab.padding[2] * xlabS * o$lin, units = "inch"),
 							  			   just = "left",
 							  			   gp = grid::gpar(col = comp$xlab.color, cex = xlabS))
@@ -376,7 +432,25 @@ tmapGridLegPlot.tm_legend_standard_portrait = function(comp, o, fH, fW) {
 
 		ni = nlev - (comp$na.show && ticks.disable.na)
 
+
+
 		tck_ids = (1L:ni)[rep(comp$labels_select, length.out = ni)]
+
+		# remove tick ids that are too close to edges
+		# only if color box frame color is there
+		if (!(("col" %in% names(comp) && is.na(comp$col)) || split_alpha_channel(comp$gpar$col[1], alpha = 1)$opacity == 0)) {
+			ih = get_legend_option(comp$item.height, "gradient")
+			na_share = ((ih - 0.25)/2)/ih
+			if (comp$gradient_ht_fracs[1] >= na_share) {
+				tck_ids = setdiff(tck_ids, 1)
+			}
+			if (comp$gradient_ht_fracs[2] > na_share) {
+				tck_ids = setdiff(tck_ids, comp$nitems - comp$na.show)
+			}
+		}
+
+
+
 
 		# tick marks in margin (specified with x coordinates between 1 and 2)
 		if (any(ticks_in_margin)) {
@@ -406,7 +480,7 @@ tmapGridLegPlot.tm_legend_standard_portrait = function(comp, o, fH, fW) {
 		df = expand.grid(col = 1:length(comp$wsu),
 						 row = 1:length(comp$hsu))
 
-		grDesign = lapply(1:nrow(df), function(i) gridCell(df$row[i], df$col[i], grid::rectGrob(gp=gpar(fill=NA,col="red", lwd=2))))
+		grDesign = lapply(1:nrow(df), function(i) gridCell(df$row[i], df$col[i], grid::rectGrob(gp=gpar(fill=NA,col="#000000", lwd=1))))
 	} else {
 		grDesign = NULL
 	}
@@ -518,6 +592,8 @@ tmapGridLegPlot.tm_legend_standard_portrait = function(comp, o, fH, fW) {
 		}
 
 		grItems2 = list(gridCell(comp$item_ids[lvs], 3, rndrectGrob(y = grid::unit(y2, "npc"), just = c("center", "bottom"), height = grid::unit(1-(y1+y2), "npc"), gp = gpars, r = comp$item.r)))
+		#grItems2 = list(gridCell(comp$item_ids[lvs], 3, rndrectGrob(y = grid::unit(y2, "npc"), just = c("center", "bottom"), height = grid::unit(1, "npc"), gp = gpars, r = comp$item.r)))
+
 		if (comp$na.show) {
 			gpars$fill = gp$fill[ifelse(length(gp$fill), nlev, 1)]
 			gpars$fill_alpha = gp$fill[ifelse(length(gp$fill_alpha), nlev, 1)]
@@ -642,7 +718,7 @@ tmapGridLegPlot.tm_legend_standard_portrait = function(comp, o, fH, fW) {
 	}
 
 
-	g = do.call(grid::grobTree, c(list(grTitle, grXlab, grYlab), grText, grItems, grTicks, grDesign, list(vp = vp)))
+	g = do.call(grid::grobTree, c(list(grobBG, grTitle, grXlab, grYlab), grText, grItems, grTicks, grDesign, list(vp = vp)))
 
 	g
 

@@ -22,7 +22,8 @@ utils::globalVariables(c(
   "split_geometry_collection", "stack_auto", "t1",
   "t2", "t3", "t4", "text.fontface", "text.fontfamily", "title.bg.alpha",
   "tmapID__", "vneutral",
-  "panel.show", "set_to_stack_message", "rev1", "rev2", "rev3", "facet.flip", "panel.show"
+  "panel.show", "set_to_stack_message", "rev1", "rev2", "rev3", "panel.show",
+  "zauto"
 ))
 
 # Add more to silence R CMD CHECK (see if some are false positive)
@@ -34,5 +35,6 @@ utils::globalVariables(c(
 	"ylab.show", "ylab.side", "ylab.space", "ylab.text", "z",
 	"x", "y", "color", "freq", "bin", "bin1", "bin2",
 	"nitems", "item.width", "page", "stack",
-  "item.height", "absolute_fontsize", "rc_text", "show", "gp2", "trns", "nbins"
+  "item.height", "absolute_fontsize", "rc_text", "show", "gp2", "trns", "nbins",
+  "World", "World_rivers", "NLD_muni", "NLD_prov", ".N"
 ))

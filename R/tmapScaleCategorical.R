@@ -12,7 +12,7 @@ tmapScaleCategorical = function(x1, scale, legend, chart, o, aes, layer, layer_a
 			levels(x1) = vapply(res, "[", 1, FUN.VALUE = character(1))
 			ct = vapply(res, "[", 2, FUN.VALUE = character(1))
 
-			if (defcols_nocats && !legend$called) {
+			if (defcols_nocats && !legend$legend_called) {
 				legend$show = FALSE
 			}
 		} else {
@@ -99,7 +99,8 @@ tmapScaleCategorical = function(x1, scale, legend, chart, o, aes, layer, layer_a
 
 		# combine levels
 		if (n.max < n) {
-			if (show.warnings) warning("Number of levels of the variable assigned to the aesthetic \"",aes ,"\" of the layer \"", layer, "\" is ", n, ", which is larger than n.max (which is ", n.max, "), so levels are combined.", call. = FALSE)
+			# only show warning if n.max is the default
+			if (show.warnings && n.max == 30) warning("Number of levels of the variable assigned to the aesthetic \"",aes ,"\" of the layer \"", layer, "\" is ", n, ", which is larger than n.max (which is ", n.max, "), so levels are combined.", call. = FALSE)
 
 			mapping = as.numeric(cut(seq.int(n), breaks=n.max))
 			to = c(which(mapping[-n] - mapping[-1]!=0), n)
@@ -127,7 +128,7 @@ tmapScaleCategorical = function(x1, scale, legend, chart, o, aes, layer, layer_a
 
 		sfun = paste0("tmapValuesScale_", aes)
 		cfun = paste0("tmapValuesColorize_", aes)
-		if (is.na(value.neutral)) value.neutral = VV$value.neutral else value.neutral = do.call(sfun, list(x = do.call(cfun, list(x = value.neutral, pc = o$pc)), scale = values.scale))
+		if (identical(value.neutral, NA)) value.neutral = VV$value.neutral else value.neutral = do.call(sfun, list(x = do.call(cfun, list(x = value.neutral, pc = o$pc)), scale = values.scale))
 
 		mfun = paste0("tmapValuesSubmit_", aes)
 		values = do.call(mfun, list(x = values, args = layer_args))
@@ -167,24 +168,27 @@ tmapScaleCategorical = function(x1, scale, legend, chart, o, aes, layer, layer_a
 
 		if (legend$reverse) {
 			labs = rev(labs)
-			values = rev(values)
+			values_rev = rev(values)
+		} else {
+			values_rev = values
 		}
 
 		if (na.show) {
 			labs = c(labs, label.na)
 			values = c(values, value.na)
+			values_rev = c(values_rev, value.na)
 		}
 		attr(labs, "align") = label.format$text.align
 
 
 		# SPECIAL CASE: if icons are used, specify this information in the symbol legend, such that it can be taken (in step4_plot_collect_legends) by other legends (e.g. for symbol sizes)
-		icon_scale = if ((aes == "shape") && any(values > 999) && getOption("tmap.mode") == "plot") layer_args$icon.scale else 1
+		icon_scale = if ((aes == "shape") && any(values_rev > 999) && getOption("tmap.mode") == "plot") layer_args$icon.scale else 1
 
 		legend = within(legend, {
 			nitems = length(labs)
 			labels = labs
 			dvalues = vals
-			vvalues = values
+			vvalues = values_rev
 			vneutral = value.neutral
 			icon_scale = icon_scale
 			na.show = get("na.show", envir = parent.env(environment()))

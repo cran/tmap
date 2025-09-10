@@ -17,18 +17,19 @@ print.tmap = function(x, return.asp = FALSE, show = TRUE, vp = NULL, knit = FALS
 	.TMAP$proxy = proxy
 	.TMAP$set_s2 = NA
 	.TMAP$animate = NULL
+	.TMAP$raster_wrap = FALSE # needed for space_overlay (#1170)
 
 	# view mode will use panes, in principle one for each layer. They start at 400, unless shiny proxy is used
 
 	dev = getOption("tmap.devel.mode")
 	if (dev) timing_init()
-	x2 = step1_rearrange(x)
+	x2 = step1_rearrange(x, knit_opts = options)
 	if (dev) timing_add("step 1")
 	x3 = step2_data(x2)
 	if (dev) timing_add("step 2")
 	x4 = step3_trans(x3)
 	if (dev) timing_add("step 3")
-	res = step4_plot(x4, vp = vp, return.asp = return.asp, show = show, in.shiny = in.shiny, knit = knit, args)
+	res = step4_plot(x4, vp = vp, return.asp = return.asp, show = show, in.shiny = in.shiny, knit = knit, knit_opts = options, args)
 	if (dev) timing_add("step 4")
 	if (dev) timing_eval()
 
@@ -39,6 +40,8 @@ print.tmap = function(x, return.asp = FALSE, show = TRUE, vp = NULL, knit = FALS
 	if (knit && tmap_graphics_name() != "Grid") {
 		kp = get("knit_print", asNamespace("knitr"))
 		return(do.call(kp, c(list(x=res), args, list(options=options))))
+	} else if (inherits(res, "knit_asis")) {
+		return(res)
 	} else {
 		invisible(res)
 	}
@@ -58,7 +61,7 @@ timing_init = function() {
 
 timing_add = function(s1 = "", s2 = "", s3 = "", s4 = "") {
 	tsx = data.table(s1 = s1, s2 = s2, s3 = s3, s4 = s4, t = Sys.time())
-	ts = data.table::rbindlist(list(get("timings", envir = .TMAP), tsx))
+	ts = data.table::rbindlist(list(get("timings", envir = .TMAP)[, c("s1", "s2", "s3", "s4", "t")], tsx))
 	assign("timings", ts, envir = .TMAP)
 }
 

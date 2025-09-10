@@ -1,10 +1,27 @@
-fancy_breaks <- function(vec, as.count = FALSE, intervals=FALSE, interval.closure="left", fun=NULL, scientific=FALSE, big.num.abbr = c("mln" = 6, "bln" = 9), prefix = "", suffix = "", text.separator="to", text.less.than=c("less", "than"), text.or.more=c("or", "more"), text.align="left", text.to.columns=FALSE, digits=NA, html.escape = TRUE, ...) {
+paste2 = function(x, y, flipped) {
+	if (flipped) {
+		paste(y, x, sep = " ")
+	} else {
+		paste(x, y, sep = " ")
+	}
+}
+
+fancy_breaks <- function(vec, as.count = FALSE, interval.disjoint = FALSE, intervals=FALSE, interval.closure="left", fun=NULL, scientific=FALSE, big.num.abbr = c("mln" = 6, "bln" = 9), prefix = "", suffix = "", text.separator="to", text.less.than=c("less", "than"), text.less.than_as.prefix = TRUE, text.or.more=c("or", "more"), text.or.more_as.prefix = FALSE, text.align="left", text.to.columns=FALSE, digits=NA, html.escape = TRUE, ...) {
 	args <- list(...)
 	n <- length(vec)
 
+	args$called = NULL
+
+	digits_defined = !is.na(digits)
+
+	if (!intervals) {
+		as.count = FALSE
+		interval.disjoint = FALSE
+	}
+
 	if (inherits(vec, c("POSIXct", "POSIXlt", "Date"))) {
 		x = format(vec)
-	} else if (!is.null(fun)) {
+	} else if (!is.null(fun) && !interval.disjoint) {
 		if (as.count) {
 			steps <- (vec[-1] - vec[-n])
 			vec <- c(vec, vec - 1L, vec + 1L) # needed for: {1, 2, ... 9}
@@ -31,7 +48,7 @@ fancy_breaks <- function(vec, as.count = FALSE, intervals=FALSE, interval.closur
 		} else {
 			# get number of decimals (which is number of decimals in vec, which is reduced when mag is large)
 			ndec <- max(10 - nchar(frm) + nchar(sub("0+$","",frm)))
-			if (is.na(digits)) {
+			if (!digits_defined) {
 				digits <- max(min(ndec, 4-mag), 0)
 
 				# add sign to frm
@@ -42,12 +59,32 @@ fancy_breaks <- function(vec, as.count = FALSE, intervals=FALSE, interval.closur
 					while (anyDuplicated(substr(frm_sign, 1, nchar(frm_sign)-10 + digits)) && (digits < 10)) {
 						digits <- digits + 1
 					}
+
+					# if (interval.disjoint) {
+					# 	## NEW
+					# 	#update vec_fin
+					# 	# add 'to' numbers and see if digits should be increased
+					# 	vec_fin2 = c(vec_fin, vec_fin[-1] - 10^-digits)
+					# 	while (anyDuplicated(na.omit(vec_fin2))) {
+					# 		digits = digits + 1
+					# 		vec_fin2 = c(vec_fin, vec_fin[-1] - 10^-digits)
+					# 	}
+					# 	vec = c(vec, vec - 10^-digits)
+					# }
+
 				}
 
+			# } else {
+			# 	if (interval.disjoint) {
+			# 		vec = c(vec, vec - 10^-digits)
+			# 	}
 			}
 		}
 
-		if (!scientific || as.count) {
+
+		if ((!is.null(fun) && interval.disjoint)) {
+			x <- do.call(fun, list(vec))
+		} else if (!scientific || as.count) {
 
 			# check whether big number abbrevations should be used
 			ext <- ""
@@ -63,14 +100,33 @@ fancy_breaks <- function(vec, as.count = FALSE, intervals=FALSE, interval.closur
 				}
 			}
 
+			if (interval.disjoint) {
+
+				if (!digits_defined) {
+					# update digits
+					vec_fin <- unique(vec[!is.infinite(vec)])
+					vec_fin2 = c(vec_fin, vec_fin[-1] - 10^-digits)
+					while (anyDuplicated(na.omit(vec_fin2))) {
+						digits = digits + 1
+						vec_fin2 = c(vec_fin, vec_fin[-1] - 10^-digits)
+					}
+				}
+				# add to points
+				vec = c(vec, head(vec, -1) - 10^-digits, tail(vec, 1))
+			}
+
 			# set default values
 			if (!("big.mark" %in% names(args))) args$big.mark <- ","
 			if (!("format" %in% names(args))) args$format <- "f"
 			if (!("preserve.width" %in% names(args))) args$preserve.width <- "none"
-			x <- paste(do.call("formatC", c(list(x=vec, digits=digits), args)), ext, sep="")
+
+			x = do.call("formatC", c(list(x=vec, digits=digits), args))
+			if (as.count || interval.disjoint) {
+				x[(n+2):(2*n)] = paste0(x[(n+2):(2*n)], ext)
+			} else {
+				x = paste0(x, ext)
+			}
 			x <- paste0(prefix, x, suffix)
-
-
 		} else {
 			if (!("format" %in% names(args))) args$format <- "g"
 			x <- do.call("formatC", c(list(x=vec, digits=digits), args))
@@ -80,6 +136,11 @@ fancy_breaks <- function(vec, as.count = FALSE, intervals=FALSE, interval.closur
 			x1 <- x[1:(n-1)]
 			x2 <- x[(n+2):(2*n)]
 			x1p1 <- x[(2*n+1):(3*n-1)]
+		} else if (interval.disjoint) {
+			x1 = x[1:(n-1)]
+			x2 = x[(n+2):(2*n)]
+
+
 		}
 		# x <- formatC(vec, format = "f", digits = 0)
 		# x1 <- x[-n]
@@ -111,13 +172,17 @@ fancy_breaks <- function(vec, as.count = FALSE, intervals=FALSE, interval.closur
 			if (as.count) {
 				lbls <- x1
 				lbls[steps>1] <- paste(x1[steps>1], x2[steps>1], sep = paste0(" ", text.separator, " "))
-				if (vec[n]==Inf) lbls[n-1] <- paste(x1[n-1], paste(text.or.more, collapse = " "), sep = " ")
+				if (vec[n]==Inf) lbls[n-1] <- paste2(x1[n-1], paste(text.or.more, collapse = " "), flipped = text.or.more_as.prefix)
+			} else if (interval.disjoint) {
+				lbls <- paste(x1, x2, sep = paste0(" ", text.separator, " "))
+				if (vec[1]==-Inf) lbls[1] <- paste2(x1[2], paste(text.less.than, collapse = " "), flipped = text.less.than_as.prefix)
+				if (vec[n]==Inf) lbls[n-1] <- paste2(x1[n-1], paste(text.or.more, collapse = " "), flipped = text.or.more_as.prefix)
 			} else {
 				x[vec==-Inf] <- ""
 
 				lbls <- paste(x[-n], x[-1], sep = paste0(" ", text.separator, " "))
-				if (vec[1]==-Inf) lbls[1] <- paste(paste(text.less.than, collapse = " "), x[2], sep = " ")
-				if (vec[n]==Inf) lbls[n-1] <- paste(x[n-1], paste(text.or.more, collapse = " "), sep = " ")
+				if (vec[1]==-Inf) lbls[1] <- paste2(x[2], paste(text.less.than, collapse = " "), flipped = text.less.than_as.prefix)
+				if (vec[n]==Inf) lbls[n-1] <- paste2(x[n-1], paste(text.or.more, collapse = " "), flipped = text.or.more_as.prefix)
 			}
 
 			if (text.to.columns) {

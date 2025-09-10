@@ -4,18 +4,29 @@ tmapScaleIntervals = function(x1, scale, legend, chart, o, aes, layer, layer_arg
 	cls = data_class(x1, midpoint_enabled = !is.null(scale$midpoint))
 	maincls = class(scale)[1]
 
-	if (attr(cls, "unique") && is.null(scale$breaks)) stop("Unique value, so cannot determine intervals scale range. Please specify breaks.", call. = FALSE)
+	if (attr(cls, "unique") && is.null(scale$breaks)) {
+		scale$ticks = NA
+		cli::cli_inform("The visual variable {.arg {aes}} of the layer {.str {layer}} contains a unique value. Therefore a discrete scale is applied (tm_scale_discrete).")
+		return(tmapScaleDiscrete(x1, scale, legend, chart, o, aes, layer, layer_args, sortRev, bypass_ord, submit_legend = submit_legend))
+
+	}
 
 	if (!(cls[1] %in% c("num", "datetime", "date"))) {
 		if (!is.factor(x1)) x1 = as.factor(x1)
 		x1 = as.integer(x1)
-		# cls = c("num", "int", "seq")
+		cls = c("num", "int", "seq")
 		warning(maincls, " is supposed to be applied to numerical or date/time data", call. = FALSE)
 	}
 
 	x1 = without_units(x1)
 
 	if (aes %in% c("pattern")) stop("tm_scale_intervals cannot be used for layer ", layer, ", aesthetic ", aes, call. = FALSE)
+
+	if (!(aes %in% c("fill", "color")) && scale$label.style == "continuous") {
+		scale$label.style = "discrete"
+		cli::cli_warn("{.field tm_scale_intervals} {.arg label.style} can only be {.str continuous} for fill and color, not for {aes}")
+	}
+
 
 	scale = get_scale_defaults(scale, o, aes, layer, cls)
 
@@ -105,13 +116,24 @@ tmapScaleIntervals = function(x1, scale, legend, chart, o, aes, layer, layer_arg
 		# create legend values
 		#values = breaks[-nbrks]
 
-		if (is.null(labels)) {
-			labels = do.call("fancy_breaks", c(list(vec=breaks, as.count = as.count, intervals=TRUE, interval.closure=int.closure), label.format))
+		if (label.style == "discrete") {
+			if (is.null(labels)) {
+				labels = do.call("fancy_breaks", c(list(vec=breaks, as.count = as.count, intervals=TRUE, interval.closure=int.closure), label.format))
+			} else {
+				if (length(labels)!=nbrks-1 && show.warnings) warning("number of legend labels should be ", nbrks-1, call. = FALSE)
+				labels = rep(labels, length.out=nbrks-1)
+				attr(labels, "align") <- label.format$text.align
+			}
 		} else {
-			if (length(labels)!=nbrks-1 && show.warnings) warning("number of legend labels should be ", nbrks-1, call. = FALSE)
-			labels = rep(labels, length.out=nbrks-1)
-			attr(labels, "align") <- label.format$text.align
+			if (is.null(labels)) {
+				labels = do.call("fancy_breaks", c(list(vec=breaks, as.count = FALSE, intervals=FALSE, interval.closure=int.closure), label.format))
+			} else {
+				if (length(labels) != length(breaks)) cli::cli_abort("{.field tm_scale_intervals} {.arg labels} should have length {length(breaks)}")
+				#labels = c(labels, {if (na.show) label.na else NULL})
+			}
 		}
+
+
 
 		if (legend$reverse) {
 			labels.brks <- attr(labels, "brks")
@@ -121,7 +143,9 @@ tmapScaleIntervals = function(x1, scale, legend, chart, o, aes, layer, layer_arg
 				attr(labels, "brks") = labels.brks[length(labels):1L,]
 			}
 			attr(labels, "align") = labels.align
-			vvalues = rev(vvalues)
+			vvalues_rev = rev(vvalues)
+		} else {
+			vvalues_rev = vvalues
 		}
 
 
@@ -138,18 +162,50 @@ tmapScaleIntervals = function(x1, scale, legend, chart, o, aes, layer, layer_arg
 			}
 			attr(labels, "align") = labels.align
 			vvalues = c(vvalues, value.na)
+			vvalues_rev = c(vvalues_rev, value.na)
 		}
 
-		legend = within(legend, {
+		if (label.style == "discrete") {
+			legend = within(legend, {
+				nitems = length(labels)
+				labels = labels
+				dvalues = breaks #not used?
+				vvalues = vvalues_rev
+				vneutral = value.neutral
+				na.show = get("na.show", envir = parent.env(environment()))
+				scale = "intervals"
+				layer_args = layer_args
+			})
+
+		} else {
+			if ((o$continuous.nclass_per_legend_break %% 2) != 0) cli::cli_abort("{.field options} the tmap option {.arg continuous.nclass_per_legend_break} should be even")
+			labels_select = c(rep(label.select, length.out = length(breaks)), {if (na.show) TRUE else NULL})
+
+			vvalues = c(unlist(mapply(function(hd, tl) {
+				paste(c(rep(hd, o$continuous.nclass_per_legend_break/2),
+						rep(tl, o$continuous.nclass_per_legend_break/2)),
+						collapse = "_")
+			}, c(NA_character_, vvalues_rev[1L:(length(breaks)-1L)]), c(vvalues_rev[1L:(length(breaks)-1L)], NA_character_))), {if (na.show) value.na else NULL})
 			nitems = length(labels)
-			labels = labels
-			dvalues = values
-			vvalues = vvalues
-			vneutral = value.neutral
-			na.show = get("na.show", envir = parent.env(environment()))
-			scale = "intervals"
-			layer_args = layer_args
-		})
+
+
+			legend = within(legend, {
+				nitems = nitems
+				labels = labels
+				dvalues = breaks #not used?
+				vvalues = vvalues
+				vneutral = value.neutral
+				na.show = get("na.show", envir = parent.env(environment()))
+				scale = "intervals"
+				layer_args = layer_args
+				is_discrete = TRUE
+
+				# continuous legend specific:
+				labels_select = labels_select
+				tr = trans_identity
+				limits = range(breaks)
+			})
+		}
 
 		chartFun = paste0("tmapChart", toTitleCase(chart$summary))
 
@@ -260,9 +316,10 @@ interval_num = function(scale, x1, aes, layer, show.messages, show.warnings) {
 	})
 }
 
-interval_date = function(scale, x1, aes, layer) {
-	interval_datetime(scale, x1, aes, layer)
+interval_date = function(scale, x1, aes, layer, show.messages, show.warnings) {
+	interval_datetime(scale, x1, aes, layer, show.messages, show.warnings)
 }
+
 
 interval_datetime = function(scale, x1, aes, layer, show.messages, show.warnings) {
 	style = NULL

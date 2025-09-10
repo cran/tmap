@@ -7,7 +7,6 @@
 tm_options(
   crs,
   facet.max,
-  facet.flip,
   free.scales,
   raster.max_cells,
   raster.warp,
@@ -50,9 +49,6 @@ tm_options(
   meta.auto_margins,
   between_margin,
   panel.margin,
-  grid.mark.height,
-  xylab.height,
-  coords.height,
   xlab.show,
   xlab.text,
   xlab.size,
@@ -82,7 +78,7 @@ tm_options(
   color_vision_deficiency_sim,
   text.fontface,
   text.fontfamily,
-  text.alpha,
+  r,
   component.position,
   component.offset,
   component.stack_margin,
@@ -102,7 +98,6 @@ tm_options(
   component.bg.color,
   component.bg.alpha,
   legend.show,
-  legend.design,
   legend.orientation,
   legend.position,
   legend.width,
@@ -116,11 +111,13 @@ tm_options(
   legend.title.alpha,
   legend.xlab.color,
   legend.xlab.size,
+  legend.xlab.rot,
   legend.xlab.fontface,
   legend.xlab.fontfamily,
   legend.xlab.alpha,
   legend.ylab.color,
   legend.ylab.size,
+  legend.ylab.rot,
   legend.ylab.fontface,
   legend.ylab.fontfamily,
   legend.ylab.alpha,
@@ -139,8 +136,8 @@ tm_options(
   legend.bg.alpha,
   legend.only,
   legend.absolute_fontsize,
-  legend.settings.standard.portrait,
-  legend.settings.standard.landscape,
+  legend.settings.portrait,
+  legend.settings.landscape,
   add_legend.position,
   chart.show,
   chart.plot.axis.x,
@@ -303,7 +300,9 @@ tm_options(
   earth_boundary.color,
   earth_boundary.lwd,
   earth_datum,
+  space,
   space.color,
+  space_overlay,
   check_and_fix,
   basemap.show,
   basemap.server,
@@ -334,8 +333,6 @@ tm_options(
 \item{crs}{Map crs (see \code{\link[=tm_shape]{tm_shape()}}). \code{NA} means the crs is specified in \code{\link[=tm_shape]{tm_shape()}}. The crs that is used by the transformation functions is defined in \code{\link[=tm_shape]{tm_shape()}}.}
 
 \item{facet.max}{Maximum number of facets}
-
-\item{facet.flip}{Should facets be flipped (in case of facet wrap)? This can also be set via \code{\link[=tm_facets_flip]{tm_facets_flip()}}}
 
 \item{free.scales}{For backward compatibility: if this value is set, it will be used to impute the free arguments in the layer functions}
 
@@ -380,7 +377,7 @@ When a different projection (crs) is used, a (usually) regular raster will be}
 
 \item{continuous.nclasses}{the number of classes of a continuous scale. Should be odd.  The default value is 101.}
 
-\item{label.format}{Format for the labels (was \code{legend.format} in tmap v3).}
+\item{label.format}{Format for the labels. These are the default values for \code{\link[=tm_label_format]{tm_label_format()}}}
 
 \item{label.na}{Default label for missing values.}
 
@@ -422,12 +419,6 @@ adjusted to the size of the device divided by the number of columns and rows.}
 \item{between_margin}{Margin between the map.}
 
 \item{panel.margin}{The margin of the panel.}
-
-\item{grid.mark.height}{The height of the mark of the grid.}
-
-\item{xylab.height}{The height of the xylab.}
-
-\item{coords.height}{The height of the coords.}
 
 \item{xlab.show}{The visibility of the xlab. \code{TRUE} or \code{FALSE}.}
 
@@ -481,13 +472,13 @@ adjusted to the size of the device divided by the number of columns and rows.}
 
 \item{color.saturation}{The saturation of the color.}
 
-\item{color_vision_deficiency_sim}{`Color vision deficiency simulation}
+\item{color_vision_deficiency_sim}{Color vision deficiency simulation. Either \code{"protan"}, \code{"deutan"}, or \code{"tritan"}.}
 
 \item{text.fontface}{The font face of the text. See \code{graphics::par}, option 'font'.}
 
 \item{text.fontfamily}{The font family of the text. See \code{graphics::par}, option 'family'.}
 
-\item{text.alpha}{The alpha transparency of the text.}
+\item{r}{The r (radius) (overall).}
 
 \item{component.position}{The position of the component. A tm_pos object, or a shortcut of two values: horizontal (left, center, right) and vertical (top, center, bottom). See tm_pos for details}
 
@@ -527,8 +518,6 @@ adjusted to the size of the device divided by the number of columns and rows.}
 
 \item{legend.show}{The visibility of the legend. \code{TRUE} or \code{FALSE}.}
 
-\item{legend.design}{The design of the legend.}
-
 \item{legend.orientation}{The orientation of the legend.}
 
 \item{legend.position}{The position of the legend. A tm_pos object, or a shortcut of two values: horizontal (left, center, right) and vertical (top, center, bottom). See tm_pos for details}
@@ -555,6 +544,8 @@ adjusted to the size of the device divided by the number of columns and rows.}
 
 \item{legend.xlab.size}{The size of the xlab of the legend.}
 
+\item{legend.xlab.rot}{The rot of the xlab of the legend.}
+
 \item{legend.xlab.fontface}{The font face of the xlab of the legend. See \code{graphics::par}, option 'font'.}
 
 \item{legend.xlab.fontfamily}{The font family of the xlab of the legend. See \code{graphics::par}, option 'family'.}
@@ -564,6 +555,8 @@ adjusted to the size of the device divided by the number of columns and rows.}
 \item{legend.ylab.color}{The color of the ylab of the legend.}
 
 \item{legend.ylab.size}{The size of the ylab of the legend.}
+
+\item{legend.ylab.rot}{The rot of the ylab of the legend.}
 
 \item{legend.ylab.fontface}{The font face of the ylab of the legend. See \code{graphics::par}, option 'font'.}
 
@@ -597,13 +590,13 @@ adjusted to the size of the device divided by the number of columns and rows.}
 
 \item{legend.bg.alpha}{The alpha transparency of the bg of the legend.}
 
-\item{legend.only}{The only of the legend.}
+\item{legend.only}{Should only legends be printed (so without map)?}
 
 \item{legend.absolute_fontsize}{The absolute fontsize of the legend. So far, only used to calculate legend dimensions}
 
-\item{legend.settings.standard.portrait}{The portrait of the standard of the settings of the legend.}
+\item{legend.settings.portrait}{The portrait of the settings of the legend.}
 
-\item{legend.settings.standard.landscape}{The landscape of the standard of the settings of the legend.}
+\item{legend.settings.landscape}{The landscape of the settings of the legend.}
 
 \item{add_legend.position}{The position of the add_legend. A tm_pos object, or a shortcut of two values: horizontal (left, center, right) and vertical (top, center, bottom). See tm_pos for details}
 
@@ -929,7 +922,11 @@ adjusted to the size of the device divided by the number of columns and rows.}
 
 \item{earth_datum}{Earth datum}
 
+\item{space}{Should the space be drawn? Only applicable is earth_boundary is enabled.}
+
 \item{space.color}{The color of the space.}
+
+\item{space_overlay}{Should the space be drawn as overlay (to make sure spatial features or rasters do not exceed the earth boundary), or as background? By default \code{TRUE} when a raster is warped.}
 
 \item{check_and_fix}{Should attempt to fix an invalid shapefile}
 
@@ -955,7 +952,7 @@ adjusted to the size of the device divided by the number of columns and rows.}
 
 \item{crs_global}{The used crs for world maps}
 
-\item{crs_basemap}{The crs_basemap of the .}
+\item{crs_basemap}{The crs_basemap (overall).}
 
 \item{title}{deprecated See \code{\link[=tm_title]{tm_title()}}}
 

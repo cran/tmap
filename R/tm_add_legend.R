@@ -11,7 +11,6 @@
 #' @param type the layer type from which the visual variables (see `...`) are taken.
 #'   Options: `"symbols"` (default), `"lines"`, `"polygons"`, and `"text"`.
 #' @param title `r .doc_opt("legend.title")`
-#' @param design `r .doc_opt("legend.design")`
 #' @param orientation `r .doc_opt("legend.orientation")`
 #' @param position `r .doc_opt("legend.position")`
 #' @inheritParams tm_title
@@ -28,7 +27,6 @@ tm_add_legend = function(...,
 						 labels = "",
 						 type = "symbols",
 						 title = "",
-						 design = NULL,
 						 orientation = NULL,
 						 position = NULL,
 						 group_id = NA_character_,
@@ -37,8 +35,12 @@ tm_add_legend = function(...,
 						 z = NA_integer_) {
 
 	args = lapply(as.list(rlang::call_match(defaults = TRUE)[-1]), eval, envir = parent.frame())
+	args$called = names(rlang::call_match(dots_expand = TRUE)[-1])
 
 	args = warning_group_args(args)
+	args$group_id = args$group_id %||% NA_character_
+	args$group_type = "tm_legend"
+	args$z = args$z %||% NA_integer_
 
 	if (type %in% c("fill", "symbol", "line")) {
 		args$type = v3_add_legend(type, names(args))
@@ -63,7 +65,7 @@ toTitleCase = function(x) {
 
 tmapAddedLegend = function(comp, o) {
 	#message("tm_mouse_coordinates ignored for 'plot' mode")
-	l = update_l(o = o, l = comp, v = "", mfun = toTitleCase(comp$type), unm = "", active = FALSE)
+	l = update_l(o = o, l = comp, v = "", mfun = paste0("tm_data_", comp$type), unm = "", active = FALSE)
 
 	fun = paste0("tm_", comp$type)
 	if (!exists(fun)) {
@@ -78,6 +80,11 @@ tmapAddedLegend = function(comp, o) {
 		} else if (!is.na(gp[[gpi]])) {
 			gp[[gpi]] = getAesOption("value.const", o, aes = gpi, layer = comp$type)
 		}
+	}
+
+	if (comp$type == "text") {
+		gp$cex = gp$size
+		gp$size = NA
 	}
 
 	l$gp = gp

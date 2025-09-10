@@ -5,7 +5,6 @@
 #' * `tm_facets_(hv)stack()` stacks the facets either horizontally or vertically (one grouping variable).
 #' * `tm_facets_grid()` specify facets for two grouping variables in a grid of rows and columns.
 #' * `tm_facets_pagewise()` same as wrap, but the facets are drawn on different plots (pages). Replaces the `along` argument from version 3.
-#' * `tm_facets_flip()` can be used to flip facets.
 #' * `tm_facets()` is the core function, but it is recommended to use the other functions.
 #'
 #' @param by Group by variable (only for a facet wrap or facet stack)
@@ -71,7 +70,7 @@ tm_facets = function(by = NULL,
 					 ...) {
 
 	args = list(...)
-	args_called = names(rlang::call_match()[-1])
+	args_called = names(rlang::call_match(dots_expand = TRUE)[-1])
 
 	if (any(v3_only("tm_facets") %in% names(args))) {
 		layer_fun = "facets"
@@ -118,6 +117,7 @@ tm_facets = function(by = NULL,
 		pages = pages,
 		nrows = nrow,
 		ncols = ncol,
+		byrow = byrow,
 		orientation = orientation,
 		free.coords = free.coords,
 		drop.units = drop.units,
@@ -217,5 +217,6 @@ tm_facets_vstack = function(by = "VARS__",
 #' @export
 #' @rdname tm_facets
 tm_facets_flip = function(...) {
-	do.call(tm_facets, list(...)) + tm_options(facet.flip = TRUE)
+	cli::cli_warn("{.field [tm_facets_flip]} please use {.code tm_facets(byrow = FALSE)} instead of {.fun tm_facets_flip}")
+	do.call(tm_facets, c(list(byrow = FALSE), list(...)))
 }

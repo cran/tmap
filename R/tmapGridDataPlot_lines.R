@@ -1,6 +1,6 @@
 #' @export
-#' @rdname tmap_internal
-tmapGridLines = function(shpTM, dt, gp, bbx, facet_row, facet_col, facet_page, id, pane, group, o, ...) {
+#' @rdname tmapGridLeaflet
+tmapGridDataPlot.tm_data_lines = function(a, shpTM, dt, gp, bbx, facet_row, facet_col, facet_page, id, pane, group, o, ...) {
 
 	rc_text = frc(facet_row, facet_col)
 
@@ -25,4 +25,12 @@ tmapGridLines = function(shpTM, dt, gp, bbx, facet_row, facet_col, facet_page, i
 
 	assign("gts", gts, envir = .TMAP_GRID)
 	NULL
+}
+
+
+#' @export
+#' @rdname tmapGridLeaflet
+tmapGridDataPlot.tm_data_iso = function(a, shpTM, dt, gp, bbx, facet_row, facet_col, facet_page, id, pane, group, o, ...) {
+	# isn't called, but needed to make tm_iso visible in tmap_overview
+	NextMethod()
 }

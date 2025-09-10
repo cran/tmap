@@ -1,3 +1,11 @@
+#' Internal methods for map components in plot and view mode
+#'
+#' Internal methods for map components
+#' @export
+#' @param comp component
+#' @param o options
+#' @keywords internal
+#' @rdname tmapGridLeaflet
 tmapGridCompPrepare = function(comp, o) {
 	UseMethod("tmapGridCompPrepare")
 }
@@ -10,20 +18,34 @@ tmapGridCompWidth = function(comp, o) {
 	UseMethod("tmapGridCompWidth")
 }
 
-tmapGridLegPlot = function(comp, o, fH, fW) {
-	UseMethod("tmapGridLegPlot")
+tmapGridCompPlot = function(comp, o, fH, fW) {
+	UseMethod("tmapGridCompPlot")
 }
 
 #' @export
-tmapGridCompPrepare.tm_legend_standard_landscape = function(comp, o) {
-	tmapGridCompPrepare.tm_legend_standard_portrait(comp, o)
+#' @keywords internal
+#' @rdname tmapGridLeaflet
+tmapGridCompPrepare.default = function(comp, o) {
+	cls = class(comp)[1]
+	id = paste("plot_mode", cls, sep = "_")
+	cli::cli_inform("{.field [plot mode]} Map component {.fun {cls}} not supported in {.str plot} mode.",
+					.frequency_id = id,
+					.frequency = "once")
+	comp$show = FALSE
+	comp
+}
+
+
+#' @export
+tmapGridCompPrepare.tm_legend_landscape = function(comp, o) {
+	tmapGridCompPrepare.tm_legend_portrait(comp, o)
 }
 
 
 
 
 #' @export
-tmapGridCompHeight.tm_legend_standard_landscape = function(comp, o) {
+tmapGridCompHeight.tm_legend_landscape = function(comp, o) {
 	nlev = comp$nitems
 	textS = comp$text.size #* o$scale
 	titleS = if (comp$title == "") 0 else comp$title.size * number_text_lines(comp$title)#* o$scale
@@ -62,7 +84,7 @@ tmapGridCompHeight.tm_legend_standard_landscape = function(comp, o) {
 
 
 #' @export
-tmapGridCompWidth.tm_legend_standard_landscape = function(comp, o) {
+tmapGridCompWidth.tm_legend_landscape = function(comp, o) {
 	nlev = comp$nitems
 	textS = comp$text.size #* o$scale
 	titleS = if (comp$title == "") 0 else comp$title.size #* o$scale
@@ -107,11 +129,44 @@ tmapGridCompWidth.tm_legend_standard_landscape = function(comp, o) {
 	items_all = c(rbind(item_widths[-nlev], item_space), item_widths[nlev])
 
 
-	ws = c(marW[1], items_all * textS * o$lin, marW[2])
+	if (comp$type == "gradient") {
+		# Cut empty space
+		if (comp$gradient_ht_fracs[1] != 0) {
+			labelW
+
+			# use additional column
+			if (comp$labels_select[1]) {
+				ih1 = min(labelW[1], item_widths[1] * comp$gradient_ht_fracs[1])
+			} else {
+				ih1 = item_widths[1] * comp$gradient_ht_fracs[1]
+			}
+
+			corrW = - (ih1 * textS * o$lin)
+		} else {
+			corrW = 0
+		}
+		if (comp$gradient_ht_fracs[2] != 0) {
+			k = nlev - comp$na.show
+			if (comp$labels_select[k]) {
+				ihk = min(labelW[k], item_widths[k] * comp$gradient_ht_fracs[2])
+			} else {
+				ihk = item_widths[k] * comp$gradient_ht_fracs[2]
+			}
+			if (comp$na.show) {
+				items_all[k * 2] = items_all[k * 2] - ihk
+			} else {
+				marW[2] = marW[2] - (ihk * textS * o$lin)
+			}
+		}
+	} else {
+		corrW = 0
+	}
+
+	ws = c(marW[1], corrW, items_all * textS * o$lin, marW[2])
 
 
-	item_ids = seq(2, by = 2, length.out = nlev)
-	pad_ids = seq(3, by = 2, length.out = nlev - 1L)
+	item_ids = seq(3, by = 2, length.out = nlev)
+	pad_ids = seq(4, by = 2, length.out = nlev - 1L)
 
 	wsu = if (comp$stretch == "padding") {
 		set_unit_with_stretch(ws, pad_ids)
@@ -141,7 +196,7 @@ tmapGridCompWidth.tm_legend_standard_landscape = function(comp, o) {
 
 
 #' @export
-tmapGridLegPlot.tm_legend_standard_landscape = function(comp, o, fH, fW) {
+tmapGridCompPlot.tm_legend_landscape = function(comp, o, fH, fW) {
 	if (comp$type != "gradient") comp$labels_select = TRUE # labels_select only needed for continuous legends (#1039)
 
 
@@ -167,6 +222,8 @@ tmapGridLegPlot.tm_legend_standard_landscape = function(comp, o, fH, fW) {
 												   nrow = length(hsu),
 												   widths = wsu,
 												   heights = hsu))
+
+	grobBG = if (getOption("tmap.design.mode")) rectGrob(gp=gpar(fill="#CAB2D6")) else NULL
 
 	if (is.na(comp$title.align)) comp$title.align = comp$position$align.h
 
@@ -197,6 +254,19 @@ tmapGridLegPlot.tm_legend_standard_landscape = function(comp, o, fH, fW) {
 
 		tck_ids = (1L:ni)[rep(comp$labels_select, length.out = ni)]
 
+		# remove tick ids that are too close to edges
+		# only if color box frame color is there
+		if (!(("col" %in% names(comp) && is.na(comp$col)) || split_alpha_channel(comp$gpar$col[1], alpha = 1)$opacity == 0)) {
+			ih = get_legend_option(comp$item.height, "gradient")
+			na_share = ((ih - 0.25)/2)/ih
+			if (comp$gradient_ht_fracs[1] >= na_share) {
+				tck_ids = setdiff(tck_ids, 1)
+			}
+			if (comp$gradient_ht_fracs[2] > na_share) {
+				tck_ids = setdiff(tck_ids, comp$nitems - comp$na.show)
+			}
+		}
+
 		# tick marks in margin (specified with y coordinates between 1 and 2)
 		if (any(ticks_in_margin)) {
 			grTicksMargin = do.call(c, lapply(ticks[ticks_in_margin], function(y) {
@@ -224,7 +294,7 @@ tmapGridLegPlot.tm_legend_standard_landscape = function(comp, o, fH, fW) {
 		df = expand.grid(col = 1:length(comp$wsu),
 						 row = 1:length(comp$hsu))
 
-		grDesign = lapply(1:nrow(df), function(i) gridCell(df$row[i], df$col[i], grid::rectGrob(gp=gpar(fill=NA,col="red", lwd=2))))
+		grDesign = lapply(1:nrow(df), function(i) gridCell(df$row[i], df$col[i], grid::rectGrob(gp=gpar(fill=NA,col="#000000", lwd=1))))
 	} else {
 		grDesign = NULL
 	}
@@ -450,7 +520,7 @@ tmapGridLegPlot.tm_legend_standard_landscape = function(comp, o, fH, fW) {
 	}
 
 
-	g = do.call(grid::grobTree, c(list(grTitle), grText, grItems, grTicks, grDesign, list(vp = vp)))
+	g = do.call(grid::grobTree, c(list(grobBG, grTitle), grText, grItems, grTicks, grDesign, list(vp = vp)))
 
 	g
 
